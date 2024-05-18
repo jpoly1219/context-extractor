@@ -1,0 +1,1068 @@
+Content-Length: 216
+
+{"jsonrpc":"2.0","method":"window/logMessage","params":{"type":3,"message":"Using Typescript version (bundled) 5.3.3 from path \"/home/jacob/.nvm/versions/node/v21.6.2/lib/node_modules/typescript/lib/tsserver.js\""}}Content-Length: 1554
+
+{"jsonrpc":"2.0","id":0,"result":{"capabilities":{"textDocumentSync":2,"completionProvider":{"triggerCharacters":[".","\"","'","/","@","<"],"resolveProvider":true},"codeActionProvider":true,"codeLensProvider":{"resolveProvider":true},"definitionProvider":true,"documentFormattingProvider":true,"documentRangeFormattingProvider":true,"documentHighlightProvider":true,"documentSymbolProvider":true,"executeCommandProvider":{"commands":["_typescript.applyWorkspaceEdit","_typescript.applyCodeAction","_typescript.applyRefactoring","_typescript.configurePlugin","_typescript.organizeImports","_typescript.applyRenameFile","_typescript.goToSourceDefinition"]},"hoverProvider":true,"inlayHintProvider":true,"linkedEditingRangeProvider":false,"renameProvider":true,"referencesProvider":true,"selectionRangeProvider":true,"signatureHelpProvider":{"triggerCharacters":["(",",","<"],"retriggerCharacters":[")"]},"workspaceSymbolProvider":true,"implementationProvider":true,"typeDefinitionProvider":true,"foldingRangeProvider":true,"semanticTokensProvider":{"documentSelector":null,"legend":{"tokenTypes":["class","enum","interface","namespace","typeParameter","type","parameter","variable","enumMember","property","function","member"],"tokenModifiers":["declaration","static","async","readonly","defaultLibrary","local"]},"full":true,"range":true},"workspace":{"fileOperations":{"willRename":{"filters":[{"scheme":"file","pattern":{"glob":"**/*.{ts,js,jsx,tsx,mjs,mts,cjs,cts}","matches":"file"}},{"scheme":"file","pattern":{"glob":"**","matches":"folder"}}]}}}}}}Content-Length: 269
+
+{"jsonrpc":"2.0","id":1,"result":{"contents":{"kind":"markdown","value":"\n```typescript\nfunction _<(model: Model, action: Action) => Model>(): (model: Model, action: Action) => Model\n```\n"},"range":{"start":{"line":5,"character":2},"end":{"line":5,"character":3}}}}Content-Length: 36
+
+{"jsonrpc":"2.0","id":2,"result":[]}Content-Length: 36
+
+{"jsonrpc":"2.0","id":3,"result":[]}Content-Length: 36
+
+{"jsonrpc":"2.0","id":4,"result":[]}Content-Length: 36
+
+{"jsonrpc":"2.0","id":5,"result":[]}Content-Length: 36
+
+{"jsonrpc":"2.0","id":6,"result":[]}Content-Length: 36
+
+{"jsonrpc":"2.0","id":7,"result":[]}Content-Length: 36
+
+{"jsonrpc":"2.0","id":8,"result":[]}Content-Length: 36
+
+{"jsonrpc":"2.0","id":9,"result":[]}Content-Length: 196
+
+{"jsonrpc":"2.0","id":10,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 228
+
+{"jsonrpc":"2.0","id":11,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Model = [BookingFormData, Booking[], number]\n```\n"},"range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}}Content-Length: 37
+
+{"jsonrpc":"2.0","id":12,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":13,"result":[]}Content-Length: 196
+
+{"jsonrpc":"2.0","id":14,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 216
+
+{"jsonrpc":"2.0","id":15,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 37
+
+{"jsonrpc":"2.0","id":16,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":17,"result":[]}Content-Length: 193
+
+{"jsonrpc":"2.0","id":18,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}]}Content-Length: 208
+
+{"jsonrpc":"2.0","id":19,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Time = [Weekday, TimeOfDay]\n```\n"},"range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}}Content-Length: 37
+
+{"jsonrpc":"2.0","id":20,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":21,"result":[]}Content-Length: 194
+
+{"jsonrpc":"2.0","id":22,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":23,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 37
+
+{"jsonrpc":"2.0","id":24,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":25,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":26,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":27,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":28,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":29,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":30,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":31,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":32,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":33,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":34,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":35,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":36,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":37,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":38,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":39,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":40,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":41,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":42,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":43,"result":[]}Content-Length: 194
+
+{"jsonrpc":"2.0","id":44,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":45,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":46,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":47,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":48,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":49,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":50,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":51,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":52,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":53,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":54,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":55,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":56,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":57,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 37
+
+{"jsonrpc":"2.0","id":58,"result":[]}Content-Length: 194
+
+{"jsonrpc":"2.0","id":59,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":60,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 37
+
+{"jsonrpc":"2.0","id":61,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":62,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":63,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":64,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":65,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":66,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":67,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":68,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":69,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":70,"result":[]}Content-Length: 194
+
+{"jsonrpc":"2.0","id":71,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":72,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":73,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":74,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":75,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":76,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":77,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":78,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":79,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":80,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":81,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":82,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":83,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":84,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":85,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":86,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 193
+
+{"jsonrpc":"2.0","id":87,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}]}Content-Length: 208
+
+{"jsonrpc":"2.0","id":88,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Time = [Weekday, TimeOfDay]\n```\n"},"range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}}Content-Length: 193
+
+{"jsonrpc":"2.0","id":89,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}]}Content-Length: 208
+
+{"jsonrpc":"2.0","id":90,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Time = [Weekday, TimeOfDay]\n```\n"},"range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}}Content-Length: 193
+
+{"jsonrpc":"2.0","id":91,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}]}Content-Length: 208
+
+{"jsonrpc":"2.0","id":92,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Time = [Weekday, TimeOfDay]\n```\n"},"range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}}Content-Length: 193
+
+{"jsonrpc":"2.0","id":93,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}]}Content-Length: 208
+
+{"jsonrpc":"2.0","id":94,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Time = [Weekday, TimeOfDay]\n```\n"},"range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}}Content-Length: 37
+
+{"jsonrpc":"2.0","id":95,"result":[]}Content-Length: 193
+
+{"jsonrpc":"2.0","id":96,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 194
+
+{"jsonrpc":"2.0","id":97,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 37
+
+{"jsonrpc":"2.0","id":98,"result":[]}Content-Length: 37
+
+{"jsonrpc":"2.0","id":99,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":100,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":101,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":102,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":103,"result":[]}Content-Length: 194
+
+{"jsonrpc":"2.0","id":104,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":105,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":106,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":107,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":108,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":109,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":110,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":111,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":112,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":113,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":114,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":115,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":116,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":117,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":118,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":119,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":120,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":121,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":122,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":123,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":124,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":125,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":126,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":127,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":128,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":129,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 170
+
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/epilogue.ts","diagnostics":[]}}Content-Length: 217
+
+{"jsonrpc":"2.0","id":130,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":131,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":132,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":133,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":134,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":135,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":136,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":137,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":138,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":139,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":140,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":141,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":142,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingFormData = [Time, string]\n```\n"},"range":{"start":{"line":14,"character":5},"end":{"line":14,"character":20}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":143,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":144,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":145,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Booking = [Time, string, number]\n```\n"},"range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":146,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":147,"result":[]}Content-Length: 194
+
+{"jsonrpc":"2.0","id":148,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":149,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Time = [Weekday, TimeOfDay]\n```\n"},"range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":150,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":151,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Time = [Weekday, TimeOfDay]\n```\n"},"range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":152,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":153,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Time = [Weekday, TimeOfDay]\n```\n"},"range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":154,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":155,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Time = [Weekday, TimeOfDay]\n```\n"},"range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":156,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}]}Content-Length: 209
+
+{"jsonrpc":"2.0","id":157,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Time = [Weekday, TimeOfDay]\n```\n"},"range":{"start":{"line":6,"character":5},"end":{"line":6,"character":9}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":158,"result":[]}Content-Length: 194
+
+{"jsonrpc":"2.0","id":159,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":160,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":161,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":162,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":163,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":164,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":165,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":166,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":167,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":168,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":169,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":170,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":171,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":172,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":173,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":174,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":175,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":176,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":177,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":178,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":179,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":180,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":181,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":182,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":183,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":184,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":185,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":186,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":187,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":188,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":189,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":190,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":191,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":192,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":193,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Booking = [Time, string, number]\n```\n"},"range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":194,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":195,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Booking = [Time, string, number]\n```\n"},"range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":196,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":197,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Booking = [Time, string, number]\n```\n"},"range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":198,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":199,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Booking = [Time, string, number]\n```\n"},"range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":200,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":201,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Booking = [Time, string, number]\n```\n"},"range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":202,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":203,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Booking = [Time, string, number]\n```\n"},"range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":204,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}]}Content-Length: 217
+
+{"jsonrpc":"2.0","id":205,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Booking = [Time, string, number]\n```\n"},"range":{"start":{"line":12,"character":5},"end":{"line":12,"character":12}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":206,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":207,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":208,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":209,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":210,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":211,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":212,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":213,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":214,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":215,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":216,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":217,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":218,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":219,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}]}Content-Length: 203
+
+{"jsonrpc":"2.0","id":220,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype BookingID = number\n```\n"},"range":{"start":{"line":10,"character":5},"end":{"line":10,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":221,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":222,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Model = [BookingFormData, Booking[], number]\n```\n"},"range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":223,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":224,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Model = [BookingFormData, Booking[], number]\n```\n"},"range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":225,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":226,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Model = [BookingFormData, Booking[], number]\n```\n"},"range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":227,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":228,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Model = [BookingFormData, Booking[], number]\n```\n"},"range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":229,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":230,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Model = [BookingFormData, Booking[], number]\n```\n"},"range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":231,"result":[]}Content-Length: 520
+
+{"jsonrpc":"2.0","id":232,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":18},"end":{"line":18,"character":92}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":21},"end":{"line":20,"character":70}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":21},"end":{"line":22,"character":46}}}]}Content-Length: 40
+
+{"jsonrpc":"2.0","id":233,"result":null}Content-Length: 520
+
+{"jsonrpc":"2.0","id":234,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":18},"end":{"line":18,"character":92}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":21},"end":{"line":20,"character":70}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":21},"end":{"line":22,"character":46}}}]}Content-Length: 40
+
+{"jsonrpc":"2.0","id":235,"result":null}Content-Length: 520
+
+{"jsonrpc":"2.0","id":236,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":18},"end":{"line":18,"character":92}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":21},"end":{"line":20,"character":70}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":21},"end":{"line":22,"character":46}}}]}Content-Length: 40
+
+{"jsonrpc":"2.0","id":237,"result":null}Content-Length: 520
+
+{"jsonrpc":"2.0","id":238,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":18},"end":{"line":18,"character":92}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":21},"end":{"line":20,"character":70}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":21},"end":{"line":22,"character":46}}}]}Content-Length: 40
+
+{"jsonrpc":"2.0","id":239,"result":null}Content-Length: 520
+
+{"jsonrpc":"2.0","id":240,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":18},"end":{"line":18,"character":92}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":21},"end":{"line":20,"character":70}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":21},"end":{"line":22,"character":46}}}]}Content-Length: 40
+
+{"jsonrpc":"2.0","id":241,"result":null}Content-Length: 520
+
+{"jsonrpc":"2.0","id":242,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":18},"end":{"line":18,"character":92}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":21},"end":{"line":20,"character":70}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":21},"end":{"line":22,"character":46}}}]}Content-Length: 40
+
+{"jsonrpc":"2.0","id":243,"result":null}Content-Length: 520
+
+{"jsonrpc":"2.0","id":244,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":18},"end":{"line":18,"character":92}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":21},"end":{"line":20,"character":70}}},{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":21},"end":{"line":22,"character":46}}}]}Content-Length: 40
+
+{"jsonrpc":"2.0","id":245,"result":null}Content-Length: 38
+
+{"jsonrpc":"2.0","id":246,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":247,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}]}Content-Length: 236
+
+{"jsonrpc":"2.0","id":248,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Action = AddBooking | CancelBooking | ClearBookings\n```\n"},"range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":249,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":250,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":251,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":252,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":253,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":254,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":255,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":256,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":257,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":258,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":259,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":260,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":261,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":262,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":263,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":264,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":265,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":266,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":267,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":268,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":269,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":270,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":271,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":272,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":273,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":274,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":275,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":276,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":277,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":278,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":279,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":280,"result":[]}Content-Length: 194
+
+{"jsonrpc":"2.0","id":281,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":282,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":283,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":284,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":285,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":286,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":287,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":288,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":289,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":290,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":291,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":292,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":293,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":294,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":295,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":296,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":297,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":298,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":299,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":300,"result":[]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":301,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 230
+
+{"jsonrpc":"2.0","id":302,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":303,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 230
+
+{"jsonrpc":"2.0","id":304,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":305,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 230
+
+{"jsonrpc":"2.0","id":306,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":307,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 230
+
+{"jsonrpc":"2.0","id":308,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":309,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 230
+
+{"jsonrpc":"2.0","id":310,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":311,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 230
+
+{"jsonrpc":"2.0","id":312,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":313,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 230
+
+{"jsonrpc":"2.0","id":314,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":315,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}]}Content-Length: 230
+
+{"jsonrpc":"2.0","id":316,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Weekday = \"M\" | \"T\" | \"W\" | \"R\" | \"F\"\n```\n"},"range":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":317,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":318,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":319,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":320,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":321,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":322,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":323,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":324,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":325,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":326,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":327,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":328,"result":[]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":329,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 210
+
+{"jsonrpc":"2.0","id":330,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":331,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 210
+
+{"jsonrpc":"2.0","id":332,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":333,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 210
+
+{"jsonrpc":"2.0","id":334,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":335,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 210
+
+{"jsonrpc":"2.0","id":336,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":337,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 210
+
+{"jsonrpc":"2.0","id":338,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":339,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 210
+
+{"jsonrpc":"2.0","id":340,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":341,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 210
+
+{"jsonrpc":"2.0","id":342,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":343,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 210
+
+{"jsonrpc":"2.0","id":344,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":345,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 210
+
+{"jsonrpc":"2.0","id":346,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 195
+
+{"jsonrpc":"2.0","id":347,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}]}Content-Length: 210
+
+{"jsonrpc":"2.0","id":348,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype TimeOfDay = \"AM\" | \"PM\"\n```\n"},"range":{"start":{"line":4,"character":5},"end":{"line":4,"character":14}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":349,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":350,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":351,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":352,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":353,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":354,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":355,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":356,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":357,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":358,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":359,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":360,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":361,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":362,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":363,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":364,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":365,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":366,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":367,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}]}Content-Length: 296
+
+{"jsonrpc":"2.0","id":368,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype AddBooking = {\n    type: \"AddBooking\";\n    user: User;\n    weekday: Weekday;\n    timeOfDay: TimeOfDay;\n}\n```\n"},"range":{"start":{"line":18,"character":5},"end":{"line":18,"character":15}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":369,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":370,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":371,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":372,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":373,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":374,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":375,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":376,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":377,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":378,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":379,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":380,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":381,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":382,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":383,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":384,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":385,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":386,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":387,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":388,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":389,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":390,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":391,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":392,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":393,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":394,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":395,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":396,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":397,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":398,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":399,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":400,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":401,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":402,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":403,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":404,"result":[]}Content-Length: 194
+
+{"jsonrpc":"2.0","id":405,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":406,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":407,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":408,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":409,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":410,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":411,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":412,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 194
+
+{"jsonrpc":"2.0","id":413,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}]}Content-Length: 195
+
+{"jsonrpc":"2.0","id":414,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype User = string\n```\n"},"range":{"start":{"line":8,"character":5},"end":{"line":8,"character":9}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":415,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":416,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":417,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":418,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":419,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":420,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":421,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":422,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":423,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":424,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":425,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":426,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":427,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":428,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":429,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":430,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":431,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":432,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":433,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":434,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":435,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":436,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":437,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":438,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":439,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":440,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":441,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":442,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":443,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":444,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":445,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":446,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":447,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":448,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":449,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":450,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":451,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}]}Content-Length: 269
+
+{"jsonrpc":"2.0","id":452,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype CancelBooking = {\n    type: \"CancelBooking\";\n    user: User;\n    id: number;\n}\n```\n"},"range":{"start":{"line":20,"character":5},"end":{"line":20,"character":18}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":453,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":454,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":455,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":456,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":457,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":458,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":459,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":460,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":461,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":462,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":463,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":464,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":465,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":466,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":467,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":468,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":469,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":470,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":471,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":472,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":473,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":474,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":475,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":476,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":477,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":478,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":479,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":480,"result":[]}Content-Length: 38
+
+{"jsonrpc":"2.0","id":481,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":482,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":483,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":484,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":485,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":486,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":487,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":488,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":489,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":490,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":491,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":492,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":493,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":494,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":495,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":496,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":497,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":498,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":499,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":500,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":501,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":502,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}]}Content-Length: 235
+
+{"jsonrpc":"2.0","id":503,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype ClearBookings = {\n    type: \"ClearBookings\";\n}\n```\n"},"range":{"start":{"line":22,"character":5},"end":{"line":22,"character":18}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":504,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}]}Content-Length: 236
+
+{"jsonrpc":"2.0","id":505,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Action = AddBooking | CancelBooking | ClearBookings\n```\n"},"range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":506,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}]}Content-Length: 236
+
+{"jsonrpc":"2.0","id":507,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Action = AddBooking | CancelBooking | ClearBookings\n```\n"},"range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":508,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}]}Content-Length: 236
+
+{"jsonrpc":"2.0","id":509,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Action = AddBooking | CancelBooking | ClearBookings\n```\n"},"range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":510,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}]}Content-Length: 236
+
+{"jsonrpc":"2.0","id":511,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Action = AddBooking | CancelBooking | ClearBookings\n```\n"},"range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":512,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}]}Content-Length: 236
+
+{"jsonrpc":"2.0","id":513,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Action = AddBooking | CancelBooking | ClearBookings\n```\n"},"range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":514,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}]}Content-Length: 236
+
+{"jsonrpc":"2.0","id":515,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Action = AddBooking | CancelBooking | ClearBookings\n```\n"},"range":{"start":{"line":24,"character":5},"end":{"line":24,"character":11}}}}Content-Length: 38
+
+{"jsonrpc":"2.0","id":516,"result":[]}Content-Length: 204
+
+{"jsonrpc":"2.0","id":517,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/injected_sketch.ts","range":{"start":{"line":0,"character":22},"end":{"line":0,"character":61}}}]}Content-Length: 40
+
+{"jsonrpc":"2.0","id":518,"result":null}Content-Length: 204
+
+{"jsonrpc":"2.0","id":519,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/injected_sketch.ts","range":{"start":{"line":0,"character":22},"end":{"line":0,"character":61}}}]}Content-Length: 40
+
+{"jsonrpc":"2.0","id":520,"result":null}Content-Length: 38
+
+{"jsonrpc":"2.0","id":521,"result":[]}Content-Length: 197
+
+{"jsonrpc":"2.0","id":522,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":523,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Model = [BookingFormData, Booking[], number]\n```\n"},"range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":524,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":525,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Model = [BookingFormData, Booking[], number]\n```\n"},"range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":526,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":527,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Model = [BookingFormData, Booking[], number]\n```\n"},"range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":528,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 229
+
+{"jsonrpc":"2.0","id":529,"result":{"contents":{"kind":"markdown","value":"\n```typescript\ntype Model = [BookingFormData, Booking[], number]\n```\n"},"range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}}Content-Length: 197
+
+{"jsonrpc":"2.0","id":530,"result":[{"uri":"file:///home/jacob/projects/context-extractor/targets/booking/prelude.ts","range":{"start":{"line":16,"character":5},"end":{"line":16,"character":10}}}]}Content-Length: 229
+

@@ -1,0 +1,13 @@
+function _<(model: Model, action: Action) => Model>(): (model: Model, action: Action) => Model;
+type Model = [BookingFormData, Booking[], number];
+type BookingFormData = [Time, string];
+type Time = [Weekday, TimeOfDay];
+type Weekday = "M" | "T" | "W" | "R" | "F";
+type TimeOfDay = "AM" | "PM";
+type User = string;
+type Booking = [Time, string, number];
+type BookingID = number;
+type Action = AddBooking | CancelBooking | ClearBookings;
+type AddBooking = {    type: "AddBooking";    user: User;    weekday: Weekday;    timeOfDay: TimeOfDay;};
+type CancelBooking = {    type: "CancelBooking";    user: User;    id: number;};
+type ClearBookings = {    type: "ClearBookings";};
