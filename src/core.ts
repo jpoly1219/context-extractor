@@ -4,13 +4,13 @@ import { execSync } from "child_process";
 
 // get context of the hole
 // currently only matching ES6 arrow functions
-const getAnnotatedFunctionHoleContext = (sketchFileContent) => {
+const getAnnotatedFunctionHoleContext = (sketchFileContent: string) => {
   const es6AnnotatedArrowFunctionPattern = /(const )(.+)(: )(\(.+\) => .+)( =[\s\S]*_())/;
   const firstPatternIndex = sketchFileContent.search(es6AnnotatedArrowFunctionPattern);
-  const match = sketchFileContent.match(es6AnnotatedArrowFunctionPattern);
+  const match = sketchFileContent.match(es6AnnotatedArrowFunctionPattern)!;
   const functionName = match[2];
   const functionTypeSpan = match[4];
-  const linePosition = (sketchFileContent.substring(0, firstPatternIndex).match(/\n/g)).length;
+  const linePosition = (sketchFileContent.substring(0, firstPatternIndex).match(/\n/g))!.length;
   const characterPosition = indexOfRegexGroup(match, 4) - firstPatternIndex;
 
   return { functionName: functionName, functionTypeSpan: functionTypeSpan, linePosition: linePosition, characterPosition: characterPosition };
