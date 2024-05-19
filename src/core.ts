@@ -58,7 +58,6 @@ const getTargetTypes = (typeSpan, aliasContext) => {
 
   const targetTypes = [];
   targetTypes.push(typeSpan);
-
   const arrowPattern = /(\(.+\))( => )(.+)/;
   const arrowMatch = typeSpan.match(arrowPattern);
   if (arrowMatch) {

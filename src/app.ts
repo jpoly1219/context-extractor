@@ -1,7 +1,7 @@
 import { JSONRPCEndpoint, LspClient } from "../../ts-lsp-client/build/src/main.js"
 import { spawn } from "child_process";
 import * as fs from "fs"
-import { extractRelevantTypes, getHoleContext, extractRelevantContext, normalize } from "./core.js";
+import { extractRelevantTypes, getHoleContext, extractRelevantContext } from "./core.js";
 
 // expected arguments: directory to run the type extraction
 // an example would be: node app.mjs /home/<username>/path/to/sketch/dir/ sketch.ts
@@ -169,19 +169,6 @@ logFile.end();
 logFile.close();
 outputFile.end();
 outputFile.close();
-
-// console.log("Model", normalize("Model", foundSoFar))
-// console.log("BookingFormData", normalize("BookingFormData", foundSoFar))
-// console.log("Time", normalize("Time", foundSoFar))
-// console.log("Weekday", normalize("Weekday", foundSoFar))
-// console.log("TimeOfDay", normalize("TimeOfDay", foundSoFar))
-// console.log("User", normalize("User", foundSoFar))
-// console.log("Booking", normalize("Booking", foundSoFar))
-// console.log("BookingID", normalize("BookingID", foundSoFar))
-// console.log("Action", normalize("Action", foundSoFar))
-// console.log("AddBooking", normalize("AddBooking", foundSoFar))
-// console.log("CancelBooking", normalize("CancelBooking", foundSoFar))
-// console.log("ClearBookings", normalize("ClearBookings", foundSoFar))
 
 const preludeContent = fs.readFileSync(`${process.argv[2]}prelude.ts`).toString("utf8");
 console.log(extractRelevantContext(preludeContent, foundSoFar));
