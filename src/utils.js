@@ -20,55 +20,34 @@ const formatTypeSpan = (typeSpan) => {
 }
 
 const isTuple = (typeSpan) => {
-  if (typeSpan[0] === "[" && typeSpan[typeSpan.length - 1] === "]") {
-    return true;
-  }
-  return false;
+  return typeSpan[0] === "[" && typeSpan[typeSpan.length - 1] === "]";
 }
 
 const isUnion = (typeSpan) => {
-  if (typeSpan.includes(" | ")) {
-    return true;
-  }
-  return false;
+  return typeSpan.includes(" | ");
 }
 
 const isArray = (typeSpan) => {
-  if (typeSpan.slice(-2) === "[]") {
-    return true;
-  }
-  return false;
+  return typeSpan.slice(-2) === "[]";
 }
 
 const isObject = (typeSpan) => {
-  if (typeSpan[0] === "{" && typeSpan[typeSpan.length - 1] === "}") {
-    return true;
-  }
-  return false;
+  return typeSpan[0] === "{" && typeSpan[typeSpan.length - 1] === "}";
 }
 
 // this is a very rudimentary check, so it should be expanded upon
 const isFunction = (typeSpan) => {
-  if (typeSpan.includes("=>")) {
-    return true;
-  }
-  return false;
+  return typeSpan.includes("=>");
 }
 
 const isPrimitive = (typeSpan) => {
   const primitives = ["string", "number", "boolean"];
-  if (primitives.includes(typeSpan)) {
-    return true;
-  }
-  return false;
+  return primitives.includes(typeSpan);
 }
 
 const isTypeAlias = (typeSpan) => {
   const caps = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  if (caps.includes(typeSpan[0])) {
-    return true;
-  }
-  return false;
+  return caps.includes(typeSpan[0]);
 }
 
 export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias };
