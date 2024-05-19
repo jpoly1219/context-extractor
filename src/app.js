@@ -1,7 +1,7 @@
 import { JSONRPCEndpoint, LspClient } from "../../ts-lsp-client/build/src/main.js"
 import { spawn } from "child_process";
 import * as fs from "fs"
-import { getAnnotatedFunctionHoleContext, extractRelevantTypes, getHoleContext, extractRelevantContext, normalize } from "./core.js";
+import { extractRelevantTypes, getHoleContext, extractRelevantContext, normalize } from "./core.js";
 
 // expected arguments: directory to run the type extraction
 // an example would be: node app.mjs /home/<username>/path/to/sketch/dir/ sketch.ts
