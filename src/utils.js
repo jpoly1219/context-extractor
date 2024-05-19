@@ -1,8 +1,8 @@
 const indexOfRegexGroup = (match, n) => {
-  let ix = match.index;
-  for (let i = 1; i < n; i++)
-    ix += match[i].length;
-  return ix;
+  return match.reduce((acc, curr, i) => {
+    if (i < 1 || i >= n) return 0;
+    return acc + curr.length;
+  }, match.index)
 }
 
 const formatTypeSpan = (typeSpan) => {
