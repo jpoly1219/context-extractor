@@ -1,6 +1,6 @@
 const indexOfRegexGroup = (match, n) => {
   return match.reduce((acc, curr, i) => {
-    if (i < 1 || i >= n) return 0;
+    if (i < 1 || i >= n) return acc;
     return acc + curr.length;
   }, match.index)
 }
