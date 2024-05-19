@@ -1,3 +1,4 @@
+import { LspClient, MarkupContent, Location } from "../../ts-lsp-client/build/src/main.js"
 import { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias } from "./utils.js";
 import * as fs from "fs";
 import { execSync } from "child_process";
@@ -7,9 +8,9 @@ import { execSync } from "child_process";
 const getAnnotatedFunctionHoleContext = (sketchFileContent: string) => {
   const es6AnnotatedArrowFunctionPattern = /(const )(.+)(: )(\(.+\) => .+)( =[\s\S]*_())/;
   const firstPatternIndex = sketchFileContent.search(es6AnnotatedArrowFunctionPattern);
-  const match = sketchFileContent.match(es6AnnotatedArrowFunctionPattern)!;
-  const functionName = match[2];
-  const functionTypeSpan = match[4];
+  const match = sketchFileContent.match(es6AnnotatedArrowFunctionPattern);
+  const functionName = match![2];
+  const functionTypeSpan = match![4];
   const linePosition = (sketchFileContent.substring(0, firstPatternIndex).match(/\n/g))!.length;
   const characterPosition = indexOfRegexGroup(match, 4) - firstPatternIndex;
 
@@ -17,10 +18,10 @@ const getAnnotatedFunctionHoleContext = (sketchFileContent: string) => {
 }
 
 // get context of the hole using hole function
-const getHoleContext = async (c, injectedSketchFilePath, injectedSketchFileContent) => {
+const getHoleContext = async (c: LspClient, injectedSketchFilePath: string, injectedSketchFileContent: string) => {
   const holePattern = /_\(\)/;
   const firstPatternIndex = injectedSketchFileContent.search(holePattern);
-  const linePosition = (injectedSketchFileContent.substring(0, firstPatternIndex).match(/\n/g)).length;
+  const linePosition = (injectedSketchFileContent.substring(0, firstPatternIndex).match(/\n/g))!.length;
   const characterPosition = firstPatternIndex - injectedSketchFileContent.split("\n", linePosition).join("\n").length - 1;
 
   const holeHoverResult = await c.hover({
@@ -33,7 +34,7 @@ const getHoleContext = async (c, injectedSketchFilePath, injectedSketchFileConte
     }
   });
 
-  const formattedHoverResult = holeHoverResult.contents.value.split("\n").reduce((acc, curr) => {
+  const formattedHoverResult = (holeHoverResult.contents as MarkupContent).value.split("\n").reduce((acc, curr) => {
     if (curr != "" && curr != "```typescript" && curr != "```") {
       return acc + curr;
     } else {
@@ -45,39 +46,39 @@ const getHoleContext = async (c, injectedSketchFilePath, injectedSketchFileConte
   const holeFunctionPattern = /(function _)(\<.+\>)(\(\): )(.+)/;
   const match = formattedHoverResult.match(holeFunctionPattern);
   const functionName = "_()";
-  const functionTypeSpan = match[4];
+  const functionTypeSpan = match![4];
 
   return { fullHoverResult: formattedHoverResult, functionName: functionName, functionTypeSpan: functionTypeSpan, linePosition: linePosition, characterPosition: characterPosition };
 }
 
-// get target types given a type span
-const getTargetTypes = (typeSpan, aliasContext) => {
-  // (Model, Action) => Model
-  // if the expected type is an arrow type, the return type is a target type.
-  // if the return type is a product type, its elements are target types.
-
-  const targetTypes = [];
-  targetTypes.push(typeSpan);
-  const arrowPattern = /(\(.+\))( => )(.+)/;
-  const arrowMatch = typeSpan.match(arrowPattern);
-  if (arrowMatch) {
-    const returnType = arrowMatch[3];
-    targetTypes.push(returnType);
-
-    const tuplePattern = /(\[.+\])/;
-    if (aliasContext.has(returnType)) {
-      const alias = aliasContext.get(returnType);
-      console.log(alias)
-      const tupleMatch = alias.match(tuplePattern);
-
-      if (tupleMatch) {
-        alias.slice(1, alias.length - 1).split(",").map((typ) => targetTypes.push(typ));
-      }
-    }
-  }
-  console.log("targetTypes: ", targetTypes);
-  return targetTypes;
-}
+// // get target types given a type span
+// const getTargetTypes = (typeSpan: string, aliasContext: string) => {
+//   // (Model, Action) => Model
+//   // if the expected type is an arrow type, the return type is a target type.
+//   // if the return type is a product type, its elements are target types.
+//
+//   const targetTypes = [];
+//   targetTypes.push(typeSpan);
+//   const arrowPattern = /(\(.+\))( => )(.+)/;
+//   const arrowMatch = typeSpan.match(arrowPattern);
+//   if (arrowMatch) {
+//     const returnType = arrowMatch[3];
+//     targetTypes.push(returnType);
+//
+//     const tuplePattern = /(\[.+\])/;
+//     if (aliasContext.has(returnType)) {
+//       const alias = aliasContext.get(returnType);
+//       console.log(alias)
+//       const tupleMatch = alias.match(tuplePattern);
+//
+//       if (tupleMatch) {
+//         alias.slice(1, alias.length - 1).split(",").map((typ) => targetTypes.push(typ));
+//       }
+//     }
+//   }
+//   console.log("targetTypes: ", targetTypes);
+//   return targetTypes;
+// }
 
 
 // pattern matching
@@ -88,7 +89,7 @@ const getTargetTypes = (typeSpan, aliasContext) => {
 // return typeSpan;
 
 // check if hover result is from a primitive type
-const checkPrimitive = (typeDefinition) => {
+const checkPrimitive = (typeDefinition: string) => {
   // type _ = boolean
   const primitivePattern = /(type )(.+)( = )(.+)/;
   const primitiveMatch = typeDefinition.match(primitivePattern);
@@ -98,15 +99,15 @@ const checkPrimitive = (typeDefinition) => {
   }
 
   if (primitiveInterestingIndex != -1) {
-    const typeName = primitiveMatch[2];
-    const typeSpan = primitiveMatch[4];
+    const typeName = primitiveMatch![2];
+    const typeSpan = primitiveMatch![4];
     return { typeName: typeName, typeSpan: typeSpan, interestingIndex: primitiveInterestingIndex }
   }
   return null;
 }
 
 // check if hover result is from an import
-const checkImports = (typeDefinition) => {
+const checkImports = (typeDefinition: string) => {
   // import { _, _ };
   const importPattern = /(import )(\{.+\})/;
   const importMatch = typeDefinition.match(importPattern);
@@ -124,12 +125,12 @@ const checkImports = (typeDefinition) => {
   }
 
   if (importInterestingIndex != -1) {
-    const typeName = importMatch[2];
-    const typeSpan = importMatch[2];
+    const typeName = importMatch![2];
+    const typeSpan = importMatch![2];
     return { typeName: typeName, typeSpan: typeSpan, interestingIndex: importInterestingIndex }
   } else if (defaultImportInterestingIndex != -1) {
-    const typeName = defaultImportMatch[2];
-    const typeSpan = defaultImportMatch[2];
+    const typeName = defaultImportMatch![2];
+    const typeSpan = defaultImportMatch![2];
     return { typeName: typeName, typeSpan: typeSpan, interestingIndex: defaultImportInterestingIndex }
   }
 
@@ -137,7 +138,7 @@ const checkImports = (typeDefinition) => {
 }
 
 // check if hover result is from a module
-const checkModule = (typeDefinition) => {
+const checkModule = (typeDefinition: string) => {
   // module "path/to/module"
   const modulePattern = /(module )(.+)/;
   const moduleMatch = typeDefinition.match(modulePattern);
@@ -147,8 +148,8 @@ const checkModule = (typeDefinition) => {
   }
 
   if (moduleInterestingIndex != -1) {
-    const typeName = moduleMatch[2];
-    const typeSpan = moduleMatch[2];
+    const typeName = moduleMatch![2];
+    const typeSpan = moduleMatch![2];
     return { typeName: typeName, typeSpan: typeSpan, interestingIndex: moduleInterestingIndex }
   }
 
@@ -156,7 +157,7 @@ const checkModule = (typeDefinition) => {
 }
 
 // check if hover result is from an object
-const checkObject = (typeDefinition) => {
+const checkObject = (typeDefinition: string) => {
   // type _ = {
   //   _: t1;
   //   _: t2;
@@ -169,15 +170,15 @@ const checkObject = (typeDefinition) => {
   }
 
   if (objectTypeDefInterestingIndex != -1) {
-    const typeName = objectTypeDefMatch[2];
-    const typeSpan = objectTypeDefMatch[4];
+    const typeName = objectTypeDefMatch![2];
+    const typeSpan = objectTypeDefMatch![4];
     return { typeName: typeName, typeSpan: typeSpan, interestingIndex: objectTypeDefInterestingIndex }
   }
   return null;
 }
 
 // check if hover result is from a union
-const checkUnion = (typeDefinition) => {
+const checkUnion = (typeDefinition: string) => {
   // type _ = A | B | C
   const unionPattern = /(type )(.+)( = )((.+ | )+.+)/;
   const unionMatch = typeDefinition.match(unionPattern);
@@ -187,15 +188,15 @@ const checkUnion = (typeDefinition) => {
   }
 
   if (unionInterestingIndex != -1) {
-    const typeName = unionMatch[2];
-    const typeSpan = unionMatch[4];
+    const typeName = unionMatch![2];
+    const typeSpan = unionMatch![4];
     return { typeName: typeName, typeSpan: typeSpan, interestingIndex: unionInterestingIndex }
   }
   return null;
 }
 
 // check if hover result is from a function
-const checkFunction = (typeDefinition) => {
+const checkFunction = (typeDefinition: string) => {
   // const myFunc : (arg1: typ1, ...) => _
   const es6AnnotatedFunctionPattern = /(const )(.+)(: )(\(.+\) => .+)/;
   const es6AnnotatedFunctionMatch = typeDefinition.match(es6AnnotatedFunctionPattern);
@@ -229,20 +230,20 @@ const checkFunction = (typeDefinition) => {
   }
 
   if (es6AnnotatedFunctionInterestingIndex != -1) {
-    const typeName = es6AnnotatedFunctionMatch[2];
-    const typeSpan = es6AnnotatedFunctionMatch[4];
+    const typeName = es6AnnotatedFunctionMatch![2];
+    const typeSpan = es6AnnotatedFunctionMatch![4];
     return { typeName: typeName, typeSpan: typeSpan, interestingIndex: es6AnnotatedFunctionInterestingIndex }
   } else if (es6FunctionTypeDefInterestingIndex != -1) {
-    const typeName = es6FunctionTypeDefPatternMatch[2];
-    const typeSpan = es6FunctionTypeDefPatternMatch[4];
+    const typeName = es6FunctionTypeDefPatternMatch![2];
+    const typeSpan = es6FunctionTypeDefPatternMatch![4];
     return { typeName: typeName, typeSpan: typeSpan, interestingIndex: es6FunctionTypeDefInterestingIndex }
   } else if (genericFunctionTypeInterestingIndex != -1) {
-    const typeName = genericFunctionTypeMatch[2];
-    const typeSpan = genericFunctionTypeMatch[3] + genericFunctionTypeMatch[4] + genericFunctionTypeMatch[5];
+    const typeName = genericFunctionTypeMatch![2];
+    const typeSpan = genericFunctionTypeMatch![3] + genericFunctionTypeMatch![4] + genericFunctionTypeMatch![5];
     return { typeName: typeName, typeSpan: typeSpan, interestingIndex: genericFunctionTypeInterestingIndex }
   } else if (functionTypeInterestingIndex != -1) {
-    const typeName = functionTypeMatch[2];
-    const typeSpan = functionTypeMatch[3] + functionTypeMatch[4] + functionTypeMatch[5];
+    const typeName = functionTypeMatch![2];
+    const typeSpan = functionTypeMatch![3] + functionTypeMatch![4] + functionTypeMatch![5];
     return { typeName: typeName, typeSpan: typeSpan, interestingIndex: functionTypeInterestingIndex }
   }
 
@@ -250,7 +251,7 @@ const checkFunction = (typeDefinition) => {
 }
 
 // check if hover result is from a hole
-const checkHole = (typeDefinition) => {
+const checkHole = (typeDefinition: string) => {
   // (type parameter) T in _<T>(): T
   const holePattern = /(\(type parameter\) T in _\<T\>\(\): T)/;
   const match = typeDefinition.match(holePattern);
@@ -264,7 +265,7 @@ const checkHole = (typeDefinition) => {
 }
 
 // check if hover result is from a parameter
-const checkParameter = (typeDefinition) => {
+const checkParameter = (typeDefinition: string) => {
   // (parameter) name: type
   // const parameterPattern = /(\(parameter\) )(.+)(: )(.+))/;
   // const parameterMatch = typeDefinition.match(parameterPattern);
@@ -282,7 +283,7 @@ const checkParameter = (typeDefinition) => {
 }
 
 // get type context from hover result
-const getTypeContext = (typeDefinition) => {
+const getTypeContext = (typeDefinition: string) => {
   if (checkHole(typeDefinition)) {
     return checkHole(typeDefinition);
   } else if (checkParameter(typeDefinition)) {
@@ -306,7 +307,18 @@ const getTypeContext = (typeDefinition) => {
 // given the span of a type annotation on a function, return a list of names and positions for all type aliases used in that annotation
 // find the span of a type definition: specialize to the case where it is a single struct
 // recurse through array, tuple, object
-const extractRelevantTypes = async (c, fullHoverResult, typeName, typeSpan, linePosition, characterPosition, foundSoFar, currentFile, outputFile, depth) => {
+const extractRelevantTypes = async (
+  c: LspClient,
+  fullHoverResult: string,
+  typeName: string,
+  typeSpan: string,
+  linePosition: number,
+  characterPosition: number,
+  foundSoFar: Map<string, string>,
+  currentFile: string,
+  outputFile: fs.WriteStream,
+  depth: number) => {
+
   if (!foundSoFar.has(typeName)) {
     foundSoFar.set(typeName, typeSpan);
     outputFile.write(`${fullHoverResult};\n`);
@@ -315,7 +327,7 @@ const extractRelevantTypes = async (c, fullHoverResult, typeName, typeSpan, line
     const content = fs.readFileSync(currentFile.slice(7), "utf8");
     const charInLine = execSync(`wc -m <<< "${content.split("\n")[linePosition].slice(characterPosition)}"`);
 
-    for (let i = 0; i < Math.min(parseInt(charInLine), typeSpan.length); i++) {
+    for (let i = 0; i < Math.min(parseInt(charInLine.toString()), typeSpan.length); i++) {
       try {
         const typeDefinitionResult = await c.typeDefinition({
           textDocument: {
@@ -327,21 +339,21 @@ const extractRelevantTypes = async (c, fullHoverResult, typeName, typeSpan, line
           }
         });
 
-        if (typeDefinitionResult.length != 0) {
+        if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
           // try hover on the goto result
           const hoverResult = await c.hover({
             textDocument: {
-              uri: typeDefinitionResult[0].uri
+              uri: (typeDefinitionResult[0] as Location).uri
             },
             position: {
-              character: typeDefinitionResult[0].range.start.character,
-              line: typeDefinitionResult[0].range.start.line
+              character: (typeDefinitionResult[0] as Location).range.start.character,
+              line: (typeDefinitionResult[0] as Location).range.start.line
             }
           });
           // console.log("hoverResult: ", hoverResult)
 
           if (hoverResult != null) {
-            const formattedHoverResult = hoverResult.contents.value.split("\n").reduce((acc, curr) => {
+            const formattedHoverResult = (hoverResult.contents as MarkupContent).value.split("\n").reduce((acc, curr) => {
               if (curr != "" && curr != "```typescript" && curr != "```") {
                 return acc + curr;
               } else {
@@ -356,7 +368,15 @@ const extractRelevantTypes = async (c, fullHoverResult, typeName, typeSpan, line
             // This could be buggy if there are multi-line type signatures.
             // Because hover returns a formatted type signature, it could also include newlines.
             // This means that iterating over typeSpan.length might crash if it steps off the edge.
-            await extractRelevantTypes(c, formattedHoverResult, typeContext.typeName, formatTypeSpan(typeContext.typeSpan), typeDefinitionResult[0].range.start.line, typeDefinitionResult[0].range.end.character + 2, foundSoFar, typeDefinitionResult[0].uri, outputFile, depth + 1);
+            await extractRelevantTypes(
+              c,
+              formattedHoverResult,
+              typeContext!.typeName,
+              formatTypeSpan(typeContext!.typeSpan),
+              (typeDefinitionResult[0] as Location).range.start.line,
+              (typeDefinitionResult[0] as Location).range.end.character + 2,
+              foundSoFar,
+              (typeDefinitionResult[0] as Location).uri, outputFile, depth + 1);
           }
         } else {
           // pass
@@ -373,11 +393,11 @@ const extractRelevantTypes = async (c, fullHoverResult, typeName, typeSpan, line
 // this would be akin to a LSP completion menu, but better
 // filter the typing context for values whose types stand in a certain relation to these target types
 // assign scores to each element of the resulting list, and return the prefix of that list truncated at some scoring and length thresholds
-const extractRelevantContext = (preludeContent, relevantTypes) => {
+const extractRelevantContext = (preludeContent: string, relevantTypes: Map<string, string>) => {
   // TODO:
   // assign scores to each element of the resulting list, and return the prefix of that list truncated at some scoring and length thresholds
 
-  const relevantContext = new Set();
+  const relevantContext = new Set<string>();
 
   // only consider lines that start with let or const
   const filteredLines = preludeContent.split("\n").filter((line) => {
@@ -389,7 +409,7 @@ const extractRelevantContext = (preludeContent, relevantTypes) => {
     const splittedLine = line.split(" = ")[0];
 
     const typeSpanPattern = /(^[^:]*: )(.+)/;
-    const returnTypeSpan = splittedLine.match(typeSpanPattern)[2];
+    const returnTypeSpan = splittedLine.match(typeSpanPattern)![2];
 
     extractRelevantContextHelper(returnTypeSpan, relevantTypes, relevantContext, splittedLine);
   });
@@ -399,7 +419,7 @@ const extractRelevantContext = (preludeContent, relevantTypes) => {
 
 // resursive helper for extractRelevantContext
 // checks for nested type equivalence
-const extractRelevantContextHelper = (typeSpan, relevantTypes, relevantContext, line) => {
+const extractRelevantContextHelper = (typeSpan: string, relevantTypes: Map<string, string>, relevantContext: Set<string>, line: string) => {
   relevantTypes.forEach(typ => {
     if (isTypeEquivalent(typeSpan, typ, relevantTypes)) {
       relevantContext.add(line);
@@ -407,7 +427,7 @@ const extractRelevantContextHelper = (typeSpan, relevantTypes, relevantContext, 
 
     if (isFunction(typeSpan)) {
       const functionPattern = /(\(.+\))( => )(.+)()/;
-      const rettype = typeSpan.match(functionPattern)[3];
+      const rettype = typeSpan.match(functionPattern)![3];
 
       extractRelevantContextHelper(rettype, relevantTypes, relevantContext, line);
 
@@ -436,7 +456,7 @@ const extractRelevantContextHelper = (typeSpan, relevantTypes, relevantContext, 
 }
 
 // two types are equivalent if they have the same normal forms
-const isTypeEquivalent = (t1, t2, relevantTypes) => {
+const isTypeEquivalent = (t1: string, t2: string, relevantTypes: Map<string, string>) => {
   const normT1 = normalize(t1, relevantTypes);
   const normT2 = normalize(t2, relevantTypes);
   return normT1 === normT2;
@@ -444,7 +464,7 @@ const isTypeEquivalent = (t1, t2, relevantTypes) => {
 
 // return the normal form given a type span and a set of relevant types
 // TODO: replace type checking with information from the AST?
-const normalize = (typeSpan, relevantTypes) => {
+const normalize = (typeSpan: string, relevantTypes: Map<string, string>) => {
   const normalForm = "";
 
   // pattern matching for typeSpan
