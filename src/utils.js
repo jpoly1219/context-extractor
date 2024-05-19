@@ -6,17 +6,10 @@ const indexOfRegexGroup = (match, n) => {
 }
 
 const formatTypeSpan = (typeSpan) => {
-  let formatted = "";
-
-  for (let i = 0; i < typeSpan.length; i++) {
-    if ((typeSpan[i] === "\n" || typeSpan[i] === " ") && formatted.slice(-1) === " ") {
-      continue;
-    }
-
-    formatted += typeSpan[i];
-  }
-
-  return formatted;
+  return typeSpan.split("").reduce((acc, curr) => {
+    if ((curr === "\n" || curr === " ") && acc.slice(-1) === " ") return acc;
+    return acc + curr;
+  }, "")
 }
 
 const isTuple = (typeSpan) => {
