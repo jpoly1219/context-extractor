@@ -148,7 +148,7 @@ export const extract = async (sketchPath: string) => {
   // recursively define relevant types
   const outputFile = fs.createWriteStream("output.txt");
   // const foundSoFar = new Set();
-  const foundSoFar = new Map();
+  const foundSoFar = new Map<string, string>();
   await extractRelevantTypes(c, holeContext.fullHoverResult, holeContext.functionName, holeContext.functionTypeSpan, 0, "declare function _(): ".length, foundSoFar, injectedSketchUri, outputFile, 1);
   console.log(foundSoFar);
 
