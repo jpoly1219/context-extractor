@@ -12,7 +12,7 @@ const getAnnotatedFunctionHoleContext = (sketchFileContent: string) => {
   const functionName = match![2];
   const functionTypeSpan = match![4];
   const linePosition = (sketchFileContent.substring(0, firstPatternIndex).match(/\n/g))!.length;
-  const characterPosition = indexOfRegexGroup(match, 4) - firstPatternIndex;
+  const characterPosition = indexOfRegexGroup(match!, 4) - firstPatternIndex;
 
   return { functionName: functionName, functionTypeSpan: functionTypeSpan, linePosition: linePosition, characterPosition: characterPosition };
 }
@@ -317,7 +317,7 @@ const extractRelevantTypes = async (
   foundSoFar: Map<string, string>,
   currentFile: string,
   outputFile: fs.WriteStream,
-  depth: number) => {
+  depth: number): Promise<Map<string, string>> => {
 
   if (!foundSoFar.has(typeName)) {
     foundSoFar.set(typeName, typeSpan);
@@ -387,6 +387,7 @@ const extractRelevantTypes = async (
       }
     }
   }
+  return foundSoFar;
 }
 
 // return a list relevant context
