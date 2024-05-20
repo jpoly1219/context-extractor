@@ -1,35 +1,33 @@
-import { JSONRPCEndpoint, LspClient } from "../../ts-lsp-client/build/src/main.js"
+import { JSONRPCEndpoint, LspClient, ClientCapabilities } from "../../ts-lsp-client/build/src/main.js"
 import { spawn } from "child_process";
-import * as fs from "fs"
+import * as fs from "fs";
+import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantContext } from "./core.js";
 
 // expected arguments: directory to run the type extraction
-// an example would be: node app.mjs /home/<username>/path/to/sketch/dir/ sketch.ts
+// an example would be: node src/app.mjs /home/<username>/path/to/sketch/dir/sketch.ts
 const logFile = fs.createWriteStream("log.txt");
-let rootUri = "file://";
-let workspaceFolders = [];
-let sketchFile = "";
+
 if (process.argv.length < 3) {
-  console.error("error: target directory and code sketch file not specified");
+  console.error("error: file path not specified");
   process.exit(1);
-} else if (process.argv.length < 4) {
-  console.error("error: missing either the target directory or code sketch file");
-  process.exit(1);
-} else if (process.argv.length > 4) {
+} else if (process.argv.length > 3) {
   console.error("error: too many arguments given");
   process.exit(1);
-} else {
-  rootUri += process.argv[2];
-  workspaceFolders = [{ 'name': 'testtslspclient', 'uri': rootUri }];
-  sketchFile = process.argv[3];
 }
+
+const sketchPath = process.argv[2];
+const rootPath = path.dirname(sketchPath)
+const rootUri = `file://${rootPath}`;
+const sketchFileName = path.basename(sketchPath);
+const workspaceFolders = [{ 'name': 'context-extractor', 'uri': rootUri }];
 
 // initialize LS client and server
 const r = spawn('typescript-language-server', ['--stdio']);
 const e = new JSONRPCEndpoint(r.stdin, r.stdout);
 const c = new LspClient(e);
 
-const capabilities = {
+const capabilities: ClientCapabilities = {
   'textDocument': {
     'codeAction': { 'dynamicRegistration': true },
     'codeLens': { 'dynamicRegistration': true },
@@ -61,7 +59,7 @@ const capabilities = {
       'dynamicRegistration': true
     },
     'implementation': { 'dynamicRegistration': true },
-    'inlayhint': { 'dynamicRegistration': true },
+    // 'inlayhint': { 'dynamicRegistration': true },
     'onTypeFormatting': { 'dynamicRegistration': true },
     'publishDiagnostics': { 'relatedInformation': true },
     'rangeFormatting': { 'dynamicRegistration': true },
@@ -78,7 +76,7 @@ const capabilities = {
       'willSaveWaitUntil': true
     },
     'typeDefinition': { 'dynamicRegistration': true, 'linkSupport': true },
-    'typeHierarchy': { 'dynamicRegistration': true }
+    // 'typeHierarchy': { 'dynamicRegistration': true }
   },
   'workspace': {
     'applyEdit': true,
@@ -105,6 +103,7 @@ await c.initialize({
   processId: process.pid,
   capabilities: capabilities,
   trace: 'off',
+  rootUri: null,
   workspaceFolders: workspaceFolders,
   initializationOptions: {
     preferences: {
@@ -114,24 +113,21 @@ await c.initialize({
 });
 
 // inject hole function
-const sketchFilePath = rootUri + sketchFile;
-const injectedSketchFilePath = rootUri + `injected_${sketchFile}`;
-const readableRootUri = rootUri.slice(7);
-const readableSketchFilePath = sketchFilePath.slice(7);
-const readableInjectedSketchFilePath = injectedSketchFilePath.slice(7);
+const injectedSketchPath = `${rootPath}/injected_${sketchFileName}`;
+const injectedSketchUri = `file://${injectedSketchPath}`;
 
-const sketchFileContent = fs.readFileSync(readableSketchFilePath, "utf8");
-fs.writeFileSync(readableInjectedSketchFilePath, `declare function _<T>(): T\n${sketchFileContent}`);
-let injectedSketchFileContent = fs.readFileSync(readableInjectedSketchFilePath, "utf8");
+const sketchFileContent = fs.readFileSync(sketchPath, "utf8");
+const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
+fs.writeFileSync(injectedSketchPath, injectedSketchFileContent);
 
 // doucment sync client and server by notifying that the client has opened all the files inside the target directory
-fs.readdirSync(readableRootUri).map(fileName => {
-  if (fs.lstatSync(readableRootUri + fileName).isFile()) {
+fs.readdirSync(rootPath).map(fileName => {
+  if (fs.lstatSync(`${rootPath}/${fileName}`).isFile()) {
     c.didOpen({
       textDocument: {
-        uri: "file://" + readableRootUri + fileName,
+        uri: `file://${rootPath}/${fileName}`,
         languageId: 'typescript',
-        text: fs.readFileSync(readableRootUri + fileName).toString("ascii"),
+        text: fs.readFileSync(`${rootPath}/${fileName}`).toString("ascii"),
         version: 1
       }
     });
@@ -140,21 +136,21 @@ fs.readdirSync(readableRootUri).map(fileName => {
 
 // get context of the hole
 // currently only matching ES6 arrow functions
-const holeContext = await getHoleContext(c, injectedSketchFilePath, injectedSketchFileContent);
+const holeContext = await getHoleContext(c, injectedSketchUri, injectedSketchFileContent);
 console.log(holeContext)
 
 // rewrite hole function after context has been extracted to make LSP work
 const trueHoleFunction = `declare function _(): ${holeContext.functionTypeSpan}`
-injectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
-fs.writeFileSync(readableInjectedSketchFilePath, injectedSketchFileContent);
+const trueInjectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
+fs.writeFileSync(injectedSketchPath, trueInjectedSketchFileContent);
 
 c.didChange({
   textDocument: {
-    uri: injectedSketchFilePath,
+    uri: injectedSketchUri,
     version: 2
   },
   contentChanges: [{
-    text: injectedSketchFileContent
+    text: trueInjectedSketchFileContent
   }]
 });
 
@@ -162,7 +158,7 @@ c.didChange({
 const outputFile = fs.createWriteStream("output.txt");
 // const foundSoFar = new Set();
 const foundSoFar = new Map();
-await extractRelevantTypes(c, holeContext.fullHoverResult, holeContext.functionName, holeContext.functionTypeSpan, 0, "declare function _(): ".length, foundSoFar, injectedSketchFilePath, outputFile, 1);
+await extractRelevantTypes(c, holeContext.fullHoverResult, holeContext.functionName, holeContext.functionTypeSpan, 0, "declare function _(): ".length, foundSoFar, injectedSketchUri, outputFile, 1);
 console.log(foundSoFar);
 
 logFile.end();
@@ -170,7 +166,7 @@ logFile.close();
 outputFile.end();
 outputFile.close();
 
-const preludeContent = fs.readFileSync(`${process.argv[2]}prelude.ts`).toString("utf8");
+const preludeContent = fs.readFileSync(`${rootPath}/prelude.ts`).toString("utf8");
 console.log(extractRelevantContext(preludeContent, foundSoFar));
 
 process.exit(0);
