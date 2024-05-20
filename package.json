@@ -1,18 +1,18 @@
 {
-  "name": "testtslspclient",
-  "version": "1.0.0",
-  "description": "A project that aims to run `typescript-language-server` outside the scope of an editor.",
-  "main": "testrunner.js",
-  "directories": {
-    "test": "tests"
-  },
+  "name": "context-extractor",
+  "version": "0.0.1",
+  "description": "Extract relevant context from an incomplete program sketch.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "npx tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "openai": "^4.30.0",
     "ts-node": "^10.9.2"
