@@ -4,8 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantContext } from "./core.js";
 
-// expected arguments: directory to run the type extraction
-// an example would be: node app.mjs /home/<username>/path/to/sketch/dir/ sketch.ts
+// sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
 export const extract = async (sketchPath: string) => {
   const logFile = fs.createWriteStream("log.txt");
   const rootPath = path.dirname(sketchPath)
@@ -113,12 +112,12 @@ export const extract = async (sketchPath: string) => {
 
   // doucment sync client and server by notifying that the client has opened all the files inside the target directory
   fs.readdirSync(rootPath).map(fileName => {
-    if (fs.lstatSync(rootPath + fileName).isFile()) {
+    if (fs.lstatSync(`${rootPath}/${fileName}`).isFile()) {
       c.didOpen({
         textDocument: {
           uri: `file://${rootPath}/${fileName}`,
           languageId: 'typescript',
-          text: fs.readFileSync(`file://${rootPath}/${fileName}`).toString("ascii"),
+          text: fs.readFileSync(`${rootPath}/${fileName}`).toString("ascii"),
           version: 1
         }
       });
@@ -128,7 +127,7 @@ export const extract = async (sketchPath: string) => {
   // get context of the hole
   // currently only matching ES6 arrow functions
   const holeContext = await getHoleContext(c, injectedSketchUri, injectedSketchFileContent);
-  console.log(holeContext);
+  // console.log(holeContext);
 
   // rewrite hole function after context has been extracted to make LSP work
   const trueHoleFunction = `declare function _(): ${holeContext.functionTypeSpan}`
@@ -147,19 +146,29 @@ export const extract = async (sketchPath: string) => {
 
   // recursively define relevant types
   const outputFile = fs.createWriteStream("output.txt");
-  // const foundSoFar = new Set();
-  const foundSoFar = new Map<string, string>();
-  await extractRelevantTypes(c, holeContext.fullHoverResult, holeContext.functionName, holeContext.functionTypeSpan, 0, "declare function _(): ".length, foundSoFar, injectedSketchUri, outputFile, 1);
-  console.log(foundSoFar);
+  // const foundSoFar = new Map<string, string>();
+  const relevantTypes = await extractRelevantTypes(
+    c,
+    holeContext.fullHoverResult,
+    holeContext.functionName,
+    holeContext.functionTypeSpan,
+    0,
+    "declare function _(): ".length,
+    new Map<string, string>(),
+    injectedSketchUri,
+    outputFile,
+    1
+  );
+  console.log("relevantTypes:", relevantTypes);
 
   logFile.end();
   logFile.close();
   outputFile.end();
   outputFile.close();
 
-  const preludeContent = fs.readFileSync(`${process.argv[2]}prelude.ts`).toString("utf8");
-  const relevantContext = extractRelevantContext(preludeContent, foundSoFar);
-  console.log(relevantContext);
-  return { holeContext: holeContext, relevantTypes: foundSoFar, relevantContext: relevantContext };
+  const preludeContent = fs.readFileSync(`${rootPath}/prelude.ts`).toString("utf8");
+  const relevantContext = extractRelevantContext(preludeContent, relevantTypes);
+  // console.log(relevantContext);
+  return { holeContext: holeContext, relevantTypes: Array.from(relevantTypes), relevantContext: relevantContext };
 }
 
