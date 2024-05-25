@@ -4,8 +4,8 @@
  * @description Finds all type declarations and const declarations in prelude.ts
  */
 
- import javascript
+import javascript
 
- from TypeAliasDeclaration ta, ConstDeclStmt c
- where ta.getFile().getBaseName() = "prelude.ts" and c.getFile().getBaseName() = "prelude.ts"
- select ta, c
+from TypeAliasDeclaration ta, ConstDeclStmt c
+where ta.getFile().getBaseName() = "prelude.ts" and c.getFile().getBaseName() = "prelude.ts"
+select ta, c
