@@ -427,7 +427,7 @@ const extractRelevantContextHelper = (typeSpan: string, relevantTypes: Map<strin
     }
 
     if (isFunction(typeSpan)) {
-      const functionPattern = /(\(.+\))( => )(.+)()/;
+      const functionPattern = /(\(.+\))( => )(.+)/;
       const rettype = typeSpan.match(functionPattern)![3];
 
       extractRelevantContextHelper(rettype, relevantTypes, relevantContext, line);
