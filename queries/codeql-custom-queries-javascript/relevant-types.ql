@@ -29,34 +29,34 @@ TypeAliasDeclaration typeAliasRecurse(TypeAliasDeclaration ta) {
 }
 
 TypeAliasDeclaration typeRecurse(TypeExpr t) {
-    if t instanceof TupleTypeExpr then result = tupleTypeExprRecurse(t) else
-    if t instanceof UnionTypeExpr then result = unionTypeExprRecurse(t) else
-    if t instanceof ArrayTypeExpr then result = arrayTypeExprRecurse(t) else
-    if t instanceof PredefinedTypeExpr then result = predefinedTypeExprRecurse(t) else
-    if t instanceof InterfaceTypeExpr then result = interfaceTypeExprRecurse(t) else
+    // if t instanceof TupleTypeExpr then result = tupleTypeExprRecurse(t) else
+    // if t instanceof UnionTypeExpr then result = unionTypeExprRecurse(t) else
+    // if t instanceof ArrayTypeExpr then result = arrayTypeExprRecurse(t) else
+    // if t instanceof PredefinedTypeExpr then result = predefinedTypeExprRecurse(t) else
+    // if t instanceof InterfaceTypeExpr then result = interfaceTypeExprRecurse(t) else
     if t instanceof LocalTypeAccess then result = localTypeAccessRecurse(t) else
-    result = t.getParent()
-}
-
-TypeAliasDeclaration tupleTypeExprRecurse(TupleTypeExpr t) {
     result = typeRecurse(t.getAChild())
 }
 
-TypeAliasDeclaration unionTypeExprRecurse(UnionTypeExpr t) {
-    result = typeRecurse(t.getAChild())
-}
+// TypeAliasDeclaration tupleTypeExprRecurse(TupleTypeExpr t) {
+//     result = typeRecurse(t.getAChild())
+// }
 
-TypeAliasDeclaration arrayTypeExprRecurse(ArrayTypeExpr t) {
-    result = typeRecurse(t.getAChild())
-}
+// TypeAliasDeclaration unionTypeExprRecurse(UnionTypeExpr t) {
+//     result = typeRecurse(t.getAChild())
+// }
 
-TypeAliasDeclaration predefinedTypeExprRecurse(PredefinedTypeExpr t) {
-    result = typeRecurse(t.getAChild())
-}
+// TypeAliasDeclaration arrayTypeExprRecurse(ArrayTypeExpr t) {
+//     result = typeRecurse(t.getAChild())
+// }
 
-TypeAliasDeclaration interfaceTypeExprRecurse(InterfaceTypeExpr t) {
-    result = typeRecurse(t.getAChild())
-}
+// TypeAliasDeclaration predefinedTypeExprRecurse(PredefinedTypeExpr t) {
+//     result = typeRecurse(t.getAChild())
+// }
+
+// TypeAliasDeclaration interfaceTypeExprRecurse(InterfaceTypeExpr t) {
+//     result = typeRecurse(t.getAChild())
+// }
 
 TypeAliasDeclaration localTypeAccessRecurse(LocalTypeAccess l) {
     result = typeAliasRecurse(l.getLocalTypeName().getADeclaration().getEnclosingStmt())
