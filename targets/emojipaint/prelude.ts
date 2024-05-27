@@ -5,11 +5,7 @@ type Row = number;
 type Col = number;
 type Grid = Emoji[][];
 
-type Model = [
-  Grid,     // The 2D grid of emojis
-  Emoji,    // The currently selected emoji
-  Emoji[]   // The list of available emojis
-];
+type Model = [Grid, Emoji, Emoji[]];
 
 type SelectEmoji = { type: "SelectEmoji"; emoji: Emoji }    // Set the currently selected emoji
 type StampEmoji = { type: "StampEmoji"; row: Row; col: Col }  // Stamp the current emoji at the specified position
