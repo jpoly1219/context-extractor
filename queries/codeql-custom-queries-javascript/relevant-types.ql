@@ -69,6 +69,7 @@ where
         isReturnType(ta, f) or
         isNestedType(ta, f)
     )
+// select concat(TypeAliasDeclaration i | i = typeAliasRecurse(ta) | i.toString())
 select typeAliasRecurse(ta)
 // any(int i | i in [0..ta.getDefinition().(TupleTypeExpr).getNumChild()-1] | ta.getDefinition().(TupleTypeExpr).getChildTypeExpr(i).toString()),
 // any(int i | i in [0..ta.getDefinition().(TupleTypeExpr).getAnElementType().getNumChild()-1] | ta.getDefinition().(TupleTypeExpr).getAnElementType().getChildTypeExpr(i).toString())
