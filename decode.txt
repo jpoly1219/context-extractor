@@ -1,0 +1,14 @@
+|        col0         |
++---------------------+
+| type We ...  | "F"; |
+| type Ti ... | "PM"; |
+| type Ti ... OfDay]; |
+| type User = string; |
+| type Bo ... number; |
+| type Bo ... ingID]; |
+| type Bo ...  User]; |
+| type Mo ... ingID]; |
+| type Ad ... fDay }; |
+| type Ca ... mber }; |
+| type Cl ... ngs" }; |
+| type Ac ... okings; |
