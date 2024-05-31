@@ -48,9 +48,10 @@ string localTypeAccessRecurse(LocalTypeAccess l) {
 
 string myTest(TypeExpr t) {
     if t instanceof PredefinedTypeExpr then result = t.toString() else
-    if t instanceof LocalTypeAccess then result = concat(string i | i = myTest(t.(LocalTypeAccess).getLocalTypeName().getADeclaration().getEnclosingStmt().(TypeAliasDeclaration).getDefinition())) else
+    if t instanceof LocalTypeAccess then result = concat(string i | i = t.(LocalTypeAccess).getLocalTypeName().getADeclaration().getEnclosingStmt().(TypeAliasDeclaration).getDefinition().toString() | i) else
     result = concat(string i | i = myTest(t.getAChild()).toString() | i)
 }
+
 
 from DeclStmt d, ConstDeclStmt c, FunctionTypeExpr ft, TypeAliasDeclaration ta
 where
@@ -66,4 +67,5 @@ where
 // select ft.getAParameter().getTypeAnnotation().(LocalTypeAccess).getLocalTypeName().getADeclaration()
 // select myTest(c.getADecl().getTypeAnnotation().(TypeExpr), d.getAChild())
 // select ta.getAChild+().(TypeExpr).toString()
-select myTest(ta.getDefinition())
+// select myTest(ta.getDefinition())
+select concat(string i | i = ta.getAChild+().toString() | i)
