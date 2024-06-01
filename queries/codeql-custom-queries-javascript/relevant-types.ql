@@ -62,14 +62,15 @@ TypeAliasDeclaration localTypeAccessRecurse(LocalTypeAccess l) {
     result = typeAliasRecurse(l.getLocalTypeName().getADeclaration().getEnclosingStmt())
 }
 
-from ConstDeclStmt s, Function f, TypeAliasDeclaration ta
+from ConstDeclStmt s, Function f, TypeAliasDeclaration ta, TypeAliasDeclaration ta2
 where
     isFunctionHole(s, f) and (
         isSameType(ta, f) or
         isReturnType(ta, f) or
         isNestedType(ta, f)
-    )
+    ) and
+    ta2 = typeAliasRecurse(ta)
 // select concat(TypeAliasDeclaration i | i = typeAliasRecurse(ta) | i.toString())
-select typeAliasRecurse(ta)
+select ta2, ta2.getName(), ta2.getDefinition(), ta2.getDefinition().getAQlClass()
 // any(int i | i in [0..ta.getDefinition().(TupleTypeExpr).getNumChild()-1] | ta.getDefinition().(TupleTypeExpr).getChildTypeExpr(i).toString()),
 // any(int i | i in [0..ta.getDefinition().(TupleTypeExpr).getAnElementType().getNumChild()-1] | ta.getDefinition().(TupleTypeExpr).getAnElementType().getChildTypeExpr(i).toString())
