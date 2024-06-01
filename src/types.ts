@@ -1,8 +1,8 @@
-interface relevantTypesTable {
+interface relevantTypeObject {
   typeAliasDeclaration: string;
   typeName: string;
   typeDefinition: string;
-  typeClass: string;
+  typeQLClass: string;
 }
 
-export { relevantTypesTable }
+export { relevantTypeObject }
