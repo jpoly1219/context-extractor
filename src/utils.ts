@@ -1,4 +1,4 @@
-import { relevantTypeObject } from "./types";
+import { relevantTypeObject, varsObject } from "./types";
 
 const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
   return match.reduce((acc, curr, i) => {
@@ -45,19 +45,20 @@ const isTypeAlias = (typeSpan: string) => {
   return caps.includes(typeSpan[0]);
 }
 
-const stripTrailingWhitespace = (str: string): string => {
-  if (!str.includes("  ")) return str;
-  return str.slice(0, str.indexOf("  "));
+const stripSurroundingWhitespace = (str: string): string => {
+  if (str[0] === " ") return stripSurroundingWhitespace(str.slice(1));
+  if (str[-1] === " ") return stripSurroundingWhitespace(str.slice(0, str.length - 1));
+  return str;
 }
 
-const parseCodeQLTable = (table: string): Map<string, relevantTypeObject> => {
+const parseCodeQLRelevantTypes = (table: string): Map<string, relevantTypeObject> => {
   const m = new Map<string, relevantTypeObject>();
 
   const rows = table.split("\n").slice(1);
-  rows.map(row => {
+  rows.forEach(row => {
     const cols = row.split("|");
     cols.map(col => {
-      return stripTrailingWhitespace(col);
+      return stripSurroundingWhitespace(col);
     })
 
     const declaration = cols[0];
@@ -70,4 +71,24 @@ const parseCodeQLTable = (table: string): Map<string, relevantTypeObject> => {
   return m;
 }
 
-export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLTable };
+const parseCodeQLVars = (table: string): Map<string, varsObject> => {
+  const m = new Map<string, varsObject>();
+
+  const rows = table.split("\n").slice(1);
+  rows.forEach(row => {
+    const cols = row.split("|");
+    cols.map(col => {
+      return stripSurroundingWhitespace(col);
+    })
+
+    const declaration = cols[0];
+    const bindingPattern = cols[1];
+    const typeAnnotation = cols[2];
+    const init = cols[3];
+    m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init });
+  })
+
+  return m;
+}
+
+export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLRelevantTypes, parseCodeQLVars };
