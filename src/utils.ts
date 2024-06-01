@@ -1,4 +1,4 @@
-import { relevantTypesTable } from "./types";
+import { relevantTypeObject } from "./types";
 
 const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
   return match.reduce((acc, curr, i) => {
@@ -45,8 +45,33 @@ const isTypeAlias = (typeSpan: string) => {
   return caps.includes(typeSpan[0]);
 }
 
-const parseCodeQLTable = (table: string): relevantTypesTable => {
+const stripTrailingWhitespace = (str: string): string => {
+  if (str.indexOf("  ") === -1) return str;
 
+  str.replace("  ", "");
+  if (str[-1] === " ") return str.slice(0, str.length - 1);
+  return str;
+}
+
+const parseCodeQLTable = (table: string): Map<string, relevantTypeObject> => {
+  const rows = table.split("\n").slice(1);
+  // from second line onwards, split by |
+
+  const m = new Map<string, relevantTypeObject>();
+  rows.map(row => {
+    const cols = row.split("|");
+    cols.map(col => {
+      return stripTrailingWhitespace(col);
+    })
+
+    const declaration = cols[0];
+    const name = cols[1];
+    const definition = cols[2];
+    const qlClass = cols[3];
+    m.set(name, { typeAliasDeclaration: declaration, typeName: name, typeDefinition: definition, typeQLClass: qlClass })
+  })
+
+  return m;
 }
 
 export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLTable };
