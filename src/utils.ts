@@ -46,11 +46,7 @@ const isTypeAlias = (typeSpan: string) => {
 }
 
 const stripTrailingWhitespace = (str: string): string => {
-  if (str.indexOf("  ") === -1) return str;
-
-  str.replace("  ", "");
-  if (str[-1] === " ") return str.slice(0, str.length - 1);
-  return str;
+  return str.slice(0, str.indexOf("  "));
 }
 
 const parseCodeQLTable = (table: string): Map<string, relevantTypeObject> => {
