@@ -1,3 +1,5 @@
+import { relevantTypesTable } from "./types";
+
 const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
   return match.reduce((acc, curr, i) => {
     if (i < 1 || i >= n) return acc;
@@ -43,4 +45,8 @@ const isTypeAlias = (typeSpan: string) => {
   return caps.includes(typeSpan[0]);
 }
 
-export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias };
+const parseCodeQLTable = (table: string): relevantTypesTable => {
+
+}
+
+export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLTable };
