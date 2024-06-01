@@ -5,4 +5,11 @@ interface relevantTypeObject {
   typeQLClass: string;
 }
 
-export { relevantTypeObject }
+interface varsObject {
+  constDeclaration: string;
+  bindingPattern: string;
+  typeAnnotation: string;
+  init: string;
+}
+
+export { relevantTypeObject, varsObject }
