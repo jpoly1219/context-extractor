@@ -46,14 +46,14 @@ const isTypeAlias = (typeSpan: string) => {
 }
 
 const stripTrailingWhitespace = (str: string): string => {
+  if (!str.includes("  ")) return str;
   return str.slice(0, str.indexOf("  "));
 }
 
 const parseCodeQLTable = (table: string): Map<string, relevantTypeObject> => {
-  const rows = table.split("\n").slice(1);
-  // from second line onwards, split by |
-
   const m = new Map<string, relevantTypeObject>();
+
+  const rows = table.split("\n").slice(1);
   rows.map(row => {
     const cols = row.split("|");
     cols.map(col => {
