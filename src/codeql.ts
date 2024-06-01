@@ -2,9 +2,9 @@ import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
 import { parseCodeQLTable } from "./utils";
-import { relevantTypesTable } from "./types";
+import { relevantTypeObject } from "./types";
 
-const extractRelevantTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): relevantTypesTable => {
+const extractRelevantTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): Map<string, relevantTypeObject> => {
   const pathToBqrs = path.join(outDir, "relevant-types.bqrs");
   const pathToDecodedTxt = path.join(outDir, "relevant-types.txt");
 
@@ -21,11 +21,9 @@ const extractRelevantTypes = (pathToCodeQL: string, pathToQuery: string, pathToD
     console.error(`error while trying to decode ${outDir}/relevant-types.bqrs: ${err}`);
   }
 
-  // save the columns into a map
   const relevantTypesContent = fs.readFileSync(pathToDecodedTxt);
   const relevantTypes = parseCodeQLTable(relevantTypesContent.toString());
 
-  // return the map
   return relevantTypes;
 }
 
