@@ -9,5 +9,6 @@ import javascript
 
 from ConstDeclStmt c
 where
-    c.getFile().getBaseName() = "prelude.ts"
+    c.getFile().getBaseName() = "prelude.ts" and
+    c.getParent() = c.getTopLevel()
 select c
