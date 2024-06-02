@@ -63,25 +63,30 @@ const getTypeFromAnnotation = (variable: varsObject): string => {
   // if not a function, return as is
   if (variable.typeQLClass !== "FunctionTypeExpr") return variable.typeAnnotation;
   // if function, strip argument names
-  const arrowTypeRegexPattern = "(\()";
-  for (let i = 0; i < variable.numArgs; ++i) {
-    arrowTypeRegexPattern.concat("(.+: )(.+)(, )");
-  }
+  const rettype = variable.typeAnnotation.split(" => ")[-1];
+  return "(" + variable.functionArgumentTypes + ") => " + rettype;
 
-  arrowTypeRegexPattern.concat("(\))");
-  const pattern = new RegExp(arrowTypeRegexPattern)
-  const matches = variable.typeAnnotation.match(pattern);
-
-  const arrowType = "(";
-  for (let i = 1; i <= variable.numArgs; ++i) {
-    arrowType.concat(matches![3 * i]);
-    if (i < variable.numArgs) {
-      arrowType.concat(", ");
-    }
-  }
-  arrowType.concat(`) => ${variable.returnType}`);
-
-  return arrowType;
+  // const arrowTypeRegexPattern = "(\()";
+  // for (let i = 0; i < variable.numArgs; ++i) {
+  //   arrowTypeRegexPattern.concat("(.+: )(.+)(, )");
+  // }
+  //
+  // arrowTypeRegexPattern.concat("(\))");
+  // const pattern = new RegExp(arrowTypeRegexPattern)
+  // const matches = variable.typeAnnotation.match(pattern);
+  //
+  // const arrowType = "(";
+  // for (let i = 1; i <= variable.numArgs; ++i) {
+  //   arrowType.concat(matches![3 * i]);
+  //   if (i < variable.numArgs) {
+  //     arrowType.concat(", ");
+  //   }
+  // }
+  // const returnType = variable.typeAnnotation.includes(") => ")
+  //
+  // arrowType.concat(`) => ${returnType}`);
+  //
+  // return arrowType;
 }
 
 const extractRelevantContextHelper = (type: string, relevantTypes: Map<string, relevantTypeObject>) => {
