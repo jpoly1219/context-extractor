@@ -50,11 +50,45 @@ const extractVars = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: 
   return vars;
 }
 
-const extractRelevantContext = (vars: Map<string, varsObject>) => {
+const extractRelevantContext = (vars: Map<string, varsObject>, relevantTypes: Map<string, relevantTypeObject>): Map<string, varsObject> => {
+  const m = new Map<string, varsObject>();
+  // for each var in vars, check if its type is equivalent to any of relevantTypes
+  vars.forEach((value, key) => {
+    const type = getTypeFromAnnotation(value);
+    extractRelevantContextHelper(type, relevantTypes);
+  })
 }
 
-const extractRelevantContextHelper = () => {
+const getTypeFromAnnotation = (variable: varsObject): string => {
+  // if not a function, return as is
+  if (variable.typeQLClass !== "FunctionTypeExpr") return variable.typeAnnotation;
+  // if function, strip argument names
+  const arrowTypeRegexPattern = "(\()";
+  for (let i = 0; i < variable.numArgs; ++i) {
+    arrowTypeRegexPattern.concat("(.+: )(.+)(, )");
+  }
 
+  arrowTypeRegexPattern.concat("(\))");
+  const pattern = new RegExp(arrowTypeRegexPattern)
+  const matches = variable.typeAnnotation.match(pattern);
+
+  const arrowType = "(";
+  for (let i = 1; i <= variable.numArgs; ++i) {
+    arrowType.concat(matches![3 * i]);
+    if (i < variable.numArgs) {
+      arrowType.concat(", ");
+    }
+  }
+  arrowType.concat(`) => ${variable.returnType}`);
+
+  return arrowType;
+}
+
+const extractRelevantContextHelper = (type: string, relevantTypes: Map<string, relevantTypeObject>) => {
+  // TODO:
+  // extract types that are consistent to any of the target types
+  // extract functions whose return types are equivalent to any of the target types
+  // extract products whose component types are equivalent to any of the target types
 }
 
 const isTypeEquivalent = () => {
