@@ -10,6 +10,8 @@ interface varsObject {
   bindingPattern: string;
   typeAnnotation: string;
   init: string;
+  typeQLClass: string;
+  functionArgumentTypes: string;
 }
 
 export { relevantTypeObject, varsObject }
