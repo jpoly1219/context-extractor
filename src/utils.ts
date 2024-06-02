@@ -85,7 +85,9 @@ const parseCodeQLVars = (table: string): Map<string, varsObject> => {
     const bindingPattern = cols[1];
     const typeAnnotation = cols[2];
     const init = cols[3];
-    m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init });
+    const qlClass = cols[4];
+    const functionArgumentTypes = cols[5];
+    m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init, typeQLClass: qlClass, functionArgumentTypes: functionArgumentTypes });
   })
 
   return m;
