@@ -11,7 +11,12 @@ interface varsObject {
   typeAnnotation: string;
   init: string;
   typeQLClass: string;
-  functionArgumentTypes: string;
+  functionReturnType: string;
 }
 
-export { relevantTypeObject, varsObject }
+interface typesObject {
+  typeName: string;
+  typeQLClass: string;
+}
+
+export { relevantTypeObject, varsObject, typesObject }
