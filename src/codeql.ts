@@ -1,8 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { parseCodeQLRelevantTypes, parseCodeQLVars } from "./utils";
-import { relevantTypeObject, varsObject } from "./types";
+import { parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction } from "./utils";
+import { relevantTypeObject, varsObject, typesObject } from "./types";
+import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
 const extractRelevantTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): Map<string, relevantTypeObject> => {
   const pathToBqrs = path.join(outDir, "relevant-types.bqrs");
@@ -50,56 +51,144 @@ const extractVars = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: 
   return vars;
 }
 
+const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): typesObject => {
+  const pathToBqrs = path.join(outDir, "types.bqrs");
+  const pathToDecodedTxt = path.join(outDir, "types.txt");
+
+  // run CodeQL query types.ql
+  try {
+    execSync(`${pathToCodeQL} query run ${pathToQuery} --database=${pathToDatabase} --output=${pathToBqrs}`);
+  } catch (err) {
+    console.error(`error while running query ${pathToQuery}: ${err}`);
+  }
+
+  try {
+    execSync(`${pathToCodeQL} bqrs decode ${pathToBqrs} --format=text --output=${pathToDecodedTxt}`);
+  } catch (err) {
+    console.error(`error while trying to decode ${outDir}/types.bqrs: ${err}`);
+  }
+
+  const typesContent = fs.readFileSync(pathToDecodedTxt);
+  const types = parseCodeQLTypes(typesContent.toString());
+
+  return types;
+}
+
 const extractRelevantContext = (vars: Map<string, varsObject>, relevantTypes: Map<string, relevantTypeObject>): Map<string, varsObject> => {
   const m = new Map<string, varsObject>();
+
   // for each var in vars, check if its type is equivalent to any of relevantTypes
   vars.forEach((value, key) => {
-    const type = getTypeFromAnnotation(value);
-    extractRelevantContextHelper(type, relevantTypes);
+    if (isQLFunction(value.typeQLClass)) {
+      extractRelevantContextHelper(value.functionSignature, value.typeQLClass, relevantTypes, m);
+    } else {
+      extractRelevantContextHelper(value.typeAnnotation, value.typeQLClass, relevantTypes, m);
+    }
   })
+
+  return m;
 }
 
-const getTypeFromAnnotation = (variable: varsObject): string => {
-  // if not a function, return as is
-  if (variable.typeQLClass !== "FunctionTypeExpr") return variable.typeAnnotation;
-  // if function, strip argument names
-  const rettype = variable.typeAnnotation.split(" => ")[-1];
-  return "(" + variable.functionArgumentTypes + ") => " + rettype;
-
-  // const arrowTypeRegexPattern = "(\()";
-  // for (let i = 0; i < variable.numArgs; ++i) {
-  //   arrowTypeRegexPattern.concat("(.+: )(.+)(, )");
-  // }
-  //
-  // arrowTypeRegexPattern.concat("(\))");
-  // const pattern = new RegExp(arrowTypeRegexPattern)
-  // const matches = variable.typeAnnotation.match(pattern);
-  //
-  // const arrowType = "(";
-  // for (let i = 1; i <= variable.numArgs; ++i) {
-  //   arrowType.concat(matches![3 * i]);
-  //   if (i < variable.numArgs) {
-  //     arrowType.concat(", ");
-  //   }
-  // }
-  // const returnType = variable.typeAnnotation.includes(") => ")
-  //
-  // arrowType.concat(`) => ${returnType}`);
-  //
-  // return arrowType;
-}
-
-const extractRelevantContextHelper = (type: string, relevantTypes: Map<string, relevantTypeObject>) => {
+const extractRelevantContextHelper = (typeSpan: string, typeQLClass: string, relevantTypes: Map<string, relevantTypeObject>, relevantContext: Map<string, varsObject>) => {
   // TODO:
   // extract types that are consistent to any of the target types
   // extract functions whose return types are equivalent to any of the target types
   // extract products whose component types are equivalent to any of the target types
+  relevantTypes.forEach(typ => {
+    if (isTypeEquivalent(typeSpan, typ.typeDefinition, relevantTypes)) {
+      relevantContext.set();
+    }
+
+    if (isQLFunction(typeQLClass)) {
+      const q = createReturnTypeQuery(typeSpan);
+
+      fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
+
+      const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
+
+      extractRelevantContextHelper(queryRes.typeName, queryRes.typeQLClass, relevantTypes, relevantContext);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    } else if (isTuple(typeSpan)) {
+      const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
+
+      elements.forEach(element => {
+        extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
+      });
+
+    } else if (isUnion(typeSpan)) {
+      const elements = typeSpan.split(" | ");
+
+      elements.forEach(element => {
+        extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
+      });
+
+    } else if (isArray(typeSpan)) {
+      const element = typeSpan.split("[]")[0];
+
+      if (isTypeEquivalent(element, typ, relevantTypes)) {
+        extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
+      }
+    }
+  });
 }
 
-const isTypeEquivalent = () => {
-
+const isTypeEquivalent = (t1: string, t2: string, relevantTypes: Map<string, relevantTypeObject>) => {
+  const normT1 = normalize(t1, relevantTypes);
+  const normT2 = normalize(t2, relevantTypes);
+  return normT1 === normT2;
 }
 
 const normalize = () => {
 
+}
+
+const createTypeQuery = (typeToQuery: string): string => {
+  return [
+    "/**",
+    " * @id types",
+    " * @name Types",
+    " * @description Find the specified type.",
+    " */",
+    "",
+    "import javascript",
+    "",
+    "from TypeExpr t",
+    `where t.toString() = ${typeToQuery}`,
+    "select t.toString(), t.getAPrimaryQlClass().toString()"
+  ].join("\n");
+}
+
+const createReturnTypeQuery = (typeToQuery: string): string => {
+  return [
+    "/**",
+    " * @id types",
+    " * @name Types",
+    " * @description Find the specified type.",
+    " */",
+    "",
+    "import javascript",
+    "",
+    "from FunctionTypeExpr t",
+    `where t.toString() = ${typeToQuery}`,
+    "select t.getReturnTypeAnnotation().toString(), t.getReturnTypeAnnotation().getAPrimaryQlClass().toString()"
+  ].join("\n");
 }
