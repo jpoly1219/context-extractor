@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion } from "./utils";
+import { parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray } from "./utils";
 import { relevantTypeObject, varsObject, typesObject } from "./types";
 import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
@@ -130,11 +130,15 @@ const extractRelevantContextHelper = (typeSpan: string, typeQLClass: string, rel
         extractRelevantContextHelper(obj.typeName, obj.typeQLClass, relevantTypes, relevantContext);
       })
 
-    } else if (isArray(typeSpan)) {
-      const element = typeSpan.split("[]")[0];
+    } else if (isQLArray(typeSpan)) {
+      const q = createArrayTypeQuery(typeSpan);
 
-      if (isTypeEquivalent(element, typ, relevantTypes)) {
-        extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
+      fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
+
+      const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
+
+      if (isTypeEquivalent(queryRes[0].typeName, typ.typeDefinition, relevantTypes)) {
+        extractRelevantContextHelper(queryRes[0].typeName, queryRes[0].typeQLClass, relevantTypes, relevantContext);
       }
     }
   });
@@ -211,6 +215,22 @@ const createUnionComponentsTypeQuery = (typeToQuery: string): string => {
     "from UnionTypeExpr t, TypeExpr e",
     `where t.toString() = ${typeToQuery} and e = t.getAnElementType()`,
     "select e, e.getAPrimaryQlClass()"
+  ].join("\n");
+}
+
+const createArrayTypeQuery = (typeToQuery: string): string => {
+  return [
+    "/**",
+    " * @id types",
+    " * @name Types",
+    " * @description Find the specified type.",
+    " */",
+    "",
+    "import javascript",
+    "",
+    "from ArrayTypeExpr t, TypeExpr e",
+    `where t.toString() = ${typeToQuery} and e = t.getAnElementType()`,
+    "select e.toString(), e.getAPrimaryQlClass()"
   ].join("\n");
 }
 
