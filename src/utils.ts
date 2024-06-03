@@ -119,4 +119,8 @@ const isQLTuple = (typeQLClass: string): boolean => {
   return typeQLClass === "TupleTypeExpr";
 }
 
-export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple };
+const isQLUnion = (typeQLClass: string): boolean => {
+  return typeQLClass === "UnionTypeExpr";
+}
+
+export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion };

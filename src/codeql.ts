@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple } from "./utils";
+import { parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion } from "./utils";
 import { relevantTypeObject, varsObject, typesObject } from "./types";
 import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
@@ -108,20 +108,6 @@ const extractRelevantContextHelper = (typeSpan: string, typeQLClass: string, rel
 
       extractRelevantContextHelper(queryRes[0].typeName, queryRes[0].typeQLClass, relevantTypes, relevantContext);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     } else if (isQLTuple(typeSpan)) {
       const q = createTupleComponentsTypeQuery(typeSpan);
 
@@ -133,12 +119,7 @@ const extractRelevantContextHelper = (typeSpan: string, typeQLClass: string, rel
         extractRelevantContextHelper(obj.typeName, obj.typeQLClass, relevantTypes, relevantContext);
       })
 
-
-
-
-
-
-    } else if (isUnion(typeSpan)) {
+    } else if (isQLUnion(typeSpan)) {
       const q = createUnionComponentsTypeQuery(typeSpan);
 
       fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
@@ -148,22 +129,6 @@ const extractRelevantContextHelper = (typeSpan: string, typeQLClass: string, rel
       queryRes.forEach(obj => {
         extractRelevantContextHelper(obj.typeName, obj.typeQLClass, relevantTypes, relevantContext);
       })
-      // const elements = typeSpan.split(" | ");
-      //
-      // elements.forEach(element => {
-      //   extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
-      // });
-
-
-
-
-
-
-
-
-
-
-
 
     } else if (isArray(typeSpan)) {
       const element = typeSpan.split("[]")[0];
