@@ -1,4 +1,4 @@
-import { relevantTypeObject, varsObject } from "./types";
+import { relevantTypeObject, varsObject, typesObject } from "./types";
 
 const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
   return match.reduce((acc, curr, i) => {
@@ -45,11 +45,11 @@ const isTypeAlias = (typeSpan: string) => {
   return caps.includes(typeSpan[0]);
 }
 
-const stripSurroundingWhitespace = (str: string): string => {
-  if (str[0] === " ") return stripSurroundingWhitespace(str.slice(1));
-  if (str[-1] === " ") return stripSurroundingWhitespace(str.slice(0, str.length - 1));
-  return str;
-}
+// const stripSurroundingWhitespace = (str: string): string => {
+//   if (str[0] === " ") return stripSurroundingWhitespace(str.slice(1));
+//   if (str[-1] === " ") return stripSurroundingWhitespace(str.slice(0, str.length - 1));
+//   return str;
+// }
 
 const parseCodeQLRelevantTypes = (table: string): Map<string, relevantTypeObject> => {
   const m = new Map<string, relevantTypeObject>();
@@ -58,7 +58,7 @@ const parseCodeQLRelevantTypes = (table: string): Map<string, relevantTypeObject
   rows.forEach(row => {
     const cols = row.split("|");
     cols.map(col => {
-      return stripSurroundingWhitespace(col);
+      return col.trim();
     })
 
     const declaration = cols[0];
@@ -78,7 +78,7 @@ const parseCodeQLVars = (table: string): Map<string, varsObject> => {
   rows.forEach(row => {
     const cols = row.split("|");
     cols.map(col => {
-      return stripSurroundingWhitespace(col);
+      return col.trim();
     })
 
     const declaration = cols[0];
@@ -86,11 +86,27 @@ const parseCodeQLVars = (table: string): Map<string, varsObject> => {
     const typeAnnotation = cols[2];
     const init = cols[3];
     const qlClass = cols[4];
-    const functionArgumentTypes = cols[5];
-    m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init, typeQLClass: qlClass, functionArgumentTypes: functionArgumentTypes });
+    const functionReturnType = cols[5];
+    m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init, typeQLClass: qlClass, functionReturnType: functionReturnType });
   })
 
   return m;
 }
 
-export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLRelevantTypes, parseCodeQLVars };
+const parseCodeQLTypes = (table: string): typesObject => {
+  const row = table.split("\n").slice(1)[0];
+  const cols = row.split("|");
+  cols.map(col => {
+    return col.trim();
+  })
+
+  const typeName = cols[0];
+  const typeQLClass = cols[1];
+  return { typeName, typeQLClass };
+}
+
+const isQLFunction = (typeQLClass: string): boolean => {
+  return typeQLClass === "FunctionTypeExpr";
+}
+
+export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction };
