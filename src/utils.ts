@@ -93,20 +93,30 @@ const parseCodeQLVars = (table: string): Map<string, varsObject> => {
   return m;
 }
 
-const parseCodeQLTypes = (table: string): typesObject => {
-  const row = table.split("\n").slice(1)[0];
-  const cols = row.split("|");
-  cols.map(col => {
-    return col.trim();
+const parseCodeQLTypes = (table: string): typesObject[] => {
+  const arr: typesObject[] = [];
+
+  const rows = table.split("\n").slice(1);
+  rows.forEach(row => {
+    const cols = row.split("|");
+    cols.map(col => {
+      return col.trim();
+    })
+
+    const typeName = cols[0];
+    const typeQLClass = cols[1];
+    arr.push({ typeName: typeName, typeQLClass: typeQLClass });
   })
 
-  const typeName = cols[0];
-  const typeQLClass = cols[1];
-  return { typeName, typeQLClass };
+  return arr;
 }
 
 const isQLFunction = (typeQLClass: string): boolean => {
   return typeQLClass === "FunctionTypeExpr";
 }
 
-export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction };
+const isQLTuple = (typeQLClass: string): boolean => {
+  return typeQLClass === "TupleTypeExpr";
+}
+
+export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple };
