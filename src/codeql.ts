@@ -106,7 +106,7 @@ const extractRelevantContextHelper = (typeSpan: string, typeQLClass: string, rel
 
       const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
 
-      extractRelevantContextHelper(queryRes.typeName, queryRes.typeQLClass, relevantTypes, relevantContext);
+      extractRelevantContextHelper(queryRes[0].typeName, queryRes[0].typeQLClass, relevantTypes, relevantContext);
 
 
 
