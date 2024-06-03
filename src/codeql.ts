@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction } from "./utils";
+import { parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple } from "./utils";
 import { relevantTypeObject, varsObject, typesObject } from "./types";
 import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
@@ -51,7 +51,7 @@ const extractVars = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: 
   return vars;
 }
 
-const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): typesObject => {
+const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): typesObject[] => {
   const pathToBqrs = path.join(outDir, "types.bqrs");
   const pathToDecodedTxt = path.join(outDir, "types.txt");
 
@@ -122,17 +122,21 @@ const extractRelevantContextHelper = (typeSpan: string, typeQLClass: string, rel
 
 
 
+    } else if (isQLTuple(typeSpan)) {
+      const q = createTupleComponentsTypeQuery(typeSpan);
+
+      fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
+
+      const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
+
+      queryRes.forEach(obj => {
+        extractRelevantContextHelper(obj.typeName, obj.typeQLClass, relevantTypes, relevantContext);
+      })
 
 
 
 
 
-    } else if (isTuple(typeSpan)) {
-      const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
-
-      elements.forEach(element => {
-        extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
-      });
 
     } else if (isUnion(typeSpan)) {
       const elements = typeSpan.split(" | ");
@@ -140,6 +144,17 @@ const extractRelevantContextHelper = (typeSpan: string, typeQLClass: string, rel
       elements.forEach(element => {
         extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
       });
+
+
+
+
+
+
+
+
+
+
+
 
     } else if (isArray(typeSpan)) {
       const element = typeSpan.split("[]")[0];
@@ -189,6 +204,22 @@ const createReturnTypeQuery = (typeToQuery: string): string => {
     "",
     "from FunctionTypeExpr t",
     `where t.toString() = ${typeToQuery}`,
-    "select t.getReturnTypeAnnotation().toString(), t.getReturnTypeAnnotation().getAPrimaryQlClass().toString()"
+    "select t.getReturnTypeAnnotation().toString(), t.getReturnTypeAnnotation().getAPrimaryQlClass()"
+  ].join("\n");
+}
+
+const createTupleComponentsTypeQuery = (typeToQuery: string): string => {
+  return [
+    "/**",
+    " * @id types",
+    " * @name Types",
+    " * @description Find the specified type.",
+    " */",
+    "",
+    "import javascript",
+    "",
+    "from TupleTypeExpr t, TypeExpr e",
+    `where t.toString() = ${typeToQuery} and e = t.getAnElementType()`,
+    "select e, e.getAPrimaryQlClass()"
   ].join("\n");
 }
