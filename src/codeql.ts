@@ -139,11 +139,20 @@ const extractRelevantContextHelper = (typeSpan: string, typeQLClass: string, rel
 
 
     } else if (isUnion(typeSpan)) {
-      const elements = typeSpan.split(" | ");
+      const q = createUnionComponentsTypeQuery(typeSpan);
 
-      elements.forEach(element => {
-        extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
-      });
+      fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
+
+      const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
+
+      queryRes.forEach(obj => {
+        extractRelevantContextHelper(obj.typeName, obj.typeQLClass, relevantTypes, relevantContext);
+      })
+      // const elements = typeSpan.split(" | ");
+      //
+      // elements.forEach(element => {
+      //   extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
+      // });
 
 
 
@@ -219,6 +228,38 @@ const createTupleComponentsTypeQuery = (typeToQuery: string): string => {
     "import javascript",
     "",
     "from TupleTypeExpr t, TypeExpr e",
+    `where t.toString() = ${typeToQuery} and e = t.getAnElementType()`,
+    "select e, e.getAPrimaryQlClass()"
+  ].join("\n");
+}
+
+const createUnionComponentsTypeQuery = (typeToQuery: string): string => {
+  return [
+    "/**",
+    " * @id types",
+    " * @name Types",
+    " * @description Find the specified type.",
+    " */",
+    "",
+    "import javascript",
+    "",
+    "from UnionTypeExpr t, TypeExpr e",
+    `where t.toString() = ${typeToQuery} and e = t.getAnElementType()`,
+    "select e, e.getAPrimaryQlClass()"
+  ].join("\n");
+}
+
+const createLocalTypeAccessTypeQuery = (typeToQuery: string): string => {
+  return [
+    "/**",
+    " * @id types",
+    " * @name Types",
+    " * @description Find the specified type.",
+    " */",
+    "",
+    "import javascript",
+    "",
+    "from UnionTypeExpr t, TypeExpr e",
     `where t.toString() = ${typeToQuery} and e = t.getAnElementType()`,
     "select e, e.getAPrimaryQlClass()"
   ].join("\n");
