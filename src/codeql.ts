@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess } from "./utils";
+import { parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface } from "./utils";
 import { relevantTypeObject, varsObject, typesObject } from "./types";
 import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
@@ -123,7 +123,7 @@ const extractRelevantContextHelper = (header: varsObject, headerType: typesObjec
 
       queryRes.forEach(obj => {
         extractRelevantContextHelper(header, obj, relevantTypes, relevantContext);
-      })
+      });
 
     } else if (isQLUnion(headerType.typeQLClass)) {
       const q = createUnionComponentsTypeQuery(headerType.typeName);
@@ -134,7 +134,7 @@ const extractRelevantContextHelper = (header: varsObject, headerType: typesObjec
 
       queryRes.forEach(obj => {
         extractRelevantContextHelper(header, obj, relevantTypes, relevantContext);
-      })
+      });
 
     } else if (isQLArray(headerType.typeQLClass)) {
       const q = createArrayTypeQuery(headerType.typeName);
@@ -146,6 +146,7 @@ const extractRelevantContextHelper = (header: varsObject, headerType: typesObjec
       if (isTypeEquivalent(queryRes[0], typObj, relevantTypes)) {
         extractRelevantContextHelper(header, queryRes[0], relevantTypes, relevantContext);
       }
+
     } else if (isQLLocalTypeAccess(headerType.typeQLClass)) {
       const q = createLocalTypeAccessTypeQuery(headerType.typeName);
 
@@ -166,8 +167,92 @@ const isTypeEquivalent = (t1: typesObject, t2: typesObject, relevantTypes: Map<s
   return normT1 === normT2;
 }
 
-const normalize = (typeSpan: typesObject, relevantTypes: Map<string, relevantTypeObject>) => {
+const normalize = (typeSpan: typesObject, relevantTypes: Map<string, relevantTypeObject>): string => {
+  const normalForm = "";
 
+  // if the type is in relevant types, use that instead
+  if (relevantTypes.has(typeSpan.typeName)) {
+    const obj: typesObject = { typeName: relevantTypes.get(typeSpan.typeName)!.typeName, typeQLClass: relevantTypes.get(typeSpan.typeName)!.typeQLClass };
+    return normalize(obj, relevantTypes);
+  }
+
+  // if not, run a query to find the type definition
+  if (isQLPredefined(typeSpan.typeQLClass) || isQLLiteral(typeSpan.typeQLClass) || isQLKeyword(typeSpan.typeQLClass)) {
+    return typeSpan.typeName;
+
+  } else if (isQLInterface(typeSpan.typeQLClass)) {
+    const q = createInterfaceComponentsTypeQuery(typeSpan.typeName);
+
+    fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
+
+    const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
+
+    normalForm.concat("{");
+    queryRes.forEach(obj => {
+      const key = obj.typeName.split(":")[0];
+      const val = obj.typeName.split(":")[1];
+      normalForm.concat(key, ": ", normalize({ typeName: val, typeQLClass: obj.typeQLClass }, relevantTypes), "; ");
+    });
+
+    normalForm.concat("}");
+    return normalForm;
+
+  } else if (isQLTuple(typeSpan.typeQLClass)) {
+    const q = createTupleComponentsTypeQuery(typeSpan.typeName);
+
+    fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
+
+    const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
+
+    normalForm.concat("[");
+    queryRes.forEach((obj, i) => {
+      normalForm.concat(normalize(obj, relevantTypes));
+      if (i < queryRes.length - 1) {
+        normalForm.concat(", ");
+      }
+    });
+
+    normalForm.concat("]");
+    return normalForm;
+
+  } else if (isQLUnion(typeSpan.typeQLClass)) {
+    const q = createUnionComponentsTypeQuery(typeSpan.typeName);
+
+    fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
+
+    const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
+
+    queryRes.forEach((obj, i) => {
+      normalForm.concat("(", normalize(obj, relevantTypes), ")");
+      if (i < queryRes.length - 1) {
+        normalForm.concat(" | ");
+      }
+    });
+
+    return normalForm;
+
+  } else if (isQLArray(typeSpan.typeQLClass)) {
+    const q = createArrayTypeQuery(typeSpan.typeName);
+
+    fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
+
+    const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
+
+    normalForm.concat(normalize(queryRes[0], relevantTypes), "[]");
+    return normalForm;
+
+  } else if (isQLLocalTypeAccess(typeSpan.typeQLClass)) {
+    const q = createLocalTypeAccessTypeQuery(typeSpan.typeName);
+
+    fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
+
+    const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
+
+    return normalize(queryRes[0], relevantTypes);
+
+  } else {
+    return typeSpan.typeName;
+  }
 }
 
 const createTypeQuery = (typeToQuery: string): string => {
@@ -199,6 +284,22 @@ const createReturnTypeQuery = (typeToQuery: string): string => {
     "from FunctionTypeExpr t",
     `where t.toString() = ${typeToQuery}`,
     "select t.getReturnTypeAnnotation().toString(), t.getReturnTypeAnnotation().getAPrimaryQlClass()"
+  ].join("\n");
+}
+
+const createInterfaceComponentsTypeQuery = (typeToQuery: string): string => {
+  return [
+    "/**",
+    " * @id types",
+    " * @name Types",
+    " * @description Find the specified type.",
+    " */",
+    "",
+    "import javascript",
+    "",
+    "from InterfaceTypeExpr t, FieldDeclaration e",
+    `where t.toString() = ${typeToQuery} and e = t.getAChild()`,
+    "select e.toString(), e.getName(), e.getTypeAnnotation(), e.getTypeAnnotation().getAPrimaryQlClass()"
   ].join("\n");
 }
 
