@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface } from "./utils";
+import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface } from "./utils";
 import { relevantTypeObject, varsObject, typesObject } from "./types";
 import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
@@ -279,7 +279,7 @@ const createTypeQuery = (typeToQuery: string): string => {
     "import javascript",
     "",
     "from TypeExpr t",
-    `where t.toString() = ${typeToQuery}`,
+    `where t.toString() = ${escapeQuotes(typeToQuery)}`,
     "select t.toString(), t.getAPrimaryQlClass().toString()"
   ].join("\n");
 }
@@ -295,7 +295,7 @@ const createReturnTypeQuery = (typeToQuery: string): string => {
     "import javascript",
     "",
     "from FunctionTypeExpr t",
-    `where t.toString() = ${typeToQuery}`,
+    `where t.toString() = ${escapeQuotes(typeToQuery)}`,
     "select t.getReturnTypeAnnotation().toString(), t.getReturnTypeAnnotation().getAPrimaryQlClass()"
   ].join("\n");
 }
@@ -311,7 +311,7 @@ const createInterfaceComponentsTypeQuery = (typeToQuery: string): string => {
     "import javascript",
     "",
     "from InterfaceTypeExpr t, FieldDeclaration e",
-    `where t.toString() = ${typeToQuery} and e = t.getAChild()`,
+    `where t.toString() = ${escapeQuotes(typeToQuery)} and e = t.getAChild()`,
     "select e.toString(), e.getName(), e.getTypeAnnotation(), e.getTypeAnnotation().getAPrimaryQlClass()"
   ].join("\n");
 }
@@ -327,7 +327,7 @@ const createTupleComponentsTypeQuery = (typeToQuery: string): string => {
     "import javascript",
     "",
     "from TupleTypeExpr t, TypeExpr e",
-    `where t.toString() = ${typeToQuery} and e = t.getAnElementType()`,
+    `where t.toString() = ${escapeQuotes(typeToQuery)} and e = t.getAnElementType()`,
     "select e, e.getAPrimaryQlClass()"
   ].join("\n");
 }
@@ -343,7 +343,7 @@ const createUnionComponentsTypeQuery = (typeToQuery: string): string => {
     "import javascript",
     "",
     "from UnionTypeExpr t, TypeExpr e",
-    `where t.toString() = ${typeToQuery} and e = t.getAnElementType()`,
+    `where t.toString() = ${escapeQuotes(typeToQuery)} and e = t.getAnElementType()`,
     "select e, e.getAPrimaryQlClass()"
   ].join("\n");
 }
@@ -359,7 +359,7 @@ const createArrayTypeQuery = (typeToQuery: string): string => {
     "import javascript",
     "",
     "from ArrayTypeExpr t, TypeExpr e",
-    `where t.toString() = ${typeToQuery} and e = t.getAnElementType()`,
+    `where t.toString() = ${escapeQuotes(typeToQuery)} and e = t.getAnElementType()`,
     "select e.toString(), e.getAPrimaryQlClass()"
   ].join("\n");
 }
@@ -375,7 +375,7 @@ const createLocalTypeAccessTypeQuery = (typeToQuery: string): string => {
     "import javascript",
     "",
     "from UnionTypeExpr t, TypeExpr e",
-    `where t.toString() = ${typeToQuery} and e = t.getAnElementType()`,
+    `where t.toString() = ${escapeQuotes(typeToQuery)} and e = t.getAnElementType()`,
     "select e, e.getAPrimaryQlClass()"
   ].join("\n");
 }

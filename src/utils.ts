@@ -51,6 +51,10 @@ const isTypeAlias = (typeSpan: string) => {
 //   return str;
 // }
 
+const escapeQuotes = (typeSpan: string): string => {
+  return typeSpan.replace(/"/g, `\\"`);
+}
+
 const parseCodeQLRelevantTypes = (table: string): Map<string, relevantTypeObject> => {
   const m = new Map<string, relevantTypeObject>();
 
@@ -157,6 +161,7 @@ export {
   isFunction,
   isPrimitive,
   isTypeAlias,
+  escapeQuotes,
   parseCodeQLRelevantTypes,
   parseCodeQLVars,
   parseCodeQLTypes,
