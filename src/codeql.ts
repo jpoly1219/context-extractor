@@ -81,19 +81,19 @@ const extractRelevantContext = (headers: Map<string, varsObject>, relevantTypes:
   headers.forEach((header) => {
     if (isQLFunction(header.typeQLClass)) {
       // extractRelevantContextHelper(value.functionSignature, value.typeQLClass, relevantTypes, m);
-      const typeOfVar: typesObject = { typeName: header.functionReturnType, typeQLClass: header.typeQLClass };
-      extractRelevantContextHelper(typeOfVar, relevantTypes, relevantContext);
+      const typeOfHeader: typesObject = { typeName: header.functionReturnType, typeQLClass: header.typeQLClass };
+      extractRelevantContextHelper(header, typeOfHeader, relevantTypes, relevantContext);
     } else {
       // extractRelevantContextHelper(value.typeAnnotation, value.typeQLClass, relevantTypes, m);
-      const typeOfVar: typesObject = { typeName: header.typeAnnotation, typeQLClass: header.typeQLClass };
-      extractRelevantContextHelper(typeOfVar, relevantTypes, relevantContext);
+      const typeOfHeader: typesObject = { typeName: header.typeAnnotation, typeQLClass: header.typeQLClass };
+      extractRelevantContextHelper(header, typeOfHeader, relevantTypes, relevantContext);
     }
   })
 
   return relevantContext;
 }
 
-const extractRelevantContextHelper = (headerType: typesObject, relevantTypes: Map<string, relevantTypeObject>, relevantContext: Map<string, typesObject>) => {
+const extractRelevantContextHelper = (header: varsObject, headerType: typesObject, relevantTypes: Map<string, relevantTypeObject>, relevantContext: Map<string, typesObject>) => {
   // TODO:
   // extract types that are consistent to any of the target types
   // extract functions whose return types are equivalent to any of the target types
@@ -109,9 +109,10 @@ const extractRelevantContextHelper = (headerType: typesObject, relevantTypes: Ma
 
       fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
 
+      // could use extractVars
       const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
 
-      extractRelevantContextHelper(queryRes[0], relevantTypes, relevantContext);
+      extractRelevantContextHelper(header, queryRes[0], relevantTypes, relevantContext);
 
     } else if (isQLTuple(headerType.typeQLClass)) {
       const q = createTupleComponentsTypeQuery(headerType.typeName);
@@ -121,7 +122,7 @@ const extractRelevantContextHelper = (headerType: typesObject, relevantTypes: Ma
       const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
 
       queryRes.forEach(obj => {
-        extractRelevantContextHelper(obj, relevantTypes, relevantContext);
+        extractRelevantContextHelper(header, obj, relevantTypes, relevantContext);
       })
 
     } else if (isQLUnion(headerType.typeQLClass)) {
@@ -132,7 +133,7 @@ const extractRelevantContextHelper = (headerType: typesObject, relevantTypes: Ma
       const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
 
       queryRes.forEach(obj => {
-        extractRelevantContextHelper(obj, relevantTypes, relevantContext);
+        extractRelevantContextHelper(header, obj, relevantTypes, relevantContext);
       })
 
     } else if (isQLArray(headerType.typeQLClass)) {
@@ -143,7 +144,7 @@ const extractRelevantContextHelper = (headerType: typesObject, relevantTypes: Ma
       const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
 
       if (isTypeEquivalent(queryRes[0], typObj, relevantTypes)) {
-        extractRelevantContextHelper(queryRes[0], relevantTypes, relevantContext);
+        extractRelevantContextHelper(header, queryRes[0], relevantTypes, relevantContext);
       }
     } else if (isQLLocalTypeAccess(headerType.typeQLClass)) {
       const q = createLocalTypeAccessTypeQuery(headerType.typeName);
@@ -152,7 +153,7 @@ const extractRelevantContextHelper = (headerType: typesObject, relevantTypes: Ma
 
       const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
 
-      extractRelevantContextHelper(queryRes[0], relevantTypes, relevantContext);
+      extractRelevantContextHelper(header, queryRes[0], relevantTypes, relevantContext);
     }
   });
 }
