@@ -127,6 +127,10 @@ const isQLArray = (typeQLClass: string): boolean => {
   return typeQLClass === "ArrayTypeExpr";
 }
 
+const isQLInterface = (typeQLClass: string): boolean => {
+  return typeQLClass === "InterfaceTypeExpr";
+}
+
 const isQLLocalTypeAccess = (typeQLClass: string): boolean => {
   return typeQLClass === "LocalTypeAccess";
 }
@@ -160,6 +164,7 @@ export {
   isQLTuple,
   isQLUnion,
   isQLArray,
+  isQLInterface,
   isQLLocalTypeAccess,
   isQLPredefined,
   isQLLiteral,
