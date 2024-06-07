@@ -114,6 +114,19 @@ const extractRelevantContextHelper = (header: varsObject, headerType: typesObjec
 
       extractRelevantContextHelper(header, queryRes[0], relevantTypes, relevantContext);
 
+    } else if (isQLInterface(headerType.typeQLClass)) {
+      const q = createInterfaceComponentsTypeQuery(headerType.typeName);
+
+      fs.writeFileSync(path.join(QUERY_DIR, "types.ql"), q);
+
+      const queryRes = extractTypes(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), path.join(BOOKING_DIR, "bookingdb"), ROOT_DIR);
+
+      queryRes.forEach(obj => {
+        const val = obj.typeName.split(":")[1];
+        const typObj: typesObject = { typeName: val, typeQLClass: obj.typeQLClass };
+        extractRelevantContextHelper(header, typObj, relevantTypes, relevantContext);
+      });
+
     } else if (isQLTuple(headerType.typeQLClass)) {
       const q = createTupleComponentsTypeQuery(headerType.typeName);
 
