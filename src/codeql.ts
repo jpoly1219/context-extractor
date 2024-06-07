@@ -74,26 +74,26 @@ const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase:
   return types;
 }
 
-const extractRelevantContext = (headers: Map<string, varsObject>, relevantTypes: Map<string, relevantTypeObject>): Map<string, varsObject> => {
-  const m = new Map<string, varsObject>();
+const extractRelevantContext = (headers: Map<string, varsObject>, relevantTypes: Map<string, relevantTypeObject>): Map<string, typesObject> => {
+  const relevantContext = new Map<string, typesObject>();
 
   // for each var in vars, check if its type is equivalent to any of relevantTypes
-  headers.forEach((header, key) => {
+  headers.forEach((header) => {
     if (isQLFunction(header.typeQLClass)) {
       // extractRelevantContextHelper(value.functionSignature, value.typeQLClass, relevantTypes, m);
       const typeOfVar: typesObject = { typeName: header.functionReturnType, typeQLClass: header.typeQLClass };
-      extractRelevantContextHelper(typeOfVar, relevantTypes, m);
+      extractRelevantContextHelper(typeOfVar, relevantTypes, relevantContext);
     } else {
       // extractRelevantContextHelper(value.typeAnnotation, value.typeQLClass, relevantTypes, m);
       const typeOfVar: typesObject = { typeName: header.typeAnnotation, typeQLClass: header.typeQLClass };
-      extractRelevantContextHelper(typeOfVar, relevantTypes, m);
+      extractRelevantContextHelper(typeOfVar, relevantTypes, relevantContext);
     }
   })
 
-  return m;
+  return relevantContext;
 }
 
-const extractRelevantContextHelper = (headerType: typesObject, relevantTypes: Map<string, relevantTypeObject>, relevantContext: Map<string, varsObject>) => {
+const extractRelevantContextHelper = (headerType: typesObject, relevantTypes: Map<string, relevantTypeObject>, relevantContext: Map<string, typesObject>) => {
   // TODO:
   // extract types that are consistent to any of the target types
   // extract functions whose return types are equivalent to any of the target types
@@ -101,7 +101,7 @@ const extractRelevantContextHelper = (headerType: typesObject, relevantTypes: Ma
   relevantTypes.forEach(typ => {
     const typObj: typesObject = { typeName: typ.typeName, typeQLClass: typ.typeQLClass };
     if (isTypeEquivalent(headerType, typObj, relevantTypes)) {
-      relevantContext.set();
+      relevantContext.set(headerType.typeName, headerType);
     }
 
     if (isQLFunction(headerType.typeQLClass)) {
