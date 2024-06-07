@@ -126,8 +126,42 @@ const isQLUnion = (typeQLClass: string): boolean => {
 const isQLArray = (typeQLClass: string): boolean => {
   return typeQLClass === "ArrayTypeExpr";
 }
+
 const isQLLocalTypeAccess = (typeQLClass: string): boolean => {
   return typeQLClass === "LocalTypeAccess";
 }
 
-export { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess };
+const isQLPredefined = (typeQLClass: string): boolean => {
+  return typeQLClass === "PredefinedTypeExpr";
+}
+
+const isQLLiteral = (typeQLClass: string): boolean => {
+  return typeQLClass === "LiteralTypeExpr";
+}
+
+const isQLKeyword = (typeQLClass: string): boolean => {
+  return typeQLClass === "KeywordTypeExpr";
+}
+
+export {
+  indexOfRegexGroup,
+  formatTypeSpan,
+  isTuple,
+  isUnion,
+  isArray,
+  isObject,
+  isFunction,
+  isPrimitive,
+  isTypeAlias,
+  parseCodeQLRelevantTypes,
+  parseCodeQLVars,
+  parseCodeQLTypes,
+  isQLFunction,
+  isQLTuple,
+  isQLUnion,
+  isQLArray,
+  isQLLocalTypeAccess,
+  isQLPredefined,
+  isQLLiteral,
+  isQLKeyword
+};
