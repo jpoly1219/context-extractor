@@ -1,1 +1,1 @@
-export { extract } from "./main"
+export { extract, extractWithCodeQL } from "./main"
