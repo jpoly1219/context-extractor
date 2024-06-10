@@ -58,17 +58,16 @@ const escapeQuotes = (typeSpan: string): string => {
 const parseCodeQLRelevantTypes = (table: string): Map<string, relevantTypeObject> => {
   const m = new Map<string, relevantTypeObject>();
 
-  const rows = table.split("\n").slice(1);
+  const rows = table.split("\n").slice(2, table.length - 1);
   rows.forEach(row => {
-    const cols = row.split("|");
-    cols.map(col => {
+    const cols = row.split("|").map(col => {
       return col.trim();
-    })
+    });
 
-    const declaration = cols[0];
-    const name = cols[1];
-    const definition = cols[2];
-    const qlClass = cols[3];
+    const declaration = cols[1];
+    const name = cols[2];
+    const definition = cols[3];
+    const qlClass = cols[4];
     m.set(name, { typeAliasDeclaration: declaration, typeName: name, typeDefinition: definition, typeQLClass: qlClass })
   })
 
@@ -78,19 +77,18 @@ const parseCodeQLRelevantTypes = (table: string): Map<string, relevantTypeObject
 const parseCodeQLVars = (table: string): Map<string, varsObject> => {
   const m = new Map<string, varsObject>();
 
-  const rows = table.split("\n").slice(1);
+  const rows = table.split("\n").slice(2, table.length - 1);
   rows.forEach(row => {
-    const cols = row.split("|");
-    cols.map(col => {
+    const cols = row.split("|").map(col => {
       return col.trim();
-    })
+    });
 
-    const declaration = cols[0];
-    const bindingPattern = cols[1];
-    const typeAnnotation = cols[2];
-    const init = cols[3];
-    const qlClass = cols[4];
-    const functionReturnType = cols[5];
+    const declaration = cols[1];
+    const bindingPattern = cols[2];
+    const typeAnnotation = cols[3];
+    const init = cols[4];
+    const qlClass = cols[5];
+    const functionReturnType = cols[6];
     m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init, typeQLClass: qlClass, functionReturnType: functionReturnType });
   })
 
@@ -100,15 +98,14 @@ const parseCodeQLVars = (table: string): Map<string, varsObject> => {
 const parseCodeQLTypes = (table: string): typesObject[] => {
   const arr: typesObject[] = [];
 
-  const rows = table.split("\n").slice(1);
+  const rows = table.split("\n").slice(2, table.length - 1);
   rows.forEach(row => {
-    const cols = row.split("|");
-    cols.map(col => {
+    const cols = row.split("|").map(col => {
       return col.trim();
-    })
+    });
 
-    const typeName = cols[0];
-    const typeQLClass = cols[1];
+    const typeName = cols[1];
+    const typeQLClass = cols[2];
     arr.push({ typeName: typeName, typeQLClass: typeQLClass });
   })
 
