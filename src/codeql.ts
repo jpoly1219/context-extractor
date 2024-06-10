@@ -5,6 +5,18 @@ import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTyp
 import { relevantTypeObject, varsObject, typesObject } from "./types";
 // import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
+const createDatabaseWithCodeQL = (pathToCodeQL: string, targetPath: string): string => {
+  const databaseName = path.basename(targetPath).concat("db");
+  const pathToDatabase = path.join(targetPath, databaseName);
+  try {
+    execSync(`${pathToCodeQL} database create ${pathToDatabase} --language=javascript-typescript`)
+    return pathToDatabase;
+  } catch (err) {
+    console.error(`error while creating database: ${err}`);
+    throw err;
+  }
+}
+
 const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): Map<string, relevantTypeObject> => {
   const pathToBqrs = path.join(outDir, "relevant-types.bqrs");
   const pathToDecodedTxt = path.join(outDir, "relevant-types.txt");
@@ -28,7 +40,7 @@ const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: strin
   return relevantTypes;
 }
 
-const extractVars = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): Map<string, varsObject> => {
+const extractHeadersWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): Map<string, varsObject> => {
   const pathToBqrs = path.join(outDir, "vars.bqrs");
   const pathToDecodedTxt = path.join(outDir, "vars.txt");
 
@@ -402,6 +414,8 @@ const createLocalTypeAccessTypeQuery = (typeToQuery: string): string => {
 }
 
 export {
+  createDatabaseWithCodeQL,
   extractRelevantTypesWithCodeQL,
+  extractHeadersWithCodeQL,
   extractRelevantContextWithCodeQL
 };
