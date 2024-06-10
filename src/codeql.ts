@@ -9,7 +9,7 @@ const createDatabaseWithCodeQL = (pathToCodeQL: string, targetPath: string): str
   const databaseName = path.basename(targetPath).concat("db");
   const pathToDatabase = path.join(targetPath, databaseName);
   try {
-    execSync(`${pathToCodeQL} database create ${pathToDatabase} --language=javascript-typescript`)
+    execSync(`${pathToCodeQL} database create ${pathToDatabase} --overwrite --language=javascript-typescript`)
     return pathToDatabase;
   } catch (err) {
     console.error(`error while creating database: ${err}`);
