@@ -9,7 +9,7 @@ const createDatabaseWithCodeQL = (pathToCodeQL: string, targetPath: string): str
   const databaseName = path.basename(targetPath).concat("db");
   const pathToDatabase = path.join(targetPath, databaseName);
   try {
-    execSync(`${pathToCodeQL} database create ${pathToDatabase} --overwrite --language=javascript-typescript`)
+    execSync(`${pathToCodeQL} database create ${pathToDatabase} --source-root=${targetPath} --overwrite --language=javascript-typescript`)
     return pathToDatabase;
   } catch (err) {
     console.error(`error while creating database: ${err}`);
@@ -87,6 +87,7 @@ const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase:
 }
 
 const extractRelevantContextWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string, headers: Map<string, varsObject>, relevantTypes: Map<string, relevantTypeObject>): Map<string, typesObject> => {
+  console.log("==entry==")
   const relevantContext = new Map<string, typesObject>();
 
   // for each var in vars, check if its type is equivalent to any of relevantTypes
@@ -114,6 +115,7 @@ const extractRelevantContextHelper = (
   headerType: typesObject,
   relevantTypes: Map<string, relevantTypeObject>,
   relevantContext: Map<string, typesObject>) => {
+  console.log("recurse: ", header)
   // TODO:
   // extract types that are consistent to any of the target types
   // extract functions whose return types are equivalent to any of the target types
