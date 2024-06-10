@@ -2,7 +2,9 @@ import { JSONRPCEndpoint, LspClient, ClientCapabilities } from "../../ts-lsp-cli
 import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import { extractRelevantTypes, getHoleContext, extractRelevantContext } from "./core.js";
+import { extractRelevantTypes, getHoleContext, extractRelevantContext } from "./core";
+import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractRelevantContextWithCodeQL, extractHeadersWithCodeQL } from "./codeql";
+import { CODEQL_PATH, QUERY_DIR } from "./constants.js";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
 export const extract = async (sketchPath: string) => {
@@ -172,3 +174,30 @@ export const extract = async (sketchPath: string) => {
   return { holeContext: holeContext, relevantTypes: Array.from(relevantTypes), relevantContext: relevantContext };
 }
 
+export const extractWithCodeQL = async (sketchPath: string) => {
+  const targetPath = path.dirname(sketchPath);
+  const sketchFileName = path.basename(sketchPath);
+
+  try {
+    // inject hole function
+    const injectedSketchPath = `${targetPath}/injected_${sketchFileName}`;
+    const sketchFileContent = fs.readFileSync(sketchPath, "utf8");
+    const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
+    fs.writeFileSync(injectedSketchPath, injectedSketchFileContent);
+    console.log(fs.statSync(injectedSketchPath));
+
+    // extraction
+    const databasePath = createDatabaseWithCodeQL(CODEQL_PATH, targetPath);
+    const relevantTypes = extractRelevantTypesWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "relevant-types.ql"), databasePath, targetPath);
+    console.log("relevantTypes: ", relevantTypes);
+    const headers = extractHeadersWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "vars.ql"), databasePath, targetPath);
+    console.log("headers: ", headers);
+    const relevantContext = extractRelevantContextWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, relevantTypes);
+    console.log("relevantContext: ", relevantContext);
+
+
+    return { relevantTypes: Array.from(relevantTypes), relevantContext: Array.from(relevantContext) };
+  } catch (err) {
+    console.error(`${targetPath}: ${err}`);
+  }
+}
