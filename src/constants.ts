@@ -1,6 +1,6 @@
 import * as path from "path";
 
-const CODEQL_PATH = path.join("opt", "codeql", "codeql");
+const CODEQL_PATH = path.join("/", "opt", "codeql", "codeql");
 const ROOT_DIR = path.join("~", "projects", "context-extractor");
 const QUERY_DIR = path.join("~", "projects", "context-extractor", "queries", "codeql-custom-queries-javascript");
 const TARGET_DIR = path.join("~", "projects", "context-extractor", "targets");
