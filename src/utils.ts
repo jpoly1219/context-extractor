@@ -1,4 +1,4 @@
-import { relevantTypeObject, varsObject, typesObject } from "./types";
+import { relevantTypeObject, varsObject, typesObject, typesQueryResult, varsQueryResult, relevantTypeQueryResult } from "./types";
 
 const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
   return match.reduce((acc, curr, i) => {
@@ -45,67 +45,49 @@ const isTypeAlias = (typeSpan: string) => {
   return caps.includes(typeSpan[0]);
 }
 
-// const stripSurroundingWhitespace = (str: string): string => {
-//   if (str[0] === " ") return stripSurroundingWhitespace(str.slice(1));
-//   if (str[-1] === " ") return stripSurroundingWhitespace(str.slice(0, str.length - 1));
-//   return str;
-// }
-
 const escapeQuotes = (typeSpan: string): string => {
   return typeSpan.replace(/"/g, `\\"`);
 }
 
-const parseCodeQLRelevantTypes = (table: string): Map<string, relevantTypeObject> => {
+const parseCodeQLRelevantTypes = (table: relevantTypeQueryResult): Map<string, relevantTypeObject> => {
   const m = new Map<string, relevantTypeObject>();
 
-  const rows = table.split("\n").slice(2, table.length - 1);
+  const rows = table["#select"]["tuples"];
   rows.forEach(row => {
-    const cols = row.split("|").map(col => {
-      return col.trim();
-    });
-
-    const declaration = cols[1];
-    const name = cols[2];
-    const definition = cols[3];
-    const qlClass = cols[4];
+    const declaration = row[0]["label"];
+    const name = row[1];
+    const definition = row[2]["label"];
+    const qlClass = row[3];
     m.set(name, { typeAliasDeclaration: declaration, typeName: name, typeDefinition: definition, typeQLClass: qlClass })
   })
 
   return m;
 }
 
-const parseCodeQLVars = (table: string): Map<string, varsObject> => {
+const parseCodeQLVars = (table: varsQueryResult): Map<string, varsObject> => {
   const m = new Map<string, varsObject>();
 
-  const rows = table.split("\n").slice(2, table.length - 1);
+  const rows = table["#select"]["tuples"];
   rows.forEach(row => {
-    const cols = row.split("|").map(col => {
-      return col.trim();
-    });
-
-    const declaration = cols[1];
-    const bindingPattern = cols[2];
-    const typeAnnotation = cols[3];
-    const init = cols[4];
-    const qlClass = cols[5];
-    const functionReturnType = cols[6];
+    const declaration = row[0]["label"]
+    const bindingPattern = row[1]["label"];
+    const typeAnnotation = row[2]["label"];;
+    const init = row[3]["label"];
+    const qlClass = row[4];
+    const functionReturnType = row[5];
     m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init, typeQLClass: qlClass, functionReturnType: functionReturnType });
   })
 
   return m;
 }
 
-const parseCodeQLTypes = (table: string): typesObject[] => {
+const parseCodeQLTypes = (table: typesQueryResult): typesObject[] => {
   const arr: typesObject[] = [];
 
-  const rows = table.split("\n").slice(2, table.length - 1);
+  const rows = table["#select"]["tuples"];
   rows.forEach(row => {
-    const cols = row.split("|").map(col => {
-      return col.trim();
-    });
-
-    const typeName = cols[1];
-    const typeQLClass = cols[2];
+    const typeName = row[0]["label"];
+    const typeQLClass = row[1];
     arr.push({ typeName: typeName, typeQLClass: typeQLClass });
   })
 
