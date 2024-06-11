@@ -19,4 +19,25 @@ interface typesObject {
   typeQLClass: string;
 }
 
-export { relevantTypeObject, varsObject, typesObject }
+interface relevantTypeQueryResult {
+  "#select": {
+    columns: [{ name: string, kind: string }, { kind: string }, { kind: string }, { kind: string }],
+    tuples: [{ label: string }, string, { label: string }, string][]
+  }
+}
+
+interface varsQueryResult {
+  "#select": {
+    columns: [{ name: string, kind: string }, { kind: string }, { kind: string }, { kind: string }, { kind: string }, { kind: string }],
+    tuples: [{ label: string }, { label: string }, { label: string }, { label: string }, string, string][]
+  }
+}
+
+interface typesQueryResult {
+  "#select": {
+    columns: [{ name: string, kind: string }, { kind: string }],
+    tuples: [{ label: string }, string][]
+  }
+}
+
+export { relevantTypeObject, varsObject, typesObject, relevantTypeQueryResult, varsQueryResult, typesQueryResult }
