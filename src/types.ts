@@ -35,8 +35,8 @@ interface varsQueryResult {
 
 interface typesQueryResult {
   "#select": {
-    columns: [{ name: string, kind: string }, { kind: string }],
-    tuples: [{ label: string }, string][]
+    columns: [{ kind: string }, { name: string, kind: string }, { name: string, kind: string }],
+    tuples: [string, string, number][]
   }
 }
 
