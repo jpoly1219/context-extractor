@@ -176,22 +176,22 @@ export const extract = async (sketchPath: string) => {
 
 export const extractWithCodeQL = async (sketchPath: string) => {
   const targetPath = path.dirname(sketchPath);
-  const sketchFileName = path.basename(sketchPath);
+  // const sketchFileName = path.basename(sketchPath);
 
   try {
-    // inject hole function
-    const injectedSketchPath = `${targetPath}/injected_${sketchFileName}`;
-    const sketchFileContent = fs.readFileSync(sketchPath, "utf8");
-    const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
-    fs.writeFileSync(injectedSketchPath, injectedSketchFileContent);
-    console.log(fs.statSync(injectedSketchPath));
+    // // inject hole function
+    // const injectedSketchPath = `${targetPath}/injected_${sketchFileName}`;
+    // const sketchFileContent = fs.readFileSync(sketchPath, "utf8");
+    // const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
+    // fs.writeFileSync(injectedSketchPath, injectedSketchFileContent);
+    // console.log(fs.statSync(injectedSketchPath));
 
     // extraction
     const databasePath = createDatabaseWithCodeQL(CODEQL_PATH, targetPath);
     const relevantTypes = extractRelevantTypesWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "relevant-types.ql"), databasePath, targetPath);
-    console.log("relevantTypes: ", relevantTypes);
+    // console.log("relevantTypes: ", relevantTypes);
     const headers = extractHeadersWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "vars.ql"), databasePath, targetPath);
-    console.log("headers: ", headers);
+    // console.log("headers: ", headers);
     const relevantContext = extractRelevantContextWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, relevantTypes);
     console.log("relevantContext: ", relevantContext);
 
