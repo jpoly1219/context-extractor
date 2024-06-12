@@ -86,10 +86,12 @@ const parseCodeQLTypes = (table: typesQueryResult): typesObject[] => {
 
   const rows = table["#select"]["tuples"];
   rows.forEach(row => {
-    const typeName = row[0]["label"];
+    const typeName = row[0];
     const typeQLClass = row[1];
     arr.push({ typeName: typeName, typeQLClass: typeQLClass });
   })
+
+  console.log(arr)
 
   return arr;
 }
