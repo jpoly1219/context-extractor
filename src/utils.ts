@@ -75,7 +75,8 @@ const parseCodeQLVars = (table: varsQueryResult): Map<string, varsObject> => {
     const init = row[3]["label"];
     const qlClass = row[4];
     const functionReturnType = row[5];
-    m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init, typeQLClass: qlClass, functionReturnType: functionReturnType });
+    const functionReturnTypeQLClass = row[6];
+    m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init, typeQLClass: qlClass, functionReturnType: functionReturnType, functionReturnTypeQLClass: functionReturnTypeQLClass });
   })
 
   return m;
@@ -90,8 +91,6 @@ const parseCodeQLTypes = (table: typesQueryResult): typesObject[] => {
     const typeQLClass = row[1];
     arr.push({ typeName: typeName, typeQLClass: typeQLClass });
   })
-
-  console.log(arr)
 
   return arr;
 }
