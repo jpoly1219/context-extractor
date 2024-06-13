@@ -5,6 +5,7 @@ import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTyp
 import { relevantTypeObject, varsObject, typesObject, relevantTypeQueryResult } from "./types";
 // import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
+
 const createDatabaseWithCodeQL = (pathToCodeQL: string, targetPath: string): string => {
   const databaseName = path.basename(targetPath).concat("db");
   const pathToDatabase = path.join(targetPath, databaseName);
@@ -16,6 +17,16 @@ const createDatabaseWithCodeQL = (pathToCodeQL: string, targetPath: string): str
     throw err;
   }
 }
+
+
+const extractHoleType = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): typesObject => {
+  const q = createHoleTypeQuery();
+  fs.writeFileSync(pathToQuery, q);
+  const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+  console.log("extractHoleType q res: ", queryRes)
+  return queryRes[0];
+}
+
 
 const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): Map<string, relevantTypeObject> => {
   const pathToBqrs = path.join(outDir, "relevant-types.bqrs");
@@ -40,6 +51,7 @@ const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: strin
   return relevantTypes;
 }
 
+
 const extractHeadersWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): Map<string, varsObject> => {
   const pathToBqrs = path.join(outDir, "vars.bqrs");
   const pathToDecodedJSON = path.join(outDir, "vars.json");
@@ -62,6 +74,7 @@ const extractHeadersWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pat
 
   return vars;
 }
+
 
 const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): typesObject[] => {
   console.log("==extractTypes==")
@@ -88,9 +101,11 @@ const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase:
   return types;
 }
 
+
 const extractRelevantContextWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string, headers: Map<string, varsObject>, relevantTypes: Map<string, relevantTypeObject>): Set<string> => {
   console.log("==entry==")
-  console.log("relevantTypes: ", relevantTypes);
+  console.log(Date.now())
+  console.log("extractRelevantContextWithCodeQL start: ", Date.now())
   const relevantContext = new Set<string>();
   const knownNormalForms = new Map<string, string>();
 
@@ -104,10 +119,11 @@ const extractRelevantContextWithCodeQL = (pathToCodeQL: string, pathToQuery: str
     }
   })
 
-  console.log("relevantContext: ", relevantContext)
-
+  console.log("knownNormalForms: ", knownNormalForms)
+  console.log("extractRelevantContextWithCodeQL end: ", Date.now())
   return relevantContext;
 }
+
 
 const extractRelevantContextHelper = (
   pathToCodeQL: string,
@@ -229,6 +245,7 @@ const extractRelevantContextHelper = (
   return false;
 }
 
+
 const isTypeEquivalent = (
   pathToCodeQL: string,
   pathToQuery: string,
@@ -276,6 +293,7 @@ const isTypeEquivalent = (
   // TODO: speed this up by saving known normal forms
 }
 
+
 const normalize = (
   pathToCodeQL: string,
   pathToQuery: string,
@@ -306,6 +324,7 @@ const normalize = (
     // query for argument types and return types
     // then concat them using "(" + normalize(argType) + ... + ") => " + normalize(returnType)
     // adding a normal form may suffer from this phenomenon, as two functions of same arg types and return type with different arg names will fail to check for existance
+    // make a check if it's a function
 
     const aq = createArgTypeQuery(typeSpan.typeName);
     fs.writeFileSync(pathToQuery, aq);
@@ -344,10 +363,15 @@ const normalize = (
 
     const normalFormBuilder: string[] = [];
     normalFormBuilder.push("{");
-    queryRes.forEach(obj => {
+    queryRes.forEach((obj, i) => {
       const key = obj.typeName.split(": ")[0];
       const val = obj.typeName.split(": ")[1];
-      normalFormBuilder.push("".concat(key, ": ", normalize(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: val, typeQLClass: obj.typeQLClass }, relevantTypes, knownNormalForms), "; "));
+      normalFormBuilder.push("".concat(key, ": ", normalize(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: val, typeQLClass: obj.typeQLClass }, relevantTypes, knownNormalForms)));
+      if (i < queryRes.length - 1) {
+        normalFormBuilder.push("; ");
+      } else {
+        normalFormBuilder.push(" ");
+      }
     });
     normalFormBuilder.push("}");
 
@@ -389,7 +413,7 @@ const normalize = (
 
     const normalFormBuilder: string[] = [];
     queryRes.forEach((obj, i) => {
-      normalFormBuilder.push("".concat("(", normalize(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, relevantTypes, knownNormalForms), ")"));
+      normalFormBuilder.push("".concat(normalize(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, relevantTypes, knownNormalForms)));
       if (i < queryRes.length - 1) {
         normalFormBuilder.push(" | ");
       }
@@ -432,7 +456,243 @@ const normalize = (
   }
 }
 
-const createTypeQuery = (typeToQuery: string): string => {
+// TODO:
+// make a target type generator.
+// the below method works, but it could be very inefficient.
+// get the hole function type
+// get the argument type
+// get the return type
+// keep the skeleton (...) => ...
+// use codeql to recurse into each argument type and return type
+// most normal form: (normalize(arg1), normalize(arg2), ...) => normalize(ret)
+// save normalize(arg1), normalize(arg2), ..., normalize(ret), and every recursive layer
+// each could be saved in an array, where the array holds all forms arg1 could take.
+// type of the hole itself: (norm(a1), ...) => norm(ret)
+// type of the return: norm(ret)
+// type of the product: (norm(a1), ...)
+// type of the components: norm(a1), norm(a2), ...
+
+// TODO:
+// given a list of recursively looked up target types, for each header,
+// is the header type in the list?
+// if header is a function, is the return type in the list?
+//   else, is norm(ret) in the list?
+// if header is a product, are any of the components in the list?
+//   else, are any of the norm(components) in the list?
+
+// TODO:
+// could there be a way to keep track of the layers of recursion?
+
+const getRelevantHeaders = (
+  pathToCodeQL: string,
+  pathToQuery: string,
+  pathToDatabase: string,
+  outDir: string,
+  headers: Map<string, varsObject>,
+  holeType: typesObject
+) => {
+  console.log("getRelevantHeaders start: ", Date.now())
+  const targetTypes = generateTargetTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType);
+  const relevantHeaders = new Set<varsObject>();
+
+  headers.forEach(header => {
+    console.log("header: ", header)
+    if (targetTypes.has(header.typeAnnotation)) {
+      relevantHeaders.add(header);
+    } else if (isQLFunction(header.typeQLClass)) {
+      const q = createReturnTypeQuery(header.typeAnnotation);
+      fs.writeFileSync(pathToQuery, q);
+      const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      console.log("header fq res: ", queryRes)
+
+      // NOTE: would be nice if we could "step" recursion into normalize2
+      // maybe make normalize2 a higher order function that returns a function that we can call
+      if (targetTypes.has(queryRes[0].typeName)) {
+        relevantHeaders.add(header);
+      } else if (targetTypes.has(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes))) {
+        relevantHeaders.add(header);
+      }
+    } else if (isQLTuple(header.typeQLClass)) {
+      const q = createTupleComponentsTypeQuery(header.typeAnnotation);
+      console.log("header tq", q)
+      fs.writeFileSync(pathToQuery, q);
+      const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      console.log("header tq res", queryRes)
+
+      queryRes.forEach(obj => {
+        if (targetTypes.has(obj.typeName)) {
+          relevantHeaders.add(header);
+        } else if (targetTypes.has(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes))) {
+          relevantHeaders.add(header);
+        }
+      });
+    }
+  });
+
+  console.log("getRelevantHeaders end: ", Date.now())
+  return relevantHeaders;
+}
+
+
+const generateTargetTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string, holeType: typesObject): Set<string> => {
+  console.log("generateTargetTypes start: ", Date.now())
+  const targetTypes = new Set<string>();
+  normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, targetTypes)
+  console.log("generateTargetTypes end: ", Date.now())
+  console.log("targetTypes: ", targetTypes)
+  return targetTypes;
+}
+
+
+const normalize2 = (
+  pathToCodeQL: string,
+  pathToQuery: string,
+  pathToDatabase: string,
+  outDir: string,
+  typeSpan: typesObject,
+  targetTypes: Set<string>
+): string => {
+  console.log("==normalize2==")
+  console.log("typespan: ", typeSpan)
+
+  targetTypes.add(typeSpan.typeName);
+
+  if (isQLPredefined(typeSpan.typeQLClass) || isQLLiteral(typeSpan.typeQLClass) || isQLKeyword(typeSpan.typeQLClass)) {
+    targetTypes.add(typeSpan.typeName);
+    return typeSpan.typeName;
+
+  } else if (isQLFunction(typeSpan.typeQLClass)) {
+    const aq = createArgTypeQuery(typeSpan.typeName);
+    fs.writeFileSync(pathToQuery, aq);
+    const aqQueryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+    console.log("normalize faq res: ", aqQueryRes)
+
+    const rq = createReturnTypeQuery(typeSpan.typeName);
+    fs.writeFileSync(pathToQuery, rq);
+    const rqQueryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+    console.log("normalize frq res: ", rqQueryRes)
+
+    const normalFormBuilder: string[] = [];
+    normalFormBuilder.push("(");
+    aqQueryRes.forEach((obj, i) => {
+      normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes));
+      if (i < aqQueryRes.length - 1) {
+        normalFormBuilder.push(", ");
+      }
+    });
+    normalFormBuilder.push(") => ");
+    normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, rqQueryRes[0], targetTypes));
+
+    const normalForm = normalFormBuilder.join("");
+    targetTypes.add(normalForm);
+    return normalForm;
+
+  } else if (isQLInterface(typeSpan.typeQLClass)) {
+    const q = createInterfaceComponentsTypeQuery(typeSpan.typeName);
+    console.log("normalize iq: ", q)
+
+    fs.writeFileSync(pathToQuery, q);
+
+    const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+    console.log("normalize iq res: ", queryRes)
+
+    const normalFormBuilder: string[] = [];
+    normalFormBuilder.push("{");
+    queryRes.forEach((obj, i) => {
+      const key = obj.typeName.split(": ")[0];
+      const val = obj.typeName.split(": ")[1];
+      normalFormBuilder.push("".concat(" ", key, ": ", normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: val, typeQLClass: obj.typeQLClass }, targetTypes)));
+      if (i < queryRes.length - 1) {
+        normalFormBuilder.push("; ");
+      } else {
+        normalFormBuilder.push(" ");
+      }
+    });
+    normalFormBuilder.push("}");
+
+    const normalForm = normalFormBuilder.join("");
+    targetTypes.add(normalForm);
+    return normalForm;
+
+  } else if (isQLTuple(typeSpan.typeQLClass)) {
+    const q = createTupleComponentsTypeQuery(typeSpan.typeName);
+    console.log("normalize tq: ", q)
+
+    fs.writeFileSync(pathToQuery, q);
+
+    const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+    console.log("normalize tq res: ", queryRes)
+
+    const normalFormBuilder: string[] = [];
+    normalFormBuilder.push("[");
+    queryRes.forEach((obj, i) => {
+      normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes));
+      if (i < queryRes.length - 1) {
+        normalFormBuilder.push(", ");
+      }
+    });
+    normalFormBuilder.push("]");
+
+    const normalForm = normalFormBuilder.join("");
+    targetTypes.add(normalForm);
+    return normalForm;
+
+  } else if (isQLUnion(typeSpan.typeQLClass)) {
+    const q = createUnionComponentsTypeQuery(typeSpan.typeName);
+    console.log("normalize uq: ", q)
+
+    fs.writeFileSync(pathToQuery, q);
+
+    const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+    console.log("normalize uq res: ", queryRes)
+
+    const normalFormBuilder: string[] = [];
+    queryRes.forEach((obj, i) => {
+      normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes));
+      if (i < queryRes.length - 1) {
+        normalFormBuilder.push(" | ");
+      }
+    });
+
+    const normalForm = normalFormBuilder.join("");
+    targetTypes.add(normalForm);
+    return normalForm;
+
+  } else if (isQLArray(typeSpan.typeQLClass)) {
+    const q = createArrayTypeQuery(typeSpan.typeName);
+    console.log("normalize aq: ", q)
+
+    fs.writeFileSync(pathToQuery, q);
+
+    const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+    console.log("normalize aq res: ", queryRes)
+
+    const normalForm = "".concat(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes), "[]");
+    targetTypes.add(normalForm);
+    return normalForm;
+
+  } else if (isQLLocalTypeAccess(typeSpan.typeQLClass)) {
+    const q = createLocalTypeAccessTypeQuery(typeSpan.typeName);
+    console.log("normalize ltaq: ", q)
+
+    fs.writeFileSync(pathToQuery, q);
+
+    const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+    console.log("normalize ltaq res: ", queryRes)
+
+    const normalForm = normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes);
+    targetTypes.add(normalForm);
+    return normalForm;
+
+  } else {
+    console.log(`normalize: this doesn't exist: ${JSON.stringify(typeSpan)}`)
+    console.error(`normalize: this doesn't exist: ${JSON.stringify(typeSpan)}`)
+    throw Error(`normalize: this doesn't exist: ${JSON.stringify(typeSpan)}`)
+  }
+}
+
+
+const createHoleTypeQuery = (): string => {
   return [
     "/**",
     " * @id types",
@@ -442,11 +702,12 @@ const createTypeQuery = (typeToQuery: string): string => {
     "",
     "import javascript",
     "",
-    "from TypeExpr t",
-    `where t.toString() = "${escapeQuotes(typeToQuery)}"`,
-    "select t.toString(), t.getAPrimaryQlClass().toString()"
+    "from VariableDeclarator d",
+    `where d.getAChild().toString() = "_()"`,
+    "select d.getTypeAnnotation().toString(), d.getTypeAnnotation().getAPrimaryQlClass()"
   ].join("\n");
 }
+
 
 const createArgTypeQuery = (typeToQuery: string): string => {
   return [
@@ -464,6 +725,7 @@ const createArgTypeQuery = (typeToQuery: string): string => {
   ].join("\n");
 }
 
+
 const createReturnTypeQuery = (typeToQuery: string): string => {
   return [
     "/**",
@@ -479,6 +741,7 @@ const createReturnTypeQuery = (typeToQuery: string): string => {
     "select e.toString(), e.getAPrimaryQlClass()"
   ].join("\n");
 }
+
 
 const createInterfaceComponentsTypeQuery = (typeToQuery: string): string => {
   return [
@@ -498,6 +761,7 @@ const createInterfaceComponentsTypeQuery = (typeToQuery: string): string => {
   ].join("\n");
 }
 
+
 const createTupleComponentsTypeQuery = (typeToQuery: string): string => {
   return [
     "/**",
@@ -514,6 +778,7 @@ const createTupleComponentsTypeQuery = (typeToQuery: string): string => {
     "order by i"
   ].join("\n");
 }
+
 
 const createUnionComponentsTypeQuery = (typeToQuery: string): string => {
   return [
@@ -532,6 +797,7 @@ const createUnionComponentsTypeQuery = (typeToQuery: string): string => {
   ].join("\n");
 }
 
+
 const createArrayTypeQuery = (typeToQuery: string): string => {
   return [
     "/**",
@@ -548,6 +814,7 @@ const createArrayTypeQuery = (typeToQuery: string): string => {
   ].join("\n");
 }
 
+
 const createLocalTypeAccessTypeQuery = (typeToQuery: string): string => {
   return [
     "/**",
@@ -558,15 +825,19 @@ const createLocalTypeAccessTypeQuery = (typeToQuery: string): string => {
     "",
     "import javascript",
     "",
-    "from LocalTypeAccess t, TypeExpr e",
-    `where t.toString() = "${escapeQuotes(typeToQuery)}" and e = t.getLocalTypeName().getADeclaration().getEnclosingStmt().(TypeAliasDeclaration).getDefinition()`,
+    "from LocalTypeAccess t, TypeExpr e, TypeAliasDeclaration td",
+    `where (t.toString() = "${escapeQuotes(typeToQuery)}" and e = t.getLocalTypeName().getADeclaration().getEnclosingStmt().(TypeAliasDeclaration).getDefinition()) or`,
+    `(t.toString() = "${escapeQuotes(typeToQuery)}" and td.getName() = "${escapeQuotes(typeToQuery)}" and td.getFile().toString() = t.getLocalTypeName().getADeclaration().getEnclosingStmt().(Import).resolveImportedPath().getPath() and e = td.getDefinition())`,
     "select e.toString(), e.getAPrimaryQlClass()"
   ].join("\n");
 }
 
+
 export {
   createDatabaseWithCodeQL,
+  extractHoleType,
   extractRelevantTypesWithCodeQL,
   extractHeadersWithCodeQL,
-  extractRelevantContextWithCodeQL
+  extractRelevantContextWithCodeQL,
+  getRelevantHeaders
 };
