@@ -493,7 +493,9 @@ const getRelevantHeaders = (
   holeType: typesObject
 ) => {
   console.log("getRelevantHeaders start: ", Date.now())
-  const targetTypes = generateTargetTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType);
+  const obj = generateTargetTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType);
+  const targetTypes = obj.targetTypes;
+  const knownNormalForms = obj.knownNormalForms;
   const relevantHeaders = new Set<string>();
 
   headers.forEach(header => {
@@ -510,7 +512,7 @@ const getRelevantHeaders = (
       // maybe make normalize2 a higher order function that returns a function that we can call
       if (targetTypes.has(queryRes[0].typeName)) {
         relevantHeaders.add(header.constDeclaration);
-      } else if (targetTypes.has(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes))) {
+      } else if (targetTypes.has(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes, knownNormalForms))) {
         relevantHeaders.add(header.constDeclaration);
       }
     } else if (isQLTuple(header.typeQLClass)) {
@@ -523,7 +525,7 @@ const getRelevantHeaders = (
       queryRes.forEach(obj => {
         if (targetTypes.has(obj.typeName)) {
           relevantHeaders.add(header.constDeclaration);
-        } else if (targetTypes.has(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes))) {
+        } else if (targetTypes.has(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes, knownNormalForms))) {
           relevantHeaders.add(header.constDeclaration);
         }
       });
@@ -535,13 +537,21 @@ const getRelevantHeaders = (
 }
 
 
-const generateTargetTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string, holeType: typesObject): Set<string> => {
-  console.log("generateTargetTypes start: ", Date.now())
+const generateTargetTypes = (
+  pathToCodeQL: string,
+  pathToQuery: string,
+  pathToDatabase: string,
+  outDir: string,
+  holeType: typesObject
+): { targetTypes: Set<string>, knownNormalForms: Map<string, string> } => {
   const targetTypes = new Set<string>();
-  normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, targetTypes)
+  const knownNormalForms = new Map<string, string>();
+  console.log("generateTargetTypes start: ", Date.now())
+  normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, targetTypes, knownNormalForms);
   console.log("generateTargetTypes end: ", Date.now())
   console.log("targetTypes: ", targetTypes)
-  return targetTypes;
+  console.log("knownNormalForms: ", knownNormalForms)
+  return { targetTypes: targetTypes, knownNormalForms: knownNormalForms };
 }
 
 
@@ -551,10 +561,15 @@ const normalize2 = (
   pathToDatabase: string,
   outDir: string,
   typeSpan: typesObject,
-  targetTypes: Set<string>
+  targetTypes: Set<string>,
+  knownNormalForms: Map<string, string>
 ): string => {
   console.log("==normalize2==")
   console.log("typespan: ", typeSpan)
+
+  if (knownNormalForms.has(typeSpan.typeName)) {
+    return knownNormalForms.get(typeSpan.typeName)!;
+  }
 
   targetTypes.add(typeSpan.typeName);
 
@@ -576,16 +591,17 @@ const normalize2 = (
     const normalFormBuilder: string[] = [];
     normalFormBuilder.push("(");
     aqQueryRes.forEach((obj, i) => {
-      normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes));
+      normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes, knownNormalForms));
       if (i < aqQueryRes.length - 1) {
         normalFormBuilder.push(", ");
       }
     });
     normalFormBuilder.push(") => ");
-    normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, rqQueryRes[0], targetTypes));
+    normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, rqQueryRes[0], targetTypes, knownNormalForms));
 
     const normalForm = normalFormBuilder.join("");
     targetTypes.add(normalForm);
+    knownNormalForms.set(typeSpan.typeName, normalForm);
     return normalForm;
 
   } else if (isQLInterface(typeSpan.typeQLClass)) {
@@ -602,7 +618,7 @@ const normalize2 = (
     queryRes.forEach((obj, i) => {
       const key = obj.typeName.split(": ")[0];
       const val = obj.typeName.split(": ")[1];
-      normalFormBuilder.push("".concat(" ", key, ": ", normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: val, typeQLClass: obj.typeQLClass }, targetTypes)));
+      normalFormBuilder.push("".concat(" ", key, ": ", normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: val, typeQLClass: obj.typeQLClass }, targetTypes, knownNormalForms)));
       if (i < queryRes.length - 1) {
         normalFormBuilder.push("; ");
       } else {
@@ -613,6 +629,7 @@ const normalize2 = (
 
     const normalForm = normalFormBuilder.join("");
     targetTypes.add(normalForm);
+    knownNormalForms.set(typeSpan.typeName, normalForm);
     return normalForm;
 
   } else if (isQLTuple(typeSpan.typeQLClass)) {
@@ -627,7 +644,7 @@ const normalize2 = (
     const normalFormBuilder: string[] = [];
     normalFormBuilder.push("[");
     queryRes.forEach((obj, i) => {
-      normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes));
+      normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes, knownNormalForms));
       if (i < queryRes.length - 1) {
         normalFormBuilder.push(", ");
       }
@@ -636,6 +653,7 @@ const normalize2 = (
 
     const normalForm = normalFormBuilder.join("");
     targetTypes.add(normalForm);
+    knownNormalForms.set(typeSpan.typeName, normalForm);
     return normalForm;
 
   } else if (isQLUnion(typeSpan.typeQLClass)) {
@@ -649,7 +667,7 @@ const normalize2 = (
 
     const normalFormBuilder: string[] = [];
     queryRes.forEach((obj, i) => {
-      normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes));
+      normalFormBuilder.push(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes, knownNormalForms));
       if (i < queryRes.length - 1) {
         normalFormBuilder.push(" | ");
       }
@@ -657,6 +675,7 @@ const normalize2 = (
 
     const normalForm = normalFormBuilder.join("");
     targetTypes.add(normalForm);
+    knownNormalForms.set(typeSpan.typeName, normalForm);
     return normalForm;
 
   } else if (isQLArray(typeSpan.typeQLClass)) {
@@ -668,8 +687,9 @@ const normalize2 = (
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
     console.log("normalize aq res: ", queryRes)
 
-    const normalForm = "".concat(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes), "[]");
+    const normalForm = "".concat(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes, knownNormalForms), "[]");
     targetTypes.add(normalForm);
+    knownNormalForms.set(typeSpan.typeName, normalForm);
     return normalForm;
 
   } else if (isQLLocalTypeAccess(typeSpan.typeQLClass)) {
@@ -681,14 +701,15 @@ const normalize2 = (
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
     console.log("normalize ltaq res: ", queryRes)
 
-    const normalForm = normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes);
+    const normalForm = normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes, knownNormalForms);
     targetTypes.add(normalForm);
+    knownNormalForms.set(typeSpan.typeName, normalForm);
     return normalForm;
 
   } else {
-    console.log(`normalize: this doesn't exist: ${JSON.stringify(typeSpan)}`)
-    console.error(`normalize: this doesn't exist: ${JSON.stringify(typeSpan)}`)
-    throw Error(`normalize: this doesn't exist: ${JSON.stringify(typeSpan)}`)
+    console.log(`normalize2: this doesn't exist: ${JSON.stringify(typeSpan)}`)
+    console.error(`normalize2: this doesn't exist: ${JSON.stringify(typeSpan)}`)
+    throw Error(`normalize2: this doesn't exist: ${JSON.stringify(typeSpan)}`)
   }
 }
 

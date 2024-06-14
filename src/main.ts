@@ -186,6 +186,7 @@ export const extractWithCodeQL = async (sketchPath: string) => {
     // const relevantContext = extractRelevantContextWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, relevantTypes);
     // console.log("relevantContext: ", relevantContext);
     const relevantHeaders = getRelevantHeaders(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, holeType);
+    console.log("relevantHeaders: ", relevantHeaders);
 
     return { hole: holeType.typeName, relevantTypes: Array.from(relevantTypes), relevantHeaders: Array.from(relevantHeaders) };
   } catch (err) {
