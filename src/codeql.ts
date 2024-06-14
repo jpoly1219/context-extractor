@@ -28,7 +28,7 @@ const extractHoleType = (pathToCodeQL: string, pathToQuery: string, pathToDataba
 }
 
 
-const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): Map<string, relevantTypeObject> => {
+const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): string[] => {
   const pathToBqrs = path.join(outDir, "relevant-types.bqrs");
   const pathToDecodedJSON = path.join(outDir, "relevant-types.json");
 
@@ -46,9 +46,10 @@ const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: strin
   }
 
   const relevantTypesContent = fs.readFileSync(pathToDecodedJSON);
-  const relevantTypes = parseCodeQLRelevantTypes(JSON.parse(relevantTypesContent.toString()));
+  const relevantTypes: Map<string, relevantTypeObject> = parseCodeQLRelevantTypes(JSON.parse(relevantTypesContent.toString()));
 
-  return relevantTypes;
+  // return relevantTypes;
+  return Array.from(relevantTypes, ([_, v]) => { return v.typeAliasDeclaration });
 }
 
 
@@ -493,12 +494,12 @@ const getRelevantHeaders = (
 ) => {
   console.log("getRelevantHeaders start: ", Date.now())
   const targetTypes = generateTargetTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType);
-  const relevantHeaders = new Set<varsObject>();
+  const relevantHeaders = new Set<string>();
 
   headers.forEach(header => {
     console.log("header: ", header)
     if (targetTypes.has(header.typeAnnotation)) {
-      relevantHeaders.add(header);
+      relevantHeaders.add(header.constDeclaration);
     } else if (isQLFunction(header.typeQLClass)) {
       const q = createReturnTypeQuery(header.typeAnnotation);
       fs.writeFileSync(pathToQuery, q);
@@ -508,9 +509,9 @@ const getRelevantHeaders = (
       // NOTE: would be nice if we could "step" recursion into normalize2
       // maybe make normalize2 a higher order function that returns a function that we can call
       if (targetTypes.has(queryRes[0].typeName)) {
-        relevantHeaders.add(header);
+        relevantHeaders.add(header.constDeclaration);
       } else if (targetTypes.has(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes))) {
-        relevantHeaders.add(header);
+        relevantHeaders.add(header.constDeclaration);
       }
     } else if (isQLTuple(header.typeQLClass)) {
       const q = createTupleComponentsTypeQuery(header.typeAnnotation);
@@ -521,9 +522,9 @@ const getRelevantHeaders = (
 
       queryRes.forEach(obj => {
         if (targetTypes.has(obj.typeName)) {
-          relevantHeaders.add(header);
+          relevantHeaders.add(header.constDeclaration);
         } else if (targetTypes.has(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, targetTypes))) {
-          relevantHeaders.add(header);
+          relevantHeaders.add(header.constDeclaration);
         }
       });
     }
