@@ -3,7 +3,7 @@ import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantContext } from "./core";
-import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractRelevantContextWithCodeQL, extractHeadersWithCodeQL } from "./codeql";
+import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractRelevantContextWithCodeQL, extractHeadersWithCodeQL, getRelevantHeaders, extractHoleType } from "./codeql";
 import { CODEQL_PATH, QUERY_DIR } from "./constants.js";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
@@ -176,27 +176,18 @@ export const extract = async (sketchPath: string) => {
 
 export const extractWithCodeQL = async (sketchPath: string) => {
   const targetPath = path.dirname(sketchPath);
-  // const sketchFileName = path.basename(sketchPath);
 
   try {
-    // // inject hole function
-    // const injectedSketchPath = `${targetPath}/injected_${sketchFileName}`;
-    // const sketchFileContent = fs.readFileSync(sketchPath, "utf8");
-    // const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
-    // fs.writeFileSync(injectedSketchPath, injectedSketchFileContent);
-    // console.log(fs.statSync(injectedSketchPath));
-
     // extraction
     const databasePath = createDatabaseWithCodeQL(CODEQL_PATH, targetPath);
+    const holeType = extractHoleType(CODEQL_PATH, path.join(QUERY_DIR, "hole.ql"), databasePath, targetPath);
     const relevantTypes = extractRelevantTypesWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "relevant-types.ql"), databasePath, targetPath);
-    // console.log("relevantTypes: ", relevantTypes);
     const headers = extractHeadersWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "vars.ql"), databasePath, targetPath);
-    // console.log("headers: ", headers);
-    const relevantContext = extractRelevantContextWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, relevantTypes);
-    console.log("relevantContext: ", relevantContext);
+    // const relevantContext = extractRelevantContextWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, relevantTypes);
+    // console.log("relevantContext: ", relevantContext);
+    const relevantHeaders = getRelevantHeaders(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, holeType);
 
-
-    return { relevantTypes: Array.from(relevantTypes), relevantContext: Array.from(relevantContext) };
+    return { hole: holeType.typeName, relevantTypes: Array.from(relevantTypes), relevantHeaders: Array.from(relevantHeaders) };
   } catch (err) {
     console.error(`${targetPath}: ${err}`);
   }
