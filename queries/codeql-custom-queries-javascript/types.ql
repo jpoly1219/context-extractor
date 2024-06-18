@@ -6,7 +6,7 @@
 
 import javascript
 
-from InterfaceTypeExpr t, FieldDeclaration e
-where t.toString() = "{ type: \"AddBooking\"; user: User; weekday: Weekday; timeOfDay: TimeOfDay }" and
-e = t.getAChild()
-select e.toString(), e.getTypeAnnotation().getAPrimaryQlClass()
+from UnionTypeExpr t, TypeExpr e, int i
+where t.toString() = "Booking | undefined" and i = [0..t.getNumElementType()] and e = t.getElementType(i)
+select e.toString(), e.getAPrimaryQlClass(), i
+order by i

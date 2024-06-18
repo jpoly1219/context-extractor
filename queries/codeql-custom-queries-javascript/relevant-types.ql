@@ -29,48 +29,26 @@ TypeAliasDeclaration typeAliasRecurse(TypeAliasDeclaration ta) {
 }
 
 TypeAliasDeclaration typeRecurse(TypeExpr t) {
-    // if t instanceof TupleTypeExpr then result = tupleTypeExprRecurse(t) else
-    // if t instanceof UnionTypeExpr then result = unionTypeExprRecurse(t) else
-    // if t instanceof ArrayTypeExpr then result = arrayTypeExprRecurse(t) else
-    // if t instanceof PredefinedTypeExpr then result = predefinedTypeExprRecurse(t) else
-    // if t instanceof InterfaceTypeExpr then result = interfaceTypeExprRecurse(t) else
     if t instanceof LocalTypeAccess then result = localTypeAccessRecurse(t) else
     result = typeRecurse(t.getAChild())
 }
-
-// TypeAliasDeclaration tupleTypeExprRecurse(TupleTypeExpr t) {
-//     result = typeRecurse(t.getAChild())
-// }
-
-// TypeAliasDeclaration unionTypeExprRecurse(UnionTypeExpr t) {
-//     result = typeRecurse(t.getAChild())
-// }
-
-// TypeAliasDeclaration arrayTypeExprRecurse(ArrayTypeExpr t) {
-//     result = typeRecurse(t.getAChild())
-// }
-
-// TypeAliasDeclaration predefinedTypeExprRecurse(PredefinedTypeExpr t) {
-//     result = typeRecurse(t.getAChild())
-// }
-
-// TypeAliasDeclaration interfaceTypeExprRecurse(InterfaceTypeExpr t) {
-//     result = typeRecurse(t.getAChild())
-// }
-
 TypeAliasDeclaration localTypeAccessRecurse(LocalTypeAccess l) {
     result = typeAliasRecurse(l.getLocalTypeName().getADeclaration().getEnclosingStmt())
 }
 
-from ConstDeclStmt s, Function f, TypeAliasDeclaration ta, TypeAliasDeclaration ta2
+from ConstDeclStmt s, Function f, TypeAliasDeclaration ta, TypeAliasDeclaration ta2, AstNode te
 where
     isFunctionHole(s, f) and (
         isSameType(ta, f) or
         isReturnType(ta, f) or
         isNestedType(ta, f)
     ) and
-    ta2 = typeAliasRecurse(ta)
-// select concat(TypeAliasDeclaration i | i = typeAliasRecurse(ta) | i.toString())
-select ta2, ta2.getName(), ta2.getDefinition(), ta2.getDefinition().getAQlClass()
-// any(int i | i in [0..ta.getDefinition().(TupleTypeExpr).getNumChild()-1] | ta.getDefinition().(TupleTypeExpr).getChildTypeExpr(i).toString()),
-// any(int i | i in [0..ta.getDefinition().(TupleTypeExpr).getAnElementType().getNumChild()-1] | ta.getDefinition().(TupleTypeExpr).getAnElementType().getChildTypeExpr(i).toString())
+    ta2 = typeAliasRecurse(ta) and
+    if ta2.getDefinition().getAPrimaryQlClass() = "InterfaceTypeExpr"
+    then te = ta2.getDefinition().(InterfaceTypeExpr).getAChild().(FieldDeclaration).getNameExpr() or te = ta2.getDefinition().(InterfaceTypeExpr).getAChild().(FieldDeclaration).getTypeAnnotation()
+    else if ta2.getDefinition().getAPrimaryQlClass() = "FunctionTypeExpr"
+    then te = ta2.getDefinition().(FunctionTypeExpr).getAParameter().getTypeAnnotation() or te = ta2.getDefinition().(FunctionTypeExpr).getReturnTypeAnnotation()
+    else if ta2.getDefinition().getAPrimaryQlClass() = "KeywordTypeExpr"
+    then te = ta2.getDefinition()
+    else te = ta2.getDefinition().getAChild()
+select ta2, ta2.getName(), ta2.getDefinition(), ta2.getDefinition().getAQlClass(), te, te.getPrimaryQlClasses()

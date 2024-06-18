@@ -7,10 +7,18 @@
 
 import javascript
 
-from ConstDeclStmt c
+from ConstDeclStmt c, TypeExpr t, AstNode a
 where
     c.getFile().getBaseName() = "prelude.ts" and
-    c.getParent() = c.getTopLevel()
+    c.getParent() = c.getTopLevel() and
+    t = c.getADecl().getTypeAnnotation() and
+    if t.getAPrimaryQlClass() = "InterfaceTypeExpr"
+    then a = t.(InterfaceTypeExpr).getAChild().(FieldDeclaration).getNameExpr() or a = t.(InterfaceTypeExpr).getAChild().(FieldDeclaration).getTypeAnnotation()
+    else if t.getAPrimaryQlClass() = "FunctionTypeExpr"
+    then a = t.(FunctionTypeExpr).getAParameter().getTypeAnnotation() or a = t.(FunctionTypeExpr).getReturnTypeAnnotation()
+    else if t.getAPrimaryQlClass() = "KeywordTypeExpr"
+    then a = t
+    else a = t.getAChild()
 select
     c,
     c.getADecl().getBindingPattern(),
@@ -21,7 +29,13 @@ select
         string i |
         i = c.getADecl().getTypeAnnotation().(FunctionTypeExpr).getReturnTypeAnnotation().toString() |
         i
-    )
+    ),
+    concat(
+        string i |
+        i = c.getADecl().getTypeAnnotation().(FunctionTypeExpr).getReturnTypeAnnotation().getAPrimaryQlClass().toString() |
+        i
+    ),
+    a, a.getAPrimaryQlClass()
     // concat(
     //     string rettype |
     //     rettype = c.getADecl().getTypeAnnotation().(FunctionTypeExpr).getReturnTypeAnnotation().toString() |
