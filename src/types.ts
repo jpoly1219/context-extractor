@@ -3,6 +3,7 @@ interface relevantTypeObject {
   typeName: string;
   typeDefinition: string;
   typeQLClass: string;
+  components: { name: string, qlClass: string }[];
 }
 
 interface varsObject {
@@ -22,21 +23,18 @@ interface typesObject {
 
 interface relevantTypeQueryResult {
   "#select": {
-    columns: [{ name: string, kind: string }, { kind: string }, { kind: string }, { kind: string }],
-    tuples: [{ label: string }, string, { label: string }, string][]
+    tuples: [{ label: string }, string, { label: string }, string, { label: string }, string][]
   }
 }
 
 interface varsQueryResult {
   "#select": {
-    columns: [{ name: string, kind: string }, { kind: string }, { kind: string }, { kind: string }, { kind: string }, { kind: string }, { kind: string }],
     tuples: [{ label: string }, { label: string }, { label: string }, { label: string }, string, string, string][]
   }
 }
 
 interface typesQueryResult {
   "#select": {
-    columns: [{ kind: string }, { name: string, kind: string }, { name: string, kind: string }],
     tuples: [string, string, number][]
   }
 }
