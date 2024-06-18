@@ -1,8 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface } from "./utils";
+import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface, isQLLabel } from "./utils";
 import { relevantTypeObject, varsObject, typesObject, relevantTypeQueryResult } from "./types";
+import { getDefaultFormatCodeSettings, isLiteralTypeNode } from "typescript";
 // import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
 
@@ -28,7 +29,7 @@ const extractHoleType = (pathToCodeQL: string, pathToQuery: string, pathToDataba
 }
 
 
-const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): string[] => {
+const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): Map<string, relevantTypeObject> => {
   const pathToBqrs = path.join(outDir, "relevant-types.bqrs");
   const pathToDecodedJSON = path.join(outDir, "relevant-types.json");
 
@@ -40,7 +41,7 @@ const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: strin
   }
 
   try {
-    execSync(`${pathToCodeQL} bqrs decode ${pathToBqrs} --format=json --output=${pathToDecodedJSON}`);
+    execSync(`${pathToCodeQL} bqrs decode ${pathToBqrs} --format=json --output=${pathToDecodedJSON} --no-titles`);
   } catch (err) {
     console.error(`error while trying to decode ${outDir}/relevant-types.bqrs: ${err}`);
   }
@@ -49,7 +50,8 @@ const extractRelevantTypesWithCodeQL = (pathToCodeQL: string, pathToQuery: strin
   const relevantTypes: Map<string, relevantTypeObject> = parseCodeQLRelevantTypes(JSON.parse(relevantTypesContent.toString()));
 
   // return relevantTypes;
-  return Array.from(relevantTypes, ([_, v]) => { return v.typeAliasDeclaration });
+  // return Array.from(relevantTypes, ([_, v]) => { return v.typeAliasDeclaration });
+  return relevantTypes;
 }
 
 
@@ -65,7 +67,7 @@ const extractHeadersWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pat
   }
 
   try {
-    execSync(`${pathToCodeQL} bqrs decode ${pathToBqrs} --format=json --output=${pathToDecodedJSON}`);
+    execSync(`${pathToCodeQL} bqrs decode ${pathToBqrs} --format=json --output=${pathToDecodedJSON} --no-titles`);
   } catch (err) {
     console.error(`error while trying to decode ${outDir}/vars.bqrs: ${err}`);
   }
@@ -90,7 +92,7 @@ const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase:
   }
 
   try {
-    execSync(`${pathToCodeQL} bqrs decode ${pathToBqrs} --format=json --output=${pathToDecodedJSON}`);
+    execSync(`${pathToCodeQL} bqrs decode ${pathToBqrs} --format=json --output=${pathToDecodedJSON} --no-titles`);
   } catch (err) {
     console.error(`error while trying to decode ${outDir}/types.bqrs: ${err}`);
   }
@@ -714,6 +716,345 @@ const normalize2 = (
 }
 
 
+const getRelevantHeaders3 = (
+  pathToCodeQL: string,
+  pathToQuery: string,
+  pathToDatabase: string,
+  outDir: string,
+  headers: Map<string, varsObject>,
+  holeType: typesObject,
+  relevantTypes: Map<string, relevantTypeObject>
+) => {
+  console.log("getRelevantHeaders3 start: ", Date.now())
+  const obj = generateTargetTypes3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, relevantTypes);
+  const targetTypes = obj.targetTypes;
+  const knownNormalForms = obj.knownNormalForms;
+  const relevantHeaders = new Set<string>();
+
+  headers.forEach(header => {
+    console.log("header: ", header)
+    if (targetTypes.has(header.typeAnnotation)) {
+      relevantHeaders.add(header.constDeclaration);
+    } else if (isQLFunction(header.typeQLClass)) {
+      // const q = createReturnTypeQuery(header.typeAnnotation);
+      // fs.writeFileSync(pathToQuery, q);
+      // const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      // console.log("header fq res: ", queryRes)
+
+      const returnType = header.components[0]
+
+      if (targetTypes.has(returnType.name)) {
+        relevantHeaders.add(header.constDeclaration);
+      } else if (targetTypes.has(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: returnType.name, typeQLClass: returnType.qlClass }, relevantTypes, targetTypes, knownNormalForms))) {
+        relevantHeaders.add(header.constDeclaration);
+      }
+    } else if (isQLTuple(header.typeQLClass)) {
+      // const q = createTupleComponentsTypeQuery(header.typeAnnotation);
+      // console.log("header tq", q)
+      // fs.writeFileSync(pathToQuery, q);
+      // const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      // console.log("header tq res", queryRes)
+
+      const components = header.components;
+
+      components.forEach(obj => {
+        if (targetTypes.has(obj.name)) {
+          relevantHeaders.add(header.constDeclaration);
+        } else if (targetTypes.has(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, relevantTypes, targetTypes, knownNormalForms))) {
+          relevantHeaders.add(header.constDeclaration);
+        }
+      });
+    }
+  });
+
+  console.log("getRelevantHeaders3 end: ", Date.now())
+  return relevantHeaders;
+}
+
+
+const generateTargetTypes3 = (
+  pathToCodeQL: string,
+  pathToQuery: string,
+  pathToDatabase: string,
+  outDir: string,
+  holeType: typesObject,
+  relevantTypes: Map<string, relevantTypeObject>
+): { targetTypes: Set<string>, knownNormalForms: Map<string, string> } => {
+  const targetTypes = new Set<string>();
+  const knownNormalForms = new Map<string, string>();
+  console.log("generateTargetTypes3 start: ", Date.now())
+  normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, relevantTypes, targetTypes, knownNormalForms);
+  console.log("generateTargetTypes3 end: ", Date.now())
+  console.log("targetTypes: ", targetTypes)
+  console.log("knownNormalForms: ", knownNormalForms)
+  return { targetTypes: targetTypes, knownNormalForms: knownNormalForms };
+}
+
+const normalize3 = (
+  pathToCodeQL: string,
+  pathToQuery: string,
+  pathToDatabase: string,
+  outDir: string,
+  typ: typesObject,
+  knownTypes: Map<string, relevantTypeObject>,
+  targetTypes: Set<string>,
+  knownNormalForms: Map<string, string>
+): string => {
+  // check if exists in known types
+  // if so, access and check its class
+  // depending on the class, build a normal form using recursion
+  if (isQLPredefined(typ.typeQLClass) || isQLLiteral(typ.typeQLClass) || isQLKeyword(typ.typeQLClass)) {
+    targetTypes.add(typ.typeName);
+    return typ.typeName;
+
+  } else if (isQLFunction(typ.typeQLClass)) {
+    // NOTE: optimize for different arg name but same type
+    if (knownTypes.has(typ.typeName)) {
+      const definition = knownTypes.get(typ.typeName)!;
+      const components = definition.components;
+      const returnType = components[0];
+      const argumentTypes = components.slice(1, components.length);
+
+      const normalFormBuilder: string[] = [];
+      normalFormBuilder.push("(");
+      argumentTypes.forEach((argTyp, i) => {
+        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: argTyp.name, typeQLClass: argTyp.qlClass }, knownTypes, targetTypes, knownNormalForms));
+        if (i < argumentTypes.length - 1) {
+          normalFormBuilder.push(", ");
+        }
+      });
+      normalFormBuilder.push(") => ");
+      normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: returnType.name, typeQLClass: returnType.qlClass }, knownTypes, targetTypes, knownNormalForms));
+
+      const normalForm = normalFormBuilder.join("");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    } else {
+      const aq = createArgTypeQuery(typ.typeName);
+      fs.writeFileSync(pathToQuery, aq);
+      const aqQueryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      console.log("normalize3 faq res: ", aqQueryRes)
+
+      const rq = createReturnTypeQuery(typ.typeName);
+      fs.writeFileSync(pathToQuery, rq);
+      const rqQueryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      console.log("normalize3 frq res: ", rqQueryRes)
+
+      const normalFormBuilder: string[] = [];
+      normalFormBuilder.push("(");
+      aqQueryRes.forEach((obj, i) => {
+        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, knownTypes, targetTypes, knownNormalForms));
+        if (i < aqQueryRes.length - 1) {
+          normalFormBuilder.push(", ");
+        }
+      });
+      normalFormBuilder.push(") => ");
+      normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, rqQueryRes[0], knownTypes, targetTypes, knownNormalForms));
+
+      const normalForm = normalFormBuilder.join("");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    }
+  } else if (isQLInterface(typ.typeQLClass)) {
+    if (knownTypes.has(typ.typeName)) {
+      const definition = knownTypes.get(typ.typeName)!;
+      const components = definition.components;
+
+      const normalFormBuilder: string[] = [];
+      normalFormBuilder.push("{");
+      components.forEach((obj, i) => {
+        if (isQLLabel(obj.qlClass)) {
+          normalFormBuilder.push("".concat(" ", obj.name, ": "));
+        } else {
+          normalFormBuilder.push("".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, knownTypes, targetTypes, knownNormalForms)));
+
+          if (i < components.length - 1) {
+            normalFormBuilder.push("; ");
+          } else {
+            normalFormBuilder.push(" ");
+          }
+        }
+      });
+      normalFormBuilder.push("}");
+
+      const normalForm = normalFormBuilder.join("");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    } else {
+      const q = createInterfaceComponentsTypeQuery(typ.typeName);
+      console.log("normalize3 iq: ", q)
+
+      fs.writeFileSync(pathToQuery, q);
+
+      const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      console.log("normalize3 iq res: ", queryRes)
+
+      const normalFormBuilder: string[] = [];
+      normalFormBuilder.push("{");
+      queryRes.forEach((obj, i) => {
+        const key = obj.typeName.split(": ")[0];
+        const val = obj.typeName.split(": ")[1];
+        normalFormBuilder.push("".concat(" ", key, ": ", normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: val, typeQLClass: obj.typeQLClass }, knownTypes, targetTypes, knownNormalForms)));
+        if (i < queryRes.length - 1) {
+          normalFormBuilder.push("; ");
+        } else {
+          normalFormBuilder.push(" ");
+        }
+      });
+      normalFormBuilder.push("}");
+
+      const normalForm = normalFormBuilder.join("");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    }
+  } else if (isQLTuple(typ.typeQLClass)) {
+    if (knownTypes.has(typ.typeName)) {
+      const definition = knownTypes.get(typ.typeName)!;
+      const components = definition.components;
+
+      const normalFormBuilder: string[] = [];
+      normalFormBuilder.push("[");
+      components.forEach((obj, i) => {
+        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, knownTypes, targetTypes, knownNormalForms));
+        if (i < components.length - 1) {
+          normalFormBuilder.push(", ");
+        }
+      });
+      normalFormBuilder.push("]");
+
+      const normalForm = normalFormBuilder.join("");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    } else {
+      const q = createTupleComponentsTypeQuery(typ.typeName);
+      console.log("normalize3 tq: ", q)
+
+      fs.writeFileSync(pathToQuery, q);
+
+      const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      console.log("normalize3 tq res: ", queryRes)
+
+      const normalFormBuilder: string[] = [];
+      normalFormBuilder.push("[");
+      queryRes.forEach((obj, i) => {
+        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, knownTypes, targetTypes, knownNormalForms));
+        if (i < queryRes.length - 1) {
+          normalFormBuilder.push(", ");
+        }
+      });
+      normalFormBuilder.push("]");
+
+      const normalForm = normalFormBuilder.join("");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    }
+  } else if (isQLUnion(typ.typeQLClass)) {
+    if (knownTypes.has(typ.typeName)) {
+      const definition = knownTypes.get(typ.typeName)!;
+      const components = definition.components;
+
+      const normalFormBuilder: string[] = [];
+      components.forEach((obj, i) => {
+        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, knownTypes, targetTypes, knownNormalForms));
+        if (i < components.length - 1) {
+          normalFormBuilder.push(" | ");
+        }
+      });
+
+      const normalForm = normalFormBuilder.join("");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    } else {
+      const q = createUnionComponentsTypeQuery(typ.typeName);
+      console.log("normalize3 uq: ", q)
+
+      fs.writeFileSync(pathToQuery, q);
+
+      const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      console.log("normalize3 uq res: ", queryRes)
+
+      const normalFormBuilder: string[] = [];
+      queryRes.forEach((obj, i) => {
+        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, knownTypes, targetTypes, knownNormalForms));
+        if (i < queryRes.length - 1) {
+          normalFormBuilder.push(" | ");
+        }
+      });
+
+      const normalForm = normalFormBuilder.join("");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    }
+  } else if (isQLArray(typ.typeQLClass)) {
+    if (knownTypes.has(typ.typeName)) {
+      const definition = knownTypes.get(typ.typeName)!;
+      const components = definition.components;
+      const elementType = components[0];
+
+      const normalForm = "".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: elementType.name, typeQLClass: elementType.qlClass }, knownTypes, targetTypes, knownNormalForms), "[]");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    } else if (knownTypes.has(typ.typeName.replace("[]", ""))) {
+      const definition = knownTypes.get(typ.typeName.replace("[]", ""))!;
+      const normalForm = "".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: definition.typeName, typeQLClass: definition.typeQLClass }, knownTypes, targetTypes, knownNormalForms), "[]");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+
+    } else {
+      const q = createArrayTypeQuery(typ.typeName);
+      console.log("normalize3 aq: ", q)
+
+      fs.writeFileSync(pathToQuery, q);
+
+      const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      console.log("normalize3 aq res: ", queryRes)
+
+      const normalForm = "".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], knownTypes, targetTypes, knownNormalForms), "[]");
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    }
+  } else if (isQLLocalTypeAccess(typ.typeQLClass)) {
+    if (knownTypes.has(typ.typeName)) {
+      const definition = knownTypes.get(typ.typeName)!;
+
+      const normalForm = normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: definition.typeName, typeQLClass: definition.typeQLClass }, knownTypes, targetTypes, knownNormalForms);
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    } else {
+      const q = createLocalTypeAccessTypeQuery(typ.typeName);
+      console.log("normalize3 ltaq: ", q)
+
+      fs.writeFileSync(pathToQuery, q);
+
+      const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      console.log("normalize3 ltaq res: ", queryRes)
+
+      const normalForm = normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], knownTypes, targetTypes, knownNormalForms);
+      targetTypes.add(normalForm);
+      knownNormalForms.set(typ.typeName, normalForm);
+      return normalForm;
+    }
+  } else {
+    console.log(`normalize3: this doesn't exist: ${JSON.stringify(typ)}`)
+    console.error(`normalize3: this doesn't exist: ${JSON.stringify(typ)}`)
+    throw Error(`normalize3: this doesn't exist: ${JSON.stringify(typ)}`)
+  }
+}
+
+
+
 const createHoleTypeQuery = (): string => {
   return [
     "/**",
@@ -861,5 +1202,6 @@ export {
   extractRelevantTypesWithCodeQL,
   extractHeadersWithCodeQL,
   extractRelevantContextWithCodeQL,
-  getRelevantHeaders
+  getRelevantHeaders,
+  getRelevantHeaders3
 };
