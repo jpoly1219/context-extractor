@@ -54,12 +54,21 @@ const parseCodeQLRelevantTypes = (table: relevantTypeQueryResult): Map<string, r
 
   const rows = table["#select"]["tuples"];
   rows.forEach(row => {
-    const declaration = row[0]["label"];
-    const name = row[1];
-    const definition = row[2]["label"];
-    const qlClass = row[3];
-    m.set(name, { typeAliasDeclaration: declaration, typeName: name, typeDefinition: definition, typeQLClass: qlClass })
-  })
+    const typeDeclaration = row[0]["label"];
+    const typeName = row[1];
+    const typeDefinition = row[2]["label"];
+    const typeQLClass = row[3];
+    const componentName = row[4]["label"];
+    const componentQLClass = row[5];
+
+    if (!m.has(typeName)) {
+      m.set(typeName, { typeAliasDeclaration: typeDeclaration, typeName: typeName, typeDefinition: typeDefinition, typeQLClass: typeQLClass, components: [{ name: componentName, qlClass: componentQLClass }] });
+    } else {
+      const value = m.get(typeName)!;
+      value.components.push({ name: componentName, qlClass: componentQLClass });
+      m.set(typeName, value);
+    }
+  });
 
   return m;
 }
@@ -77,7 +86,7 @@ const parseCodeQLVars = (table: varsQueryResult): Map<string, varsObject> => {
     const functionReturnType = row[5];
     const functionReturnTypeQLClass = row[6];
     m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init, typeQLClass: qlClass, functionReturnType: functionReturnType, functionReturnTypeQLClass: functionReturnTypeQLClass });
-  })
+  });
 
   return m;
 }
@@ -90,7 +99,7 @@ const parseCodeQLTypes = (table: typesQueryResult): typesObject[] => {
     const typeName = row[0];
     const typeQLClass = row[1];
     arr.push({ typeName: typeName, typeQLClass: typeQLClass });
-  })
+  });
 
   return arr;
 }
