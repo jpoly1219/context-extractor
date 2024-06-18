@@ -85,7 +85,25 @@ const parseCodeQLVars = (table: varsQueryResult): Map<string, varsObject> => {
     const qlClass = row[4];
     const functionReturnType = row[5];
     const functionReturnTypeQLClass = row[6];
-    m.set(bindingPattern, { constDeclaration: declaration, bindingPattern: bindingPattern, typeAnnotation: typeAnnotation, init: init, typeQLClass: qlClass, functionReturnType: functionReturnType, functionReturnTypeQLClass: functionReturnTypeQLClass });
+    const componentName = row[7]["label"];
+    const componentQLClass = row[8];
+
+    if (!m.has(bindingPattern)) {
+      m.set(bindingPattern, {
+        constDeclaration: declaration,
+        bindingPattern: bindingPattern,
+        typeAnnotation: typeAnnotation,
+        init: init,
+        typeQLClass: qlClass,
+        functionReturnType: functionReturnType,
+        functionReturnTypeQLClass: functionReturnTypeQLClass,
+        components: [{ name: componentName, qlClass: componentQLClass }]
+      });
+    } else {
+      const value = m.get(bindingPattern)!;
+      value.components.push({ name: componentName, qlClass: componentQLClass });
+      m.set(bindingPattern, value);
+    }
   });
 
   return m;
@@ -140,6 +158,10 @@ const isQLKeyword = (typeQLClass: string): boolean => {
   return typeQLClass === "KeywordTypeExpr";
 }
 
+const isQLLabel = (typeQLClass: string): boolean => {
+  return typeQLClass === "Label";
+}
+
 export {
   indexOfRegexGroup,
   formatTypeSpan,
@@ -162,5 +184,6 @@ export {
   isQLLocalTypeAccess,
   isQLPredefined,
   isQLLiteral,
-  isQLKeyword
+  isQLKeyword,
+  isQLLabel
 };

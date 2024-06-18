@@ -14,6 +14,7 @@ interface varsObject {
   typeQLClass: string;
   functionReturnType: string;
   functionReturnTypeQLClass: string;
+  components: { name: string, qlClass: string }[];
 }
 
 interface typesObject {
@@ -29,7 +30,7 @@ interface relevantTypeQueryResult {
 
 interface varsQueryResult {
   "#select": {
-    tuples: [{ label: string }, { label: string }, { label: string }, { label: string }, string, string, string][]
+    tuples: [{ label: string }, { label: string }, { label: string }, { label: string }, string, string, string, { label: string }, string][]
   }
 }
 
