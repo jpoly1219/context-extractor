@@ -196,7 +196,7 @@ export const extractWithCodeQL = async (sketchPath: string) => {
     console.log("end: ", end)
     console.log("elapsed: ", end - start)
 
-    return { hole: holeType.typeName, relevantTypes: Array.from(relevantTypes), relevantHeaders: Array.from(relevantHeaders) };
+    return { hole: holeType.typeName, relevantTypes: Array.from(relevantTypes, ([k, v]) => { return JSON.stringify(v) }), relevantHeaders: Array.from(relevantHeaders) };
   } catch (err) {
     console.error(`${targetPath}: ${err}`);
   }
