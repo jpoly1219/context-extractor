@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface, isQLLabel } from "./utils";
+import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface, isQLLabel, isQLIdentifier } from "./utils";
 import { relevantTypeObject, varsObject, typesObject, relevantTypeQueryResult } from "./types";
 import { getDefaultFormatCodeSettings, isLiteralTypeNode } from "typescript";
 // import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
@@ -800,6 +800,7 @@ const normalize3 = (
   targetTypes: Set<string>,
   knownNormalForms: Map<string, string>
 ): string => {
+  console.log("current: ", typ)
   // check if exists in known types
   // if so, access and check its class
   // depending on the class, build a normal form using recursion
@@ -912,6 +913,7 @@ const normalize3 = (
       return normalForm;
     }
   } else if (isQLTuple(typ.typeQLClass)) {
+    // NOTE: some tuples have identifiers
     if (knownTypes.has(typ.typeName)) {
       const definition = knownTypes.get(typ.typeName)!;
       const components = definition.components;
@@ -919,9 +921,11 @@ const normalize3 = (
       const normalFormBuilder: string[] = [];
       normalFormBuilder.push("[");
       components.forEach((obj, i) => {
-        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, knownTypes, targetTypes, knownNormalForms));
-        if (i < components.length - 1) {
-          normalFormBuilder.push(", ");
+        if (!isQLIdentifier(obj.qlClass)) {
+          normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, knownTypes, targetTypes, knownNormalForms));
+          if (i < components.length - 1) {
+            normalFormBuilder.push(", ");
+          }
         }
       });
       normalFormBuilder.push("]");
@@ -942,9 +946,11 @@ const normalize3 = (
       const normalFormBuilder: string[] = [];
       normalFormBuilder.push("[");
       queryRes.forEach((obj, i) => {
-        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, knownTypes, targetTypes, knownNormalForms));
-        if (i < queryRes.length - 1) {
-          normalFormBuilder.push(", ");
+        if (!isQLIdentifier(obj.typeQLClass)) {
+          normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, knownTypes, targetTypes, knownNormalForms));
+          if (i < queryRes.length - 1) {
+            normalFormBuilder.push(", ");
+          }
         }
       });
       normalFormBuilder.push("]");
