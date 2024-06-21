@@ -162,6 +162,10 @@ const isQLLabel = (typeQLClass: string): boolean => {
   return typeQLClass === "Label";
 }
 
+const isQLIdentifier = (typeQLClass: string): boolean => {
+  return typeQLClass === "Identifier";
+}
+
 export {
   indexOfRegexGroup,
   formatTypeSpan,
@@ -185,5 +189,6 @@ export {
   isQLPredefined,
   isQLLiteral,
   isQLKeyword,
-  isQLLabel
+  isQLLabel,
+  isQLIdentifier
 };
