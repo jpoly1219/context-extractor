@@ -3,6 +3,7 @@ interface relevantTypeObject {
   typeName: string;
   typeDefinition: string;
   typeQLClass: string;
+  locatedFile: string;
   components: { name: string, qlClass: string }[];
 }
 
@@ -14,6 +15,7 @@ interface varsObject {
   typeQLClass: string;
   functionReturnType: string;
   functionReturnTypeQLClass: string;
+  locatedFile: string;
   components: { name: string, qlClass: string }[];
 }
 
@@ -22,15 +24,20 @@ interface typesObject {
   typeQLClass: string;
 }
 
+interface typeNameAndLocation {
+  typeName: string;
+  locatedFile: string;
+}
+
 interface relevantTypeQueryResult {
   "#select": {
-    tuples: [{ label: string }, string, { label: string }, string, { label: string }, string][]
+    tuples: [{ label: string }, string, { label: string }, string, { label: string }, string, { label: string }][]
   }
 }
 
 interface varsQueryResult {
   "#select": {
-    tuples: [{ label: string }, { label: string }, { label: string }, { label: string }, string, string, string, { label: string }, string][]
+    tuples: [{ label: string }, { label: string }, { label: string }, { label: string }, string, string, string, { label: string }, string, { label: string }][]
   }
 }
 
@@ -40,4 +47,4 @@ interface typesQueryResult {
   }
 }
 
-export { relevantTypeObject, varsObject, typesObject, relevantTypeQueryResult, varsQueryResult, typesQueryResult }
+export { relevantTypeObject, varsObject, typesObject, typeNameAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult }

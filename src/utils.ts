@@ -60,9 +60,17 @@ const parseCodeQLRelevantTypes = (table: relevantTypeQueryResult): Map<string, r
     const typeQLClass = row[3];
     const componentName = row[4]["label"];
     const componentQLClass = row[5];
+    const locatedFile = row[6]["label"];
 
     if (!m.has(typeName)) {
-      m.set(typeName, { typeAliasDeclaration: typeDeclaration, typeName: typeName, typeDefinition: typeDefinition, typeQLClass: typeQLClass, components: [{ name: componentName, qlClass: componentQLClass }] });
+      m.set(typeName, {
+        typeAliasDeclaration: typeDeclaration,
+        typeName: typeName,
+        typeDefinition: typeDefinition,
+        typeQLClass: typeQLClass,
+        locatedFile: locatedFile,
+        components: [{ name: componentName, qlClass: componentQLClass }]
+      });
     } else {
       const value = m.get(typeName)!;
       value.components.push({ name: componentName, qlClass: componentQLClass });
@@ -87,6 +95,7 @@ const parseCodeQLVars = (table: varsQueryResult): Map<string, varsObject> => {
     const functionReturnTypeQLClass = row[6];
     const componentName = row[7]["label"];
     const componentQLClass = row[8];
+    const locatedFile = row[9]["label"];
 
     if (!m.has(bindingPattern)) {
       m.set(bindingPattern, {
@@ -97,6 +106,7 @@ const parseCodeQLVars = (table: varsQueryResult): Map<string, varsObject> => {
         typeQLClass: qlClass,
         functionReturnType: functionReturnType,
         functionReturnTypeQLClass: functionReturnTypeQLClass,
+        locatedFile: locatedFile,
         components: [{ name: componentName, qlClass: componentQLClass }]
       });
     } else {
