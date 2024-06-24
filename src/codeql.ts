@@ -2,8 +2,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
 import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface, isQLLabel, isQLIdentifier } from "./utils";
-import { relevantTypeObject, varsObject, typesObject, relevantTypeQueryResult } from "./types";
-import { getDefaultFormatCodeSettings, isLiteralTypeNode } from "typescript";
+import { relevantTypeObject, varsObject, typesObject, relevantTypeQueryResult, typeNameAndLocation } from "./types";
+import { OutliningSpanKind, getDefaultFormatCodeSettings, isLiteralTypeNode } from "typescript";
 // import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
 
@@ -24,7 +24,7 @@ const extractHoleType = (pathToCodeQL: string, pathToQuery: string, pathToDataba
   const q = createHoleTypeQuery();
   fs.writeFileSync(pathToQuery, q);
   const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-  console.log("extractHoleType q res: ", queryRes)
+  // console.log("extractHoleType q res: ", queryRes)
   return queryRes[0];
 }
 
@@ -80,7 +80,7 @@ const extractHeadersWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pat
 
 
 const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string): typesObject[] => {
-  console.log("==extractTypes==")
+  // console.log("==extractTypes==")
   const pathToBqrs = path.join(outDir, "types.bqrs");
   const pathToDecodedJSON = path.join(outDir, "types.json");
 
@@ -99,22 +99,22 @@ const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase:
 
   const typesContent = fs.readFileSync(pathToDecodedJSON);
   const types = parseCodeQLTypes(JSON.parse(typesContent.toString()));
-  console.log("extractTypes result: ", types, "\n\n")
+  // console.log("extractTypes result: ", types, "\n\n")
 
   return types;
 }
 
 
 const extractRelevantContextWithCodeQL = (pathToCodeQL: string, pathToQuery: string, pathToDatabase: string, outDir: string, headers: Map<string, varsObject>, relevantTypes: Map<string, relevantTypeObject>): Set<string> => {
-  console.log("==entry==")
-  console.log(Date.now())
-  console.log("extractRelevantContextWithCodeQL start: ", Date.now())
+  // console.log("==entry==")
+  // console.log(Date.now())
+  // console.log("extractRelevantContextWithCodeQL start: ", Date.now())
   const relevantContext = new Set<string>();
   const knownNormalForms = new Map<string, string>();
 
   // for each var in vars, check if its type is equivalent to any of relevantTypes
   headers.forEach((header) => {
-    console.log("\n\nheader: ", header, "\n\n")
+    // console.log("\n\nheader: ", header, "\n\n")
     const typeOfHeader: typesObject = { typeName: header.typeAnnotation, typeQLClass: header.typeQLClass };
     const isEquivalent = extractRelevantContextHelper(pathToCodeQL, pathToQuery, pathToDatabase, outDir, typeOfHeader, relevantTypes, knownNormalForms);
     if (isEquivalent) {
@@ -122,8 +122,8 @@ const extractRelevantContextWithCodeQL = (pathToCodeQL: string, pathToQuery: str
     }
   })
 
-  console.log("knownNormalForms: ", knownNormalForms)
-  console.log("extractRelevantContextWithCodeQL end: ", Date.now())
+  // console.log("knownNormalForms: ", knownNormalForms)
+  // console.log("extractRelevantContextWithCodeQL end: ", Date.now())
   return relevantContext;
 }
 
@@ -137,8 +137,8 @@ const extractRelevantContextHelper = (
   relevantTypes: Map<string, relevantTypeObject>,
   knownNormalForms: Map<string, string>
 ): boolean => {
-  console.log("\n\n==recurse==")
-  console.log("headerType: ", headerType)
+  // console.log("\n\n==recurse==")
+  // console.log("headerType: ", headerType)
   // NOTE:
   // extract types that are consistent to any of the target types
   // extract functions whose return types are equivalent to any of the target types
@@ -146,10 +146,10 @@ const extractRelevantContextHelper = (
 
   for (const [key, typ] of relevantTypes.entries()) {
     const typObj: typesObject = { typeName: typ.typeDefinition, typeQLClass: typ.typeQLClass };
-    console.log("typ: ", typ)
+    // console.log("typ: ", typ)
 
     if (isTypeEquivalent(pathToCodeQL, pathToQuery, pathToDatabase, outDir, headerType, typObj, relevantTypes, knownNormalForms)) {
-      console.log("isTypeEquivalent!")
+      // console.log("isTypeEquivalent!")
       return true;
     }
   }
@@ -160,23 +160,23 @@ const extractRelevantContextHelper = (
   // }
   if (isQLFunction(headerType.typeQLClass)) {
     const q = createReturnTypeQuery(headerType.typeName);
-    console.log("extractor fq: ", q)
+    // console.log("extractor fq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     // could use extractVars
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("extractor fq res: ", queryRes)
+    // console.log("extractor fq res: ", queryRes)
     return extractRelevantContextHelper(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], relevantTypes, knownNormalForms);
 
   } else if (isQLInterface(headerType.typeQLClass)) {
     const q = createInterfaceComponentsTypeQuery(headerType.typeName);
-    console.log("extractor iq", q)
+    // console.log("extractor iq", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("extractor iq res", queryRes)
+    // console.log("extractor iq res", queryRes)
 
     queryRes.forEach(obj => {
       const val = obj.typeName.split(":")[1];
@@ -186,12 +186,12 @@ const extractRelevantContextHelper = (
 
   } else if (isQLTuple(headerType.typeQLClass)) {
     const q = createTupleComponentsTypeQuery(headerType.typeName);
-    console.log("extractor tq", q)
+    // console.log("extractor tq", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("extractor tq res", queryRes)
+    // console.log("extractor tq res", queryRes)
 
     let res = true;
     queryRes.forEach(obj => {
@@ -201,12 +201,12 @@ const extractRelevantContextHelper = (
 
   } else if (isQLUnion(headerType.typeQLClass)) {
     const q = createUnionComponentsTypeQuery(headerType.typeName);
-    console.log("extractor uq", q)
+    // console.log("extractor uq", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("extractor uq res", queryRes)
+    // console.log("extractor uq res", queryRes)
 
     let res = true;
     queryRes.forEach(obj => {
@@ -216,12 +216,12 @@ const extractRelevantContextHelper = (
 
   } else if (isQLArray(headerType.typeQLClass)) {
     const q = createArrayTypeQuery(headerType.typeName);
-    console.log("extractor aq", q)
+    // console.log("extractor aq", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("extractor aq res", queryRes)
+    // console.log("extractor aq res", queryRes)
 
     return extractRelevantContextHelper(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], relevantTypes, knownNormalForms);
     // if (isTypeEquivalent(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], typObj, relevantTypes)) {
@@ -230,21 +230,21 @@ const extractRelevantContextHelper = (
 
   } else if (isQLLocalTypeAccess(headerType.typeQLClass)) {
     const q = createLocalTypeAccessTypeQuery(headerType.typeName);
-    console.log("extractor ltaq", q)
+    // console.log("extractor ltaq", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("extractor ltaq res", queryRes)
+    // console.log("extractor ltaq res", queryRes)
 
     return extractRelevantContextHelper(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], relevantTypes, knownNormalForms);
   } else {
-    console.log(`extractRelevantContextHelper: this doesn't exist: ${JSON.stringify(headerType)}`);
+    // console.log(`extractRelevantContextHelper: this doesn't exist: ${JSON.stringify(headerType)}`);
     // console.error(`extractRelevantContextHelper: this doesn't exist: ${JSON.stringify(headerType)}`);
     // throw Error(`extractRelevantContextHelper: this doesn't exist: ${JSON.stringify(headerType)}`);
   }
 
-  console.log("not found for header: ", headerType)
+  // console.log("not found for header: ", headerType)
   return false;
 }
 
@@ -259,13 +259,13 @@ const isTypeEquivalent = (
   relevantTypes: Map<string, relevantTypeObject>,
   knownNormalForms: Map<string, string>
 ) => {
-  console.log("\n\n==isTypeEquivalent==")
+  // console.log("\n\n==isTypeEquivalent==")
   // TODO: the headerType.typeName will include all the arg names too, for example (model: Model, user: User) => Booking[]
   if (knownNormalForms.has(t1.typeName) && knownNormalForms.has(t2.typeName)) {
     const normT1 = knownNormalForms.get(t1.typeName);
     const normT2 = knownNormalForms.get(t2.typeName);
 
-    console.log("\n\nnormal forms:\n", t1, " -> ", normT1, ", ", t2, " -> ", normT2, "\n\n")
+    // console.log("\n\nnormal forms:\n", t1, " -> ", normT1, ", ", t2, " -> ", normT2, "\n\n")
     return normT1 === normT2;
 
   } else if (knownNormalForms.has(t1.typeName)) {
@@ -273,7 +273,7 @@ const isTypeEquivalent = (
     const normT2 = normalize(pathToCodeQL, pathToQuery, pathToDatabase, outDir, t2, relevantTypes, knownNormalForms);
     knownNormalForms.set(t2.typeName, normT2);
 
-    console.log("\n\nnormal forms:\n", t1, " -> ", normT1, ", ", t2, " -> ", normT2, "\n\n")
+    // console.log("\n\nnormal forms:\n", t1, " -> ", normT1, ", ", t2, " -> ", normT2, "\n\n")
     return normT1 === normT2;
 
   } else if (knownNormalForms.has(t2.typeName)) {
@@ -281,7 +281,7 @@ const isTypeEquivalent = (
     knownNormalForms.set(t1.typeName, normT1);
     const normT2 = knownNormalForms.get(t2.typeName);
 
-    console.log("\n\nnormal forms:\n", t1, " -> ", normT1, ", ", t2, " -> ", normT2, "\n\n")
+    // console.log("\n\nnormal forms:\n", t1, " -> ", normT1, ", ", t2, " -> ", normT2, "\n\n")
     return normT1 === normT2;
 
   } else {
@@ -290,7 +290,7 @@ const isTypeEquivalent = (
     knownNormalForms.set(t1.typeName, normT1);
     knownNormalForms.set(t2.typeName, normT1);
 
-    console.log("\n\nnormal forms:\n", t1, " -> ", normT1, ", ", t2, " -> ", normT2, "\n\n")
+    // console.log("\n\nnormal forms:\n", t1, " -> ", normT1, ", ", t2, " -> ", normT2, "\n\n")
     return normT1 === normT2;
   }
   // TODO: speed this up by saving known normal forms
@@ -306,8 +306,8 @@ const normalize = (
   relevantTypes: Map<string, relevantTypeObject>,
   knownNormalForms: Map<string, string>
 ): string => {
-  console.log("==normalize==")
-  console.log("typespan: ", typeSpan)
+  // console.log("==normalize==")
+  // console.log("typespan: ", typeSpan)
 
   // if the type is in relevant types, use that instead
   // if (relevantTypes.has(typeSpan.typeName)) {
@@ -332,12 +332,12 @@ const normalize = (
     const aq = createArgTypeQuery(typeSpan.typeName);
     fs.writeFileSync(pathToQuery, aq);
     const aqQueryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize faq res: ", aqQueryRes)
+    // console.log("normalize faq res: ", aqQueryRes)
 
     const rq = createReturnTypeQuery(typeSpan.typeName);
     fs.writeFileSync(pathToQuery, rq);
     const rqQueryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize frq res: ", rqQueryRes)
+    // console.log("normalize frq res: ", rqQueryRes)
 
     const normalFormBuilder: string[] = [];
     normalFormBuilder.push("(");
@@ -357,12 +357,12 @@ const normalize = (
 
   } else if (isQLInterface(typeSpan.typeQLClass)) {
     const q = createInterfaceComponentsTypeQuery(typeSpan.typeName);
-    console.log("normalize iq: ", q)
+    // console.log("normalize iq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize iq res: ", queryRes)
+    // console.log("normalize iq res: ", queryRes)
 
     const normalFormBuilder: string[] = [];
     normalFormBuilder.push("{");
@@ -384,12 +384,12 @@ const normalize = (
 
   } else if (isQLTuple(typeSpan.typeQLClass)) {
     const q = createTupleComponentsTypeQuery(typeSpan.typeName);
-    console.log("normalize tq: ", q)
+    // console.log("normalize tq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize tq res: ", queryRes)
+    // console.log("normalize tq res: ", queryRes)
 
     const normalFormBuilder: string[] = [];
     normalFormBuilder.push("[");
@@ -407,12 +407,12 @@ const normalize = (
 
   } else if (isQLUnion(typeSpan.typeQLClass)) {
     const q = createUnionComponentsTypeQuery(typeSpan.typeName);
-    console.log("normalize uq: ", q)
+    // console.log("normalize uq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize uq res: ", queryRes)
+    // console.log("normalize uq res: ", queryRes)
 
     const normalFormBuilder: string[] = [];
     queryRes.forEach((obj, i) => {
@@ -428,12 +428,12 @@ const normalize = (
 
   } else if (isQLArray(typeSpan.typeQLClass)) {
     const q = createArrayTypeQuery(typeSpan.typeName);
-    console.log("normalize aq: ", q)
+    // console.log("normalize aq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize aq res: ", queryRes)
+    // console.log("normalize aq res: ", queryRes)
 
     const normalForm = "".concat(normalize(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], relevantTypes, knownNormalForms), "[]");
     knownNormalForms.set(typeSpan.typeName, normalForm);
@@ -441,19 +441,19 @@ const normalize = (
 
   } else if (isQLLocalTypeAccess(typeSpan.typeQLClass)) {
     const q = createLocalTypeAccessTypeQuery(typeSpan.typeName);
-    console.log("normalize ltaq: ", q)
+    // console.log("normalize ltaq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize ltaq res: ", queryRes)
+    // console.log("normalize ltaq res: ", queryRes)
 
     const normalForm = normalize(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], relevantTypes, knownNormalForms);
     knownNormalForms.set(typeSpan.typeName, normalForm);
     return normalForm;
 
   } else {
-    console.log(`normalize: this doesn't exist: ${JSON.stringify(typeSpan)}`)
+    // console.log(`normalize: this doesn't exist: ${JSON.stringify(typeSpan)}`)
     console.error(`normalize: this doesn't exist: ${JSON.stringify(typeSpan)}`)
     throw Error(`normalize: this doesn't exist: ${JSON.stringify(typeSpan)}`)
   }
@@ -494,21 +494,21 @@ const getRelevantHeaders = (
   headers: Map<string, varsObject>,
   holeType: typesObject
 ) => {
-  console.log("getRelevantHeaders start: ", Date.now())
+  // console.log("getRelevantHeaders start: ", Date.now())
   const obj = generateTargetTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType);
   const targetTypes = obj.targetTypes;
   const knownNormalForms = obj.knownNormalForms;
   const relevantHeaders = new Set<string>();
 
   headers.forEach(header => {
-    console.log("header: ", header)
+    // console.log("header: ", header)
     if (targetTypes.has(header.typeAnnotation)) {
       relevantHeaders.add(header.constDeclaration);
     } else if (isQLFunction(header.typeQLClass)) {
       const q = createReturnTypeQuery(header.typeAnnotation);
       fs.writeFileSync(pathToQuery, q);
       const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-      console.log("header fq res: ", queryRes)
+      // console.log("header fq res: ", queryRes)
 
       // NOTE: would be nice if we could "step" recursion into normalize2
       // maybe make normalize2 a higher order function that returns a function that we can call
@@ -519,10 +519,10 @@ const getRelevantHeaders = (
       }
     } else if (isQLTuple(header.typeQLClass)) {
       const q = createTupleComponentsTypeQuery(header.typeAnnotation);
-      console.log("header tq", q)
+      // console.log("header tq", q)
       fs.writeFileSync(pathToQuery, q);
       const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-      console.log("header tq res", queryRes)
+      // console.log("header tq res", queryRes)
 
       queryRes.forEach(obj => {
         if (targetTypes.has(obj.typeName)) {
@@ -534,7 +534,7 @@ const getRelevantHeaders = (
     }
   });
 
-  console.log("getRelevantHeaders end: ", Date.now())
+  // console.log("getRelevantHeaders end: ", Date.now())
   return relevantHeaders;
 }
 
@@ -548,11 +548,11 @@ const generateTargetTypes = (
 ): { targetTypes: Set<string>, knownNormalForms: Map<string, string> } => {
   const targetTypes = new Set<string>();
   const knownNormalForms = new Map<string, string>();
-  console.log("generateTargetTypes start: ", Date.now())
+  // console.log("generateTargetTypes start: ", Date.now())
   normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, targetTypes, knownNormalForms);
-  console.log("generateTargetTypes end: ", Date.now())
-  console.log("targetTypes: ", targetTypes)
-  console.log("knownNormalForms: ", knownNormalForms)
+  // console.log("generateTargetTypes end: ", Date.now())
+  // console.log("targetTypes: ", targetTypes)
+  // console.log("knownNormalForms: ", knownNormalForms)
   return { targetTypes: targetTypes, knownNormalForms: knownNormalForms };
 }
 
@@ -566,8 +566,8 @@ const normalize2 = (
   targetTypes: Set<string>,
   knownNormalForms: Map<string, string>
 ): string => {
-  console.log("==normalize2==")
-  console.log("typespan: ", typeSpan)
+  // console.log("==normalize2==")
+  // console.log("typespan: ", typeSpan)
 
   if (knownNormalForms.has(typeSpan.typeName)) {
     return knownNormalForms.get(typeSpan.typeName)!;
@@ -583,12 +583,12 @@ const normalize2 = (
     const aq = createArgTypeQuery(typeSpan.typeName);
     fs.writeFileSync(pathToQuery, aq);
     const aqQueryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize faq res: ", aqQueryRes)
+    // console.log("normalize faq res: ", aqQueryRes)
 
     const rq = createReturnTypeQuery(typeSpan.typeName);
     fs.writeFileSync(pathToQuery, rq);
     const rqQueryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize frq res: ", rqQueryRes)
+    // console.log("normalize frq res: ", rqQueryRes)
 
     const normalFormBuilder: string[] = [];
     normalFormBuilder.push("(");
@@ -608,12 +608,12 @@ const normalize2 = (
 
   } else if (isQLInterface(typeSpan.typeQLClass)) {
     const q = createInterfaceComponentsTypeQuery(typeSpan.typeName);
-    console.log("normalize iq: ", q)
+    // console.log("normalize iq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize iq res: ", queryRes)
+    // console.log("normalize iq res: ", queryRes)
 
     const normalFormBuilder: string[] = [];
     normalFormBuilder.push("{");
@@ -636,12 +636,12 @@ const normalize2 = (
 
   } else if (isQLTuple(typeSpan.typeQLClass)) {
     const q = createTupleComponentsTypeQuery(typeSpan.typeName);
-    console.log("normalize tq: ", q)
+    // console.log("normalize tq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize tq res: ", queryRes)
+    // console.log("normalize tq res: ", queryRes)
 
     const normalFormBuilder: string[] = [];
     normalFormBuilder.push("[");
@@ -660,12 +660,12 @@ const normalize2 = (
 
   } else if (isQLUnion(typeSpan.typeQLClass)) {
     const q = createUnionComponentsTypeQuery(typeSpan.typeName);
-    console.log("normalize uq: ", q)
+    // console.log("normalize uq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize uq res: ", queryRes)
+    // console.log("normalize uq res: ", queryRes)
 
     const normalFormBuilder: string[] = [];
     queryRes.forEach((obj, i) => {
@@ -682,12 +682,12 @@ const normalize2 = (
 
   } else if (isQLArray(typeSpan.typeQLClass)) {
     const q = createArrayTypeQuery(typeSpan.typeName);
-    console.log("normalize aq: ", q)
+    // console.log("normalize aq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize aq res: ", queryRes)
+    // console.log("normalize aq res: ", queryRes)
 
     const normalForm = "".concat(normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes, knownNormalForms), "[]");
     targetTypes.add(normalForm);
@@ -696,12 +696,12 @@ const normalize2 = (
 
   } else if (isQLLocalTypeAccess(typeSpan.typeQLClass)) {
     const q = createLocalTypeAccessTypeQuery(typeSpan.typeName);
-    console.log("normalize ltaq: ", q)
+    // console.log("normalize ltaq: ", q)
 
     fs.writeFileSync(pathToQuery, q);
 
     const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-    console.log("normalize ltaq res: ", queryRes)
+    // console.log("normalize ltaq res: ", queryRes)
 
     const normalForm = normalize2(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], targetTypes, knownNormalForms);
     targetTypes.add(normalForm);
@@ -709,7 +709,7 @@ const normalize2 = (
     return normalForm;
 
   } else {
-    console.log(`normalize2: this doesn't exist: ${JSON.stringify(typeSpan)}`)
+    // console.log(`normalize2: this doesn't exist: ${JSON.stringify(typeSpan)}`)
     console.error(`normalize2: this doesn't exist: ${JSON.stringify(typeSpan)}`)
     throw Error(`normalize2: this doesn't exist: ${JSON.stringify(typeSpan)}`)
   }
@@ -725,14 +725,13 @@ const getRelevantHeaders3 = (
   holeType: typesObject,
   relevantTypes: Map<string, relevantTypeObject>
 ) => {
-  console.log("getRelevantHeaders3 start: ", Date.now())
+  // console.log("getRelevantHeaders3 start: ", Date.now())
   const obj = generateTargetTypes3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, relevantTypes);
   const targetTypes = obj.targetTypes;
   const knownNormalForms = obj.knownNormalForms;
   const relevantHeaders = new Set<string>();
 
   headers.forEach(header => {
-    console.log("header: ", header)
     if (targetTypes.has(header.typeAnnotation)) {
       relevantHeaders.add(header.constDeclaration);
     } else if (isQLFunction(header.typeQLClass)) {
@@ -767,7 +766,7 @@ const getRelevantHeaders3 = (
     }
   });
 
-  console.log("getRelevantHeaders3 end: ", Date.now())
+  // console.log("getRelevantHeaders3 end: ", Date.now())
   return relevantHeaders;
 }
 
@@ -782,11 +781,11 @@ const generateTargetTypes3 = (
 ): { targetTypes: Set<string>, knownNormalForms: Map<string, string> } => {
   const targetTypes = new Set<string>();
   const knownNormalForms = new Map<string, string>();
-  console.log("generateTargetTypes3 start: ", Date.now())
+  // console.log("generateTargetTypes3 start: ", Date.now())
   normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, relevantTypes, targetTypes, knownNormalForms);
-  console.log("generateTargetTypes3 end: ", Date.now())
-  console.log("targetTypes: ", targetTypes)
-  console.log("knownNormalForms: ", knownNormalForms)
+  // console.log("generateTargetTypes3 end: ", Date.now())
+  // console.log("targetTypes: ", targetTypes)
+  // console.log("knownNormalForms: ", knownNormalForms)
   return { targetTypes: targetTypes, knownNormalForms: knownNormalForms };
 }
 
@@ -800,7 +799,7 @@ const normalize3 = (
   targetTypes: Set<string>,
   knownNormalForms: Map<string, string>
 ): string => {
-  console.log("current: ", typ)
+  // console.log("current: ", typ)
   // check if exists in known types
   // if so, access and check its class
   // depending on the class, build a normal form using recursion
@@ -835,12 +834,12 @@ const normalize3 = (
       const aq = createArgTypeQuery(typ.typeName);
       fs.writeFileSync(pathToQuery, aq);
       const aqQueryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-      console.log("normalize3 faq res: ", aqQueryRes)
+      // console.log("normalize3 faq res: ", aqQueryRes)
 
       const rq = createReturnTypeQuery(typ.typeName);
       fs.writeFileSync(pathToQuery, rq);
       const rqQueryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-      console.log("normalize3 frq res: ", rqQueryRes)
+      // console.log("normalize3 frq res: ", rqQueryRes)
 
       const normalFormBuilder: string[] = [];
       normalFormBuilder.push("(");
@@ -886,12 +885,12 @@ const normalize3 = (
       return normalForm;
     } else {
       const q = createInterfaceComponentsTypeQuery(typ.typeName);
-      console.log("normalize3 iq: ", q)
+      // console.log("normalize3 iq: ", q)
 
       fs.writeFileSync(pathToQuery, q);
 
       const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-      console.log("normalize3 iq res: ", queryRes)
+      // console.log("normalize3 iq res: ", queryRes)
 
       const normalFormBuilder: string[] = [];
       normalFormBuilder.push("{");
@@ -936,12 +935,12 @@ const normalize3 = (
       return normalForm;
     } else {
       const q = createTupleComponentsTypeQuery(typ.typeName);
-      console.log("normalize3 tq: ", q)
+      // console.log("normalize3 tq: ", q)
 
       fs.writeFileSync(pathToQuery, q);
 
       const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-      console.log("normalize3 tq res: ", queryRes)
+      // console.log("normalize3 tq res: ", queryRes)
 
       const normalFormBuilder: string[] = [];
       normalFormBuilder.push("[");
@@ -979,12 +978,12 @@ const normalize3 = (
       return normalForm;
     } else {
       const q = createUnionComponentsTypeQuery(typ.typeName);
-      console.log("normalize3 uq: ", q)
+      // console.log("normalize3 uq: ", q)
 
       fs.writeFileSync(pathToQuery, q);
 
       const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-      console.log("normalize3 uq res: ", queryRes)
+      // console.log("normalize3 uq res: ", queryRes)
 
       const normalFormBuilder: string[] = [];
       queryRes.forEach((obj, i) => {
@@ -1018,12 +1017,12 @@ const normalize3 = (
 
     } else {
       const q = createArrayTypeQuery(typ.typeName);
-      console.log("normalize3 aq: ", q)
+      // console.log("normalize3 aq: ", q)
 
       fs.writeFileSync(pathToQuery, q);
 
       const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-      console.log("normalize3 aq res: ", queryRes)
+      // console.log("normalize3 aq res: ", queryRes)
 
       const normalForm = "".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], knownTypes, targetTypes, knownNormalForms), "[]");
       targetTypes.add(normalForm);
@@ -1040,12 +1039,12 @@ const normalize3 = (
       return normalForm;
     } else {
       const q = createLocalTypeAccessTypeQuery(typ.typeName);
-      console.log("normalize3 ltaq: ", q)
+      // console.log("normalize3 ltaq: ", q)
 
       fs.writeFileSync(pathToQuery, q);
 
       const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-      console.log("normalize3 ltaq res: ", queryRes)
+      // console.log("normalize3 ltaq res: ", queryRes)
 
       const normalForm = normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, queryRes[0], knownTypes, targetTypes, knownNormalForms);
       targetTypes.add(normalForm);
@@ -1059,6 +1058,116 @@ const normalize3 = (
   }
 }
 
+
+const getRelevantHeaders3 = (
+  pathToCodeQL: string,
+  pathToQuery: string,
+  pathToDatabase: string,
+  outDir: string,
+  headers: Map<string, varsObject>,
+  holeType: typesObject,
+  relevantTypes: Map<string, relevantTypeObject>
+) => {
+  // console.log("getRelevantHeaders3 start: ", Date.now())
+  const obj = generateTargetTypes3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, relevantTypes);
+  const targetTypes = obj.targetTypes;
+  const knownNormalForms = obj.knownNormalForms;
+  const relevantHeaders = new Set<string>();
+
+  headers.forEach(header => {
+    if (isRelevantHeader(header, relevantTypes, outDir)) {
+      relevantHeaders.add(header.constDeclaration);
+    } else if (isQLFunction(header.typeQLClass)) {
+      const returnType = header.components[0]
+      if (isRelevantHeader(returnType, relevantTypes, outDir)) {
+        relevantHeaders.add(header.constDeclaration);
+      }
+
+    } else if (isQLTuple(header.typeQLClass)) {
+      // const q = createTupleComponentsTypeQuery(header.typeAnnotation);
+      // console.log("header tq", q)
+      // fs.writeFileSync(pathToQuery, q);
+      // const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
+      // console.log("header tq res", queryRes)
+
+      const components = header.components;
+
+      components.forEach(obj => {
+        if (targetTypes.has(obj.name)) {
+          relevantHeaders.add(header.constDeclaration);
+        } else if (targetTypes.has(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, relevantTypes, targetTypes, knownNormalForms))) {
+          relevantHeaders.add(header.constDeclaration);
+        }
+      });
+    }
+  });
+
+  // console.log("getRelevantHeaders3 end: ", Date.now())
+  return relevantHeaders;
+}
+
+
+const isRelevantHeader = (
+  header: varsObject,
+  relevantTypes: Map<string, relevantTypeObject>,
+  outDir: string
+): boolean => {
+  // check if exists in known types
+  // if so, access and check its class
+  // if not, loop over each known type and try invoking a static error on a function file that accepts header type and target type
+  if (relevantTypes.has(header.typeAnnotation)) {
+    return true;
+  }
+
+  for (const [_, knownType] of relevantTypes.entries()) {
+    // TODO: each query needs to get the file location
+    const t1: typeNameAndLocation = { typeName: header.typeAnnotation, locatedFile: header.locatedFile };
+    const t2: typeNameAndLocation = { typeName: knownType.typeDefinition, locatedFile: knownType.locatedFile };
+    if (isConsistent(t1, t2, outDir)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
+// checks if two types are consistent
+// take in two types and write a consistency checker function to a file
+// run the typescript compiler on it to invoke static errors
+// if there are no errors, then the two types are consistent
+const isConsistent = (t1: typeNameAndLocation, t2: typeNameAndLocation, outDir: string): boolean => {
+  const checkPath = createConsistencyCheckFunction(t1, t2, outDir);
+  return checkConsistency(checkPath);
+}
+
+
+// write the function to file
+const createConsistencyCheckFunction = (t1: typeNameAndLocation, t2: typeNameAndLocation, outDir: string): string => {
+  // TODO: handle import paths
+  const checkFunction = [
+    `import ${t1.typeName} from ${t1.locatedFile};`,
+    `import ${t2.typeName} from ${t2.locatedFile};`,
+    `function check (a: ${t1.typeName}): ${t2.typeName} { return a; }`
+  ].join("\n");
+
+  const checkPath = path.join(outDir, "checkConsistency.ts");
+
+  fs.writeFileSync(checkPath, checkFunction);
+
+  return checkPath;
+}
+
+
+const checkConsistency = (checkPath: string): boolean => {
+  try {
+    execSync(`tsc ${checkPath}`);
+    return true;
+  } catch (err) {
+    console.log(`types are inconsistent: ${err}`);
+    return false;
+  }
+}
 
 
 const createHoleTypeQuery = (): string => {
