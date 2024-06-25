@@ -195,8 +195,10 @@ export const extractWithCodeQL = async (sketchPath: string) => {
     const knownTypeLocations = extractTypesAndLocations(CODEQL_PATH, path.join(QUERY_DIR, "imports.ql"), databasePath, targetPath);
     console.log("known type locations: ", knownTypeLocations)
     // TODO:
-    const relevantHeaders = getRelevantHeaders4(CODEQL_PATH, QUERY_DIR, databasePath, targetPath, headers, relevantTypes);
+    const relevantHeaders = getRelevantHeaders3(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, holeType, relevantTypes);
     console.log("relevantHeaders: ", Array.from(relevantHeaders));
+    // const relevantHeaders = getRelevantHeaders4(CODEQL_PATH, QUERY_DIR, databasePath, targetPath, headers, relevantTypes, knownTypeLocations);
+    // console.log("relevantHeaders: ", Array.from(relevantHeaders));
     const end = Date.now()
     console.log("end: ", end)
     console.log("elapsed: ", end - start)
