@@ -1,4 +1,4 @@
-import { relevantTypeObject, varsObject, typesObject, typesQueryResult, varsQueryResult, relevantTypeQueryResult } from "./types";
+import { relevantTypeObject, varsObject, typesObject, typesQueryResult, varsQueryResult, relevantTypeQueryResult, typesAndLocationsQueryResult } from "./types";
 
 const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
   return match.reduce((acc, curr, i) => {
@@ -60,7 +60,6 @@ const parseCodeQLRelevantTypes = (table: relevantTypeQueryResult): Map<string, r
     const typeQLClass = row[3];
     const componentName = row[4]["label"];
     const componentQLClass = row[5];
-    const locatedFile = row[6]["label"];
 
     if (!m.has(typeName)) {
       m.set(typeName, {
@@ -68,7 +67,6 @@ const parseCodeQLRelevantTypes = (table: relevantTypeQueryResult): Map<string, r
         typeName: typeName,
         typeDefinition: typeDefinition,
         typeQLClass: typeQLClass,
-        locatedFile: locatedFile,
         components: [{ name: componentName, qlClass: componentQLClass }]
       });
     } else {
@@ -95,7 +93,6 @@ const parseCodeQLVars = (table: varsQueryResult): Map<string, varsObject> => {
     const functionReturnTypeQLClass = row[6];
     const componentName = row[7]["label"];
     const componentQLClass = row[8];
-    const locatedFile = row[9]["label"];
 
     if (!m.has(bindingPattern)) {
       m.set(bindingPattern, {
@@ -106,12 +103,11 @@ const parseCodeQLVars = (table: varsQueryResult): Map<string, varsObject> => {
         typeQLClass: qlClass,
         functionReturnType: functionReturnType,
         functionReturnTypeQLClass: functionReturnTypeQLClass,
-        locatedFile: locatedFile,
-        components: [{ name: componentName, qlClass: componentQLClass }]
+        components: [{ typeName: componentName, typeQLClass: componentQLClass }]
       });
     } else {
       const value = m.get(bindingPattern)!;
-      value.components.push({ name: componentName, qlClass: componentQLClass });
+      value.components.push({ typeName: componentName, typeQLClass: componentQLClass });
       m.set(bindingPattern, value);
     }
   });
@@ -130,6 +126,25 @@ const parseCodeQLTypes = (table: typesQueryResult): typesObject[] => {
   });
 
   return arr;
+}
+
+const parseCodeQLTypesAndLocations = (table: typesAndLocationsQueryResult): Map<string, string[]> => {
+  const locationToTypes = new Map<string, string[]>();
+
+  const rows = table["#select"]["tuples"];
+  rows.forEach(row => {
+    const typeName = row[0];
+    const locatedFile = row[1];
+    if (!locationToTypes.has(locatedFile)) {
+      locationToTypes.set(locatedFile, [typeName]);
+    } else {
+      const pair = locationToTypes.get(locatedFile)!;
+      pair.push(typeName);
+      locationToTypes.set(locatedFile, pair);
+    }
+  });
+
+  return locationToTypes;
 }
 
 const isQLFunction = (typeQLClass: string): boolean => {
@@ -190,6 +205,7 @@ export {
   parseCodeQLRelevantTypes,
   parseCodeQLVars,
   parseCodeQLTypes,
+  parseCodeQLTypesAndLocations,
   isQLFunction,
   isQLTuple,
   isQLUnion,
