@@ -1144,7 +1144,7 @@ const isRelevantHeader = (
 
     } else if (isQLTuple(header.typeQLClass)) {
       console.log("isQLTuple")
-      // if tuple, recurse on componet types
+      // if tuple, recurse on component types
       const components = header.components;
       for (const comp of components) {
         if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, comp, relevantTypes, knownTypeLocations)) return true;
@@ -1209,6 +1209,33 @@ const isConsistent = (
 ): boolean => {
   console.log("===isConsistent===")
 
+  // TODO: this is still too slow. let's just import everything and compile everything
+  // TODO: abstract this
+  const builder: string[] = [];
+  for (const [file, dependencies] of knownTypeLocations.locationToType.entries()) {
+    builder.push(`import {${dependencies.join(", ")}} from "${file}"`);
+  }
+  for (const comp of comparisonTypes) {
+    builder.push(`function check(a: ${scrutineeType}): ${comp} { return a; }`);
+  }
+  const checkFunction = builder.join("\n");
+  const checkPath = path.join(outDir, "checkConsistency.ts");
+  fs.writeFileSync(checkPath, checkFunction);
+
+  const numChecks = comparisonTypes.length;
+  try {
+    execSync(`tsc ${checkPath}`);
+  } catch (err: any) {
+    const numErrors = err.stdout.toString().split("\n").length;
+    return numErrors < numChecks;
+  }
+  return false;
+
+
+
+
+
+  /*
   // extract necessary dependencies by invoking static dependency error
   const dependencyErrorInvoker = createDependencyErrorInvoker([scrutineeType, ...comparisonTypes]);
   const invokerPath = path.join(outDir, "invokeDependencyError.ts");
@@ -1258,6 +1285,7 @@ const isConsistent = (
     }
   }
   return false;
+  */
 }
 
 
