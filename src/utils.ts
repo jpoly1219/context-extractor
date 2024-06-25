@@ -128,7 +128,7 @@ const parseCodeQLTypes = (table: typesQueryResult): typesObject[] => {
   return arr;
 }
 
-const parseCodeQLTypesAndLocations = (table: typesAndLocationsQueryResult): Map<string, string[]> => {
+const parseCodeQLLocationsAndTypes = (table: typesAndLocationsQueryResult): Map<string, string[]> => {
   const locationToTypes = new Map<string, string[]>();
 
   const rows = table["#select"]["tuples"];
@@ -145,6 +145,24 @@ const parseCodeQLTypesAndLocations = (table: typesAndLocationsQueryResult): Map<
   });
 
   return locationToTypes;
+}
+
+const parseCodeQLTypesAndLocations = (table: typesAndLocationsQueryResult): Map<string, string> => {
+  const typeToLocation = new Map<string, string>();
+
+  const rows = table["#select"]["tuples"];
+  rows.forEach(row => {
+    const typeName = row[0];
+    const locatedFile = row[1];
+    if (!typeToLocation.has(typeName)) {
+      typeToLocation.set(typeName, locatedFile);
+    } else {
+      // NOTE: this should technically be a name collision
+      typeToLocation.set(typeName, locatedFile);
+    }
+  });
+
+  return typeToLocation;
 }
 
 const isQLFunction = (typeQLClass: string): boolean => {
@@ -205,6 +223,7 @@ export {
   parseCodeQLRelevantTypes,
   parseCodeQLVars,
   parseCodeQLTypes,
+  parseCodeQLLocationsAndTypes,
   parseCodeQLTypesAndLocations,
   isQLFunction,
   isQLTuple,
