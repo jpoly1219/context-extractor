@@ -9,8 +9,8 @@ import javascript
 
 from ConstDeclStmt c, TypeExpr t, AstNode a
 where
-    c.getFile().getBaseName() = "prelude.ts" and
-    c.getParent() = c.getTopLevel() and
+    // c.getFile().getBaseName() = "prelude.ts"
+    // c.getParent() = c.getTopLevel() and
     t = c.getADecl().getTypeAnnotation() and
     if t.getAPrimaryQlClass() = "InterfaceTypeExpr"
     then a = t.(InterfaceTypeExpr).getAChild().(FieldDeclaration).getNameExpr() or a = t.(InterfaceTypeExpr).getAChild().(FieldDeclaration).getTypeAnnotation()
@@ -18,7 +18,7 @@ where
     then a = t.(FunctionTypeExpr).getAParameter().getTypeAnnotation() or a = t.(FunctionTypeExpr).getReturnTypeAnnotation()
     else if t.getAPrimaryQlClass() = "KeywordTypeExpr"
     then a = t
-    else a = t.getAChild()
+    else if t.getNumChild() > 0 then a = t.getAChild() else a = t
 select
     c,
     c.getADecl().getBindingPattern(),
