@@ -1,9 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface, isQLLabel, isQLIdentifier } from "./utils";
-import { relevantTypeObject, varsObject, typesObject, relevantTypeQueryResult, typeNameAndLocation } from "./types";
+import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface, isQLLabel, isQLIdentifier, parseCodeQLTypesAndLocations } from "./utils";
+import { relevantTypeObject, varsObject, typesObject, relevantTypeQueryResult, typeAndLocation } from "./types";
 import { OutliningSpanKind, getDefaultFormatCodeSettings, isLiteralTypeNode } from "typescript";
+import { QUERY_DIR } from "./constants";
 // import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
 
@@ -102,6 +103,35 @@ const extractTypes = (pathToCodeQL: string, pathToQuery: string, pathToDatabase:
   // console.log("extractTypes result: ", types, "\n\n")
 
   return types;
+}
+
+
+const extractTypesAndLocations = (
+  pathToCodeQL: string,
+  pathToQuery: string,
+  pathToDatabase: string,
+  outDir: string
+) => {
+  const pathToBqrs = path.join(outDir, "imports.bqrs");
+  const pathToDecodedJSON = path.join(outDir, "imports.json");
+
+  try {
+    execSync(`${pathToCodeQL} query run ${pathToQuery} --database=${pathToDatabase} --output=${pathToBqrs}`);
+  } catch (err) {
+    console.error(`error while running query ${pathToQuery}: ${err}`);
+  }
+
+  try {
+    execSync(`${pathToCodeQL} bqrs decode ${pathToBqrs} --format=json --output=${pathToDecodedJSON} --no-titles`);
+  } catch (err) {
+    console.error(`error while trying to decode ${outDir}/imports.bqrs: ${err}`);
+  }
+
+  const typesAndLocationsContent = fs.readFileSync(pathToDecodedJSON);
+  const typesAndLocations = parseCodeQLTypesAndLocations(JSON.parse(typesAndLocationsContent.toString()));
+  console.log("extractTypesAndLocations result: ", typesAndLocations)
+
+  return typesAndLocations;
 }
 
 
@@ -742,9 +772,9 @@ const getRelevantHeaders3 = (
 
       const returnType = header.components[0]
 
-      if (targetTypes.has(returnType.name)) {
+      if (targetTypes.has(returnType.typeName)) {
         relevantHeaders.add(header.constDeclaration);
-      } else if (targetTypes.has(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: returnType.name, typeQLClass: returnType.qlClass }, relevantTypes, targetTypes, knownNormalForms))) {
+      } else if (targetTypes.has(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: returnType.typeName, typeQLClass: returnType.typeQLClass }, relevantTypes, targetTypes, knownNormalForms))) {
         relevantHeaders.add(header.constDeclaration);
       }
     } else if (isQLTuple(header.typeQLClass)) {
@@ -757,9 +787,9 @@ const getRelevantHeaders3 = (
       const components = header.components;
 
       components.forEach(obj => {
-        if (targetTypes.has(obj.name)) {
+        if (targetTypes.has(obj.typeName)) {
           relevantHeaders.add(header.constDeclaration);
-        } else if (targetTypes.has(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, relevantTypes, targetTypes, knownNormalForms))) {
+        } else if (targetTypes.has(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.typeName, typeQLClass: obj.typeQLClass }, relevantTypes, targetTypes, knownNormalForms))) {
           relevantHeaders.add(header.constDeclaration);
         }
       });
@@ -1059,48 +1089,54 @@ const normalize3 = (
 }
 
 
-const getRelevantHeaders3 = (
+const getRelevantHeaders4 = (
   pathToCodeQL: string,
-  pathToQuery: string,
+  pathToQueryDir: string,
   pathToDatabase: string,
   outDir: string,
   headers: Map<string, varsObject>,
-  holeType: typesObject,
   relevantTypes: Map<string, relevantTypeObject>
 ) => {
-  // console.log("getRelevantHeaders3 start: ", Date.now())
-  const obj = generateTargetTypes3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, relevantTypes);
-  const targetTypes = obj.targetTypes;
-  const knownNormalForms = obj.knownNormalForms;
+  // TODO:
+  // take a type and the header it belongs to.
+  // check if that type is directly in relevant types. If so, the header with that type is relevant.
+  // if not, then try running a consistency check with all the relevant types.
+  // if there's a consistent type, then the header with that type is relevant.
+  // if not, then we need to split that type.
+  // if it's an arrow type, recurse on the return type.
+  // if it's a tuple type, recurse on the components.
   const relevantHeaders = new Set<string>();
+  console.log("headers: ", headers)
 
   headers.forEach(header => {
-    if (isRelevantHeader(header, relevantTypes, outDir)) {
+    if (isRelevantHeader(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, header, relevantTypes)) {
+      // TODO: need to strip identifiers from functions, interfaces, tuples, ...
       relevantHeaders.add(header.constDeclaration);
-    } else if (isQLFunction(header.typeQLClass)) {
-      const returnType = header.components[0]
-      if (isRelevantHeader(returnType, relevantTypes, outDir)) {
-        relevantHeaders.add(header.constDeclaration);
-      }
-
-    } else if (isQLTuple(header.typeQLClass)) {
-      // const q = createTupleComponentsTypeQuery(header.typeAnnotation);
-      // console.log("header tq", q)
-      // fs.writeFileSync(pathToQuery, q);
-      // const queryRes = extractTypes(pathToCodeQL, pathToQuery, pathToDatabase, outDir);
-      // console.log("header tq res", queryRes)
-
-      const components = header.components;
-
-      components.forEach(obj => {
-        if (targetTypes.has(obj.name)) {
-          relevantHeaders.add(header.constDeclaration);
-        } else if (targetTypes.has(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, relevantTypes, targetTypes, knownNormalForms))) {
-          relevantHeaders.add(header.constDeclaration);
-        }
-      });
     }
   });
+
+  // headers.forEach(header => {
+  //   if (isRelevantHeader({ typeAnnotation: header.typeAnnotation, locatedFile: header.locatedFile }, relevantTypes, outDir)) {
+  //     // TODO: need to strip identifiers from functions, interfaces, tuples, ...
+  //     relevantHeaders.add(header.constDeclaration);
+  //
+  //   } else if (isQLFunction(header.typeQLClass)) {
+  //     const returnType = header.components[0];
+  //     const returnTypeLocation = relevantTypes.get(returnType.name)!.locatedFile;
+  //     if (isRelevantHeader({ typeAnnotation: returnType.name, locatedFile: returnTypeLocation }, relevantTypes, outDir)) {
+  //       relevantHeaders.add(header.constDeclaration);
+  //     }
+  //
+  //   } else if (isQLTuple(header.typeQLClass)) {
+  //     const components = header.components;
+  //     components.forEach(comp => {
+  //       const componentTypeLocation = relevantTypes.get(comp.name)!.locatedFile;
+  //       if (isRelevantHeader({ typeAnnotation: comp.name, locatedFile: componentTypeLocation }, relevantTypes, outDir)) {
+  //         relevantHeaders.add(header.constDeclaration);
+  //       }
+  //     });
+  //   }
+  // });
 
   // console.log("getRelevantHeaders3 end: ", Date.now())
   return relevantHeaders;
@@ -1108,26 +1144,73 @@ const getRelevantHeaders3 = (
 
 
 const isRelevantHeader = (
+  pathToCodeQL: string,
+  pathToQueryDir: string,
+  pathToDatabase: string,
+  outDir: string,
   header: varsObject,
   relevantTypes: Map<string, relevantTypeObject>,
-  outDir: string
 ): boolean => {
-  // check if exists in known types
-  // if so, access and check its class
-  // if not, loop over each known type and try invoking a static error on a function file that accepts header type and target type
-  if (relevantTypes.has(header.typeAnnotation)) {
+  // console.log("===isRelevantHeader===")
+
+  const currType: typesObject = { typeName: header.typeAnnotation, typeQLClass: header.typeQLClass };
+  console.log("currType: ", currType)
+  if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, currType, relevantTypes)) {
+    return true;
+  } else {
+    if (isQLFunction(header.typeQLClass)) {
+      console.log("isQLFunction")
+      // if function, recurse on return type
+      const returnType: typesObject = header.components[0];
+      return isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, returnType, relevantTypes);
+
+    } else if (isQLTuple(header.typeQLClass)) {
+      console.log("isQLTuple")
+      // if tuple, recurse on componet types
+      const components = header.components;
+      for (const comp of components) {
+        if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, comp, relevantTypes)) return true;
+      }
+    }
+    return false;
+  };
+}
+
+const isRelevantHeaderHelper = (
+  pathToCodeQL: string,
+  pathToQueryDir: string,
+  pathToDatabase: string,
+  outDir: string,
+  typ: typesObject,
+  relevantTypes: Map<string, relevantTypeObject>
+): boolean => {
+  console.log("===helper===")
+  console.log(`typ: ${JSON.stringify(typ)}`)
+  if (relevantTypes.has(typ.typeName)) {
     return true;
   }
 
-  for (const [_, knownType] of relevantTypes.entries()) {
-    // TODO: each query needs to get the file location
-    const t1: typeNameAndLocation = { typeName: header.typeAnnotation, locatedFile: header.locatedFile };
-    const t2: typeNameAndLocation = { typeName: knownType.typeDefinition, locatedFile: knownType.locatedFile };
-    if (isConsistent(t1, t2, outDir)) {
-      return true;
+  // this can be a big file that compiles once.
+  const scrutineeType = typ.typeName;
+  const comparisonTypes = Array.from(relevantTypes.values(), val => { return val.typeName });
+  if (isConsistent(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, scrutineeType, comparisonTypes)) {
+    return true;
+  } else if (isQLFunction(typ.typeQLClass)) {
+    const q = createReturnTypeQuery(typ.typeName);
+    const qPath = path.join(pathToQueryDir, "types.ql");
+    fs.writeFileSync(qPath, q);
+    const queryRes: typesObject[] = extractTypes(pathToCodeQL, qPath, pathToDatabase, outDir);
+    return isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, queryRes[0], relevantTypes);
+
+  } else if (isQLTuple(typ.typeQLClass)) {
+    const q = createTupleComponentsTypeQuery(typ.typeName);
+    const qPath = path.join(pathToQueryDir, "types.ql");
+    fs.writeFileSync(qPath, q);
+    const queryRes: typesObject[] = extractTypes(pathToCodeQL, qPath, pathToDatabase, outDir);
+    for (const comp of queryRes) {
+      if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, comp, relevantTypes)) return true;
     }
   }
-
   return false;
 }
 
@@ -1136,37 +1219,108 @@ const isRelevantHeader = (
 // take in two types and write a consistency checker function to a file
 // run the typescript compiler on it to invoke static errors
 // if there are no errors, then the two types are consistent
-const isConsistent = (t1: typeNameAndLocation, t2: typeNameAndLocation, outDir: string): boolean => {
-  const checkPath = createConsistencyCheckFunction(t1, t2, outDir);
-  return checkConsistency(checkPath);
-}
+const isConsistent = (pathToCodeQL: string, pathtoQueryDir: string, pathToDatabase: string, outDir: string, scrutineeType: string, comparisonTypes: string[]): boolean => {
+  console.log("===isConsistent===")
 
+  // extract necessary dependencies by invoking static dependency error
+  const dependencyErrorInvoker = createDependencyErrorInvoker([scrutineeType, ...comparisonTypes]);
+  const invokerPath = path.join(outDir, "invokeDependencyError.ts");
+  fs.writeFileSync(invokerPath, dependencyErrorInvoker);
 
-// write the function to file
-const createConsistencyCheckFunction = (t1: typeNameAndLocation, t2: typeNameAndLocation, outDir: string): string => {
-  // TODO: handle import paths
-  const checkFunction = [
-    `import ${t1.typeName} from ${t1.locatedFile};`,
-    `import ${t2.typeName} from ${t2.locatedFile};`,
-    `function check (a: ${t1.typeName}): ${t2.typeName} { return a; }`
-  ].join("\n");
+  const dependencies: string[] = [];
 
-  const checkPath = path.join(outDir, "checkConsistency.ts");
-
-  fs.writeFileSync(checkPath, checkFunction);
-
-  return checkPath;
-}
-
-
-const checkConsistency = (checkPath: string): boolean => {
   try {
-    execSync(`tsc ${checkPath}`);
-    return true;
-  } catch (err) {
-    console.log(`types are inconsistent: ${err}`);
-    return false;
+    execSync(`tsc ${invokerPath}`);
+  } catch (err: any) {
+    dependencies.push(...extractDependencies(err.stdout.toString()));
   }
+
+  // use CodeQL to find their locations
+  // we could do this for each comparisonType, but lots of individual queries are expensive.
+  const filesAndDependencies = resolveDependencies(pathToCodeQL, pathtoQueryDir, pathToDatabase, outDir, dependencies);
+
+  // inject those dependencies into the checker
+  for (const comparisonType of comparisonTypes) {
+    const checkFunction = createConsistencyCheckFunction(scrutineeType, comparisonType, filesAndDependencies);
+    const checkPath = path.join(outDir, "checkConsistency.ts");
+    fs.writeFileSync(checkPath, checkFunction);
+
+    try {
+      execSync(`tsc ${checkPath}`);
+      return true;
+    } catch (err: any) {
+      console.log(`types are not consistent: ${err}`);
+    }
+  }
+  return false;
+}
+
+
+// tsc will print an error "Cannot find name <name>" if it encounters a dependency error.
+// extract the dependency from that message.
+const extractDependencies = (errorMsg: string): string[] => {
+  // TODO: this should be done once at the beginning to establish a global import map
+  const dependencies: string[] = [];
+  const lines: string[] = errorMsg.split("\n");
+  lines.forEach(line => {
+    const matches = line.match(/(.*Cannot find name \')(.*)(\'.)/)
+    if (matches) {
+      dependencies.push(matches[2]);
+    }
+  });
+  return dependencies;
+}
+
+
+// run a query to get the dependencies and their file locations.
+const resolveDependencies = (pathToCodeQL: string, pathToQueryDir: string, pathToDatabase: string, outDir: string, dependencies: string[]): Map<string, string[]> => {
+  const q = createImportQuery(dependencies);
+  fs.writeFileSync(path.join(pathToQueryDir, "imports.ql"), q);
+
+  return extractTypesAndLocations(pathToCodeQL, path.join(pathToQueryDir, "imports.ql"), pathToDatabase, outDir);
+}
+
+
+const createDependencyErrorInvoker = (possibleDependencies: string[]) => {
+  const builder: string[] = [];
+  for (const pdep of possibleDependencies) {
+    builder.push(`let x: ${pdep};`);
+  }
+  return builder.join("\n");
+}
+
+
+const createConsistencyCheckFunction = (scrutineeType: string, comparisonType: string, filesAndDependencies: Map<string, string[]>): string => {
+  const builder: string[] = [];
+  for (const [file, dependencies] of filesAndDependencies.entries()) {
+    builder.push(`import {${dependencies.join(", ")}} from "${file}"`);
+  }
+  builder.push(`function check(a: ${scrutineeType}): ${comparisonType} { return a; }`);
+  return builder.join("\n");
+}
+
+
+const createImportQuery = (dependencies: string[]): string => {
+  const dependencyDisjunction = dependencies.reduce((acc, curr, i) => {
+    if (i < dependencies.length - 1) {
+      return acc + `t.getIdentifier().toString() = "${curr}" or `;
+    }
+    return acc + `t.getIdentifier().toString() = "${curr}"`;
+  }, "")
+
+  return [
+    "/**",
+    " * @id imports",
+    " * @name Imports",
+    " * @description Resolve dependencies during consistency check.",
+    " */",
+    "",
+    "import javascript",
+    "",
+    "from File f, TypeAliasDeclaration t",
+    `where(${dependencyDisjunction}) and t.getFile() = f`,
+    "select t.getIdentifier().toString(), f.toString()"
+  ].join("\n");
 }
 
 
@@ -1304,7 +1458,7 @@ const createLocalTypeAccessTypeQuery = (typeToQuery: string): string => {
     "import javascript",
     "",
     "from LocalTypeAccess t, TypeExpr e, TypeAliasDeclaration td",
-    `where (t.toString() = "${escapeQuotes(typeToQuery)}" and e = t.getLocalTypeName().getADeclaration().getEnclosingStmt().(TypeAliasDeclaration).getDefinition()) or`,
+    `where(t.toString() = "${escapeQuotes(typeToQuery)}" and e = t.getLocalTypeName().getADeclaration().getEnclosingStmt().(TypeAliasDeclaration).getDefinition()) or`,
     `(t.toString() = "${escapeQuotes(typeToQuery)}" and td.getName() = "${escapeQuotes(typeToQuery)}" and td.getFile().toString() = t.getLocalTypeName().getADeclaration().getEnclosingStmt().(Import).resolveImportedPath().getPath() and e = td.getDefinition())`,
     "select e.toString(), e.getAPrimaryQlClass()"
   ].join("\n");
@@ -1317,6 +1471,8 @@ export {
   extractRelevantTypesWithCodeQL,
   extractHeadersWithCodeQL,
   extractRelevantContextWithCodeQL,
+  extractTypesAndLocations,
   getRelevantHeaders,
-  getRelevantHeaders3
+  getRelevantHeaders3,
+  getRelevantHeaders4
 };
