@@ -91,12 +91,19 @@ We use CodeQL to determine the type of the hole.
 We denote `_()` to be the hole construct.
 Using CodeQL, we find the AST node whose string representation includes `_()`.
 Then we climb up the tree to find the enclosing statement, and its type annotation.
-Note the term *type annotation*. CodeQL cannot infer the type of a given hole. Every statement with a hole must include an explicit type annotation. We are looking into ways to infer the type of the hole.
+Note the term *type annotation*. CodeQL cannot infer the type of a given hole.
+Every statement with a hole must include an explicit type annotation.
+We are looking into ways to infer the type of the hole.
 
 ### Extracting relevant types
 
 Once we have the type of the hole, we recursively extract types from its components.
-For example, if the hole type includes `Model` and `Action`, we visit those types, get their definitions, and recurse on their components.
+For example, if the hole type includes `Model` and `Action`, we do the following:
+
+- Visit those types.
+- Get their definitions.
+- Recurse on their components, until we reach primitive types.
+
 In the end, we save all discovered relevant types into a map.
 
 ### Extracting relevant headers
@@ -108,8 +115,17 @@ The target types are as follows:
 - The type of the hole itself. (Model, Action) => Model
 - If the hole is a function, its return type.
 - If the hole is a tuple, its component types.
+- Recurse.
 
 At this point, we have two different ways to check for consistency:
 
 - Generate normal forms of both types and check whether they are the same.
-- Use `tsc` to compile the following checker function: `check(a: HeaderType): TargetType { return a };`
+- Use `tsc` to check if the following function compiles: `function check (a: HeaderType): TargetType { return a };`
+- (possibly) Recursively extract types from headers. For each header, check if there are any common subsets between it's recursive types and target types. (possibly a faster normal form checker)
+
+We use CodeQL to get all headers in the codebase, then sift through each one to extract the relevant ones.
+We finally save these into a map.
+
+## Limitations
+
+
