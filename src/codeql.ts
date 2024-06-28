@@ -758,6 +758,7 @@ const getRelevantHeaders3 = (
 ) => {
   // console.log("getRelevantHeaders3 start: ", Date.now())
   const obj = generateTargetTypes3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, relevantTypes);
+  console.log("target types:", obj)
   const targetTypes = obj.targetTypes;
   const knownNormalForms = obj.knownNormalForms;
   const relevantHeaders = new Set<string>();
@@ -849,13 +850,13 @@ const normalize3 = (
       const normalFormBuilder: string[] = [];
       normalFormBuilder.push("(");
       argumentTypes.forEach((argTyp, i) => {
-        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: argTyp.name, typeQLClass: argTyp.qlClass }, knownTypes, targetTypes, knownNormalForms));
+        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, argTyp, knownTypes, targetTypes, knownNormalForms));
         if (i < argumentTypes.length - 1) {
           normalFormBuilder.push(", ");
         }
       });
       normalFormBuilder.push(") => ");
-      normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: returnType.name, typeQLClass: returnType.qlClass }, knownTypes, targetTypes, knownNormalForms));
+      normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, returnType, knownTypes, targetTypes, knownNormalForms));
 
       const normalForm = normalFormBuilder.join("");
       targetTypes.add(normalForm);
@@ -896,10 +897,10 @@ const normalize3 = (
       const normalFormBuilder: string[] = [];
       normalFormBuilder.push("{");
       components.forEach((obj, i) => {
-        if (isQLLabel(obj.qlClass)) {
-          normalFormBuilder.push("".concat(" ", obj.name, ": "));
+        if (isQLLabel(obj.typeQLClass)) {
+          normalFormBuilder.push("".concat(" ", obj.typeName, ": "));
         } else {
-          normalFormBuilder.push("".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, knownTypes, targetTypes, knownNormalForms)));
+          normalFormBuilder.push("".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, knownTypes, targetTypes, knownNormalForms)));
 
           if (i < components.length - 1) {
             normalFormBuilder.push("; ");
@@ -951,8 +952,8 @@ const normalize3 = (
       const normalFormBuilder: string[] = [];
       normalFormBuilder.push("[");
       components.forEach((obj, i) => {
-        if (!isQLIdentifier(obj.qlClass)) {
-          normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, knownTypes, targetTypes, knownNormalForms));
+        if (!isQLIdentifier(obj.typeQLClass)) {
+          normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, knownTypes, targetTypes, knownNormalForms));
           if (i < components.length - 1) {
             normalFormBuilder.push(", ");
           }
@@ -997,7 +998,7 @@ const normalize3 = (
 
       const normalFormBuilder: string[] = [];
       components.forEach((obj, i) => {
-        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: obj.name, typeQLClass: obj.qlClass }, knownTypes, targetTypes, knownNormalForms));
+        normalFormBuilder.push(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, obj, knownTypes, targetTypes, knownNormalForms));
         if (i < components.length - 1) {
           normalFormBuilder.push(" | ");
         }
@@ -1035,13 +1036,13 @@ const normalize3 = (
       const components = definition.components;
       const elementType = components[0];
 
-      const normalForm = "".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: elementType.name, typeQLClass: elementType.qlClass }, knownTypes, targetTypes, knownNormalForms), "[]");
+      const normalForm = "".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, elementType, knownTypes, targetTypes, knownNormalForms), "[]");
       targetTypes.add(normalForm);
       knownNormalForms.set(typ.typeName, normalForm);
       return normalForm;
     } else if (knownTypes.has(typ.typeName.replace("[]", ""))) {
       const definition = knownTypes.get(typ.typeName.replace("[]", ""))!;
-      const normalForm = "".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, { typeName: definition.typeName, typeQLClass: definition.typeQLClass }, knownTypes, targetTypes, knownNormalForms), "[]");
+      const normalForm = "".concat(normalize3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, definition, knownTypes, targetTypes, knownNormalForms), "[]");
       targetTypes.add(normalForm);
       knownNormalForms.set(typ.typeName, normalForm);
       return normalForm;
@@ -1096,6 +1097,7 @@ const getRelevantHeaders4 = (
   pathToDatabase: string,
   outDir: string,
   headers: Map<string, varsObject>,
+  holeType: typesObject,
   relevantTypes: Map<string, relevantTypeObject>,
   knownTypeLocations: { locationToType: Map<string, string[]>, typeToLocation: Map<string, string> }
 ) => {
@@ -1110,13 +1112,92 @@ const getRelevantHeaders4 = (
   const relevantHeaders = new Set<string>();
   console.log("headers: ", headers)
 
+  const targetTypes = getTargetTypes(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, relevantTypes, holeType);
+  console.log("targetTypes", targetTypes);
+
   headers.forEach(header => {
-    if (isRelevantHeader(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, header, relevantTypes, knownTypeLocations)) {
+    if (isRelevantHeader(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, header, targetTypes, relevantTypes, knownTypeLocations)) {
       // TODO: need to strip identifiers from functions, interfaces, tuples, ...
       relevantHeaders.add(header.constDeclaration);
     }
   });
   return relevantHeaders;
+}
+
+
+const getTargetTypes = (
+  pathToCodeQL: string,
+  pathToQueryDir: string,
+  pathToDatabase: string,
+  outDir: string,
+  relevantTypes: Map<string, relevantTypeObject>,
+  holeType: typesObject
+): Map<string, typesObject> => {
+  const targetTypes = new Map<string, typesObject>();
+  targetTypes.set(holeType.typeName, holeType);
+  getTargetTypesHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, relevantTypes, holeType, targetTypes);
+
+  return targetTypes;
+}
+
+
+const getTargetTypesHelper = (
+  pathToCodeQL: string,
+  pathToQueryDir: string,
+  pathToDatabase: string,
+  outDir: string,
+  relevantTypes: Map<string, relevantTypeObject>,
+  currType: typesObject,
+  targetTypes: Map<string, typesObject>
+) => {
+  // console.log("===Helper===")
+  // console.log("currType: ", currType)
+  // console.log("targetTypes: ", targetTypes)
+  if (isQLFunction(currType.typeQLClass)) {
+    if (relevantTypes.has(currType.typeName)) {
+      const definition = relevantTypes.get(currType.typeName)!;
+      const components = definition.components;
+      const returnType = components[0];
+      targetTypes.set(returnType.typeName, returnType);
+      getTargetTypesHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, relevantTypes, returnType, targetTypes);
+
+    } else {
+      const q = createReturnTypeQuery(currType.typeName);
+      const qPath = path.join(pathToQueryDir, "types.ql");
+      fs.writeFileSync(qPath, q);
+      const queryRes: typesObject[] = extractTypes(pathToCodeQL, qPath, pathToDatabase, outDir);
+      // console.log("fqr: ", queryRes)
+      const returnType = queryRes[0];
+      targetTypes.set(returnType.typeName, returnType);
+      getTargetTypesHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, relevantTypes, returnType, targetTypes);
+    }
+
+  } else if (isQLTuple(currType.typeQLClass)) {
+    if (relevantTypes.has(currType.typeName)) {
+      const definition = relevantTypes.get(currType.typeName)!;
+      const components = definition.components;
+      for (const comp of components) {
+        targetTypes.set(comp.typeName, comp);
+        getTargetTypesHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, relevantTypes, comp, targetTypes);
+      }
+    } else {
+      const q = createTupleComponentsTypeQuery(currType.typeName);
+      const qPath = path.join(pathToQueryDir, "types.ql");
+      fs.writeFileSync(qPath, q);
+      const queryRes: typesObject[] = extractTypes(pathToCodeQL, qPath, pathToDatabase, outDir);
+      // console.log("tqr: ", queryRes)
+      for (const comp of queryRes) {
+        targetTypes.set(comp.typeName, comp);
+        getTargetTypesHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, relevantTypes, comp, targetTypes);
+      }
+    }
+  } else if (isQLLocalTypeAccess(currType.typeQLClass)) {
+    if (relevantTypes.has(currType.typeName)) {
+      const definition = relevantTypes.get(currType.typeName)!;
+      const nextType: typesObject = { typeName: definition.typeName, typeQLClass: definition.typeQLClass };
+      getTargetTypesHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, relevantTypes, nextType, targetTypes);
+    }
+  }
 }
 
 
@@ -1126,32 +1207,34 @@ const isRelevantHeader = (
   pathToDatabase: string,
   outDir: string,
   header: varsObject,
+  targetTypes: Map<string, typesObject>,
   relevantTypes: Map<string, relevantTypeObject>,
   knownTypeLocations: { locationToType: Map<string, string[]>, typeToLocation: Map<string, string> }
 ): boolean => {
   // console.log("===isRelevantHeader===")
 
   const currType: typesObject = { typeName: header.typeAnnotation, typeQLClass: header.typeQLClass };
-  console.log("currType: ", currType)
-  if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, currType, relevantTypes, knownTypeLocations)) {
-    return true;
-  } else {
-    if (isQLFunction(header.typeQLClass)) {
-      console.log("isQLFunction")
-      // if function, recurse on return type
-      const returnType: typesObject = header.components[0];
-      return isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, returnType, relevantTypes, knownTypeLocations);
-
-    } else if (isQLTuple(header.typeQLClass)) {
-      console.log("isQLTuple")
-      // if tuple, recurse on component types
-      const components = header.components;
-      for (const comp of components) {
-        if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, comp, relevantTypes, knownTypeLocations)) return true;
-      }
-    }
-    return false;
-  };
+  return isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, currType, targetTypes, relevantTypes, knownTypeLocations);
+  // console.log("currType: ", currType)
+  // if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, currType, relevantTypes, knownTypeLocations)) {
+  //   return true;
+  // } else {
+  //   if (isQLFunction(header.typeQLClass)) {
+  //     // console.log("isQLFunction")
+  //     // if function, recurse on return type
+  //     const returnType: typesObject = header.components[0];
+  //     return isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, returnType, relevantTypes, knownTypeLocations);
+  //
+  //   } else if (isQLTuple(header.typeQLClass)) {
+  //     // console.log("isQLTuple")
+  //     // if tuple, recurse on component types
+  //     const components = header.components;
+  //     for (const comp of components) {
+  //       if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, comp, relevantTypes, knownTypeLocations)) return true;
+  //     }
+  //   }
+  //   return false;
+  // };
 }
 
 const isRelevantHeaderHelper = (
@@ -1160,34 +1243,54 @@ const isRelevantHeaderHelper = (
   pathToDatabase: string,
   outDir: string,
   typ: typesObject,
+  targetTypes: Map<string, typesObject>,
   relevantTypes: Map<string, relevantTypeObject>,
   knownTypeLocations: { locationToType: Map<string, string[]>, typeToLocation: Map<string, string> }
 ): boolean => {
   console.log("===helper===")
   console.log(`typ: ${JSON.stringify(typ)}`)
-  if (relevantTypes.has(typ.typeName)) {
+  if (targetTypes.has(typ.typeName)) {
     return true;
   }
 
   // this can be a big file that compiles once.
   const scrutineeType = typ.typeName;
-  const comparisonTypes = Array.from(relevantTypes.values(), val => { return val.typeName });
+  const comparisonTypes = Array.from(targetTypes.keys());
   if (isConsistent(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, scrutineeType, comparisonTypes, knownTypeLocations)) {
     return true;
   } else if (isQLFunction(typ.typeQLClass)) {
-    const q = createReturnTypeQuery(typ.typeName);
-    const qPath = path.join(pathToQueryDir, "types.ql");
-    fs.writeFileSync(qPath, q);
-    const queryRes: typesObject[] = extractTypes(pathToCodeQL, qPath, pathToDatabase, outDir);
-    return isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, queryRes[0], relevantTypes, knownTypeLocations);
+    // if (isQLFunction(typ.typeQLClass)) {
+    if (relevantTypes.has(typ.typeName)) {
+      const definition = relevantTypes.get(typ.typeName)!;
+      const components = definition.components;
+      const returnType = components[0];
+      return isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, returnType, targetTypes, relevantTypes, knownTypeLocations);
+
+    } else {
+      console.log("fquery")
+      const q = createReturnTypeQuery(typ.typeName);
+      const qPath = path.join(pathToQueryDir, "types.ql");
+      fs.writeFileSync(qPath, q);
+      const queryRes: typesObject[] = extractTypes(pathToCodeQL, qPath, pathToDatabase, outDir);
+      return isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, queryRes[0], targetTypes, relevantTypes, knownTypeLocations);
+    }
 
   } else if (isQLTuple(typ.typeQLClass)) {
-    const q = createTupleComponentsTypeQuery(typ.typeName);
-    const qPath = path.join(pathToQueryDir, "types.ql");
-    fs.writeFileSync(qPath, q);
-    const queryRes: typesObject[] = extractTypes(pathToCodeQL, qPath, pathToDatabase, outDir);
-    for (const comp of queryRes) {
-      if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, comp, relevantTypes, knownTypeLocations)) return true;
+    if (relevantTypes.has(typ.typeName)) {
+      const definition = relevantTypes.get(typ.typeName)!;
+      const components = definition.components;
+      for (const comp of components) {
+        if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, comp, targetTypes, relevantTypes, knownTypeLocations)) return true;
+      }
+    } else {
+      console.log("tquery")
+      const q = createTupleComponentsTypeQuery(typ.typeName);
+      const qPath = path.join(pathToQueryDir, "types.ql");
+      fs.writeFileSync(qPath, q);
+      const queryRes: typesObject[] = extractTypes(pathToCodeQL, qPath, pathToDatabase, outDir);
+      for (const comp of queryRes) {
+        if (isRelevantHeaderHelper(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, comp, targetTypes, relevantTypes, knownTypeLocations)) return true;
+      }
     }
   }
   return false;
@@ -1207,7 +1310,7 @@ const isConsistent = (
   comparisonTypes: string[],
   knownTypeLocations: { locationToType: Map<string, string[]>, typeToLocation: Map<string, string> }
 ): boolean => {
-  console.log("===isConsistent===")
+  console.log(`===isConsistent===`)
 
   // TODO: this is still too slow. let's just import everything and compile everything
   // TODO: abstract this
@@ -1240,20 +1343,20 @@ const isConsistent = (
   const dependencyErrorInvoker = createDependencyErrorInvoker([scrutineeType, ...comparisonTypes]);
   const invokerPath = path.join(outDir, "invokeDependencyError.ts");
   fs.writeFileSync(invokerPath, dependencyErrorInvoker);
-
+ 
   const dependencies: string[] = [];
-
+ 
   try {
     execSync(`tsc ${invokerPath}`);
   } catch (err: any) {
     dependencies.push(...extractDependencies(err.stdout.toString()));
   }
-
+ 
   // TODO: this is slow. we should just use a global map to find the locations.
   // use CodeQL to find their locations
   // we could do this for each comparisonType, but lots of individual queries are expensive.
   // const filesAndDependencies = resolveDependencies(pathToCodeQL, pathtoQueryDir, pathToDatabase, outDir, dependencies);
-
+ 
   // loop over dependencies. for each dep, check in knownTypes.typeToLocation to see the location.
   // const filesAndDependencies = dependencies.reduce((m, dep) => {
   //   const location = knownTypeLocations.typeToLocation.get(dep);
@@ -1270,13 +1373,13 @@ const isConsistent = (
   // }, new Map<string, string[]>);
   const filesAndDependencies = resolveDependencies(pathToCodeQL, pathtoQueryDir, pathToDatabase, outDir, dependencies, knownTypeLocations);
   console.log("filesAndDependencies: ", filesAndDependencies)
-
+ 
   // inject those dependencies into the checker
   for (const comparisonType of comparisonTypes) {
     const checkFunction = createConsistencyCheckFunction(scrutineeType, comparisonType, filesAndDependencies);
     const checkPath = path.join(outDir, "checkConsistency.ts");
     fs.writeFileSync(checkPath, checkFunction);
-
+ 
     try {
       execSync(`tsc ${checkPath}`);
       return true;

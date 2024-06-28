@@ -67,11 +67,11 @@ const parseCodeQLRelevantTypes = (table: relevantTypeQueryResult): Map<string, r
         typeName: typeName,
         typeDefinition: typeDefinition,
         typeQLClass: typeQLClass,
-        components: [{ name: componentName, qlClass: componentQLClass }]
+        components: [{ typeName: componentName, typeQLClass: componentQLClass }]
       });
     } else {
       const value = m.get(typeName)!;
-      value.components.push({ name: componentName, qlClass: componentQLClass });
+      value.components.push({ typeName: componentName, typeQLClass: componentQLClass });
       m.set(typeName, value);
     }
   });

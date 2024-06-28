@@ -185,7 +185,8 @@ export const extractWithCodeQL = async (sketchPath: string) => {
     const holeType = extractHoleType(CODEQL_PATH, path.join(QUERY_DIR, "hole.ql"), databasePath, targetPath);
     console.log("holeType: ", holeType);
     const relevantTypes = extractRelevantTypesWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "relevant-types.ql"), databasePath, targetPath);
-    console.log("relevantTypes: ", Array.from(relevantTypes, ([k, v]) => { return v.typeAliasDeclaration; }));
+    // console.log("relevantTypes: ", Array.from(relevantTypes, ([k, v]) => { return v.typeAliasDeclaration; }));
+    console.log("relevantTypes: ", relevantTypes)
     const headers = extractHeadersWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "vars.ql"), databasePath, targetPath);
     console.log("headers: ", headers)
     // const relevantContext = extractRelevantContextWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, relevantTypes);
@@ -194,11 +195,11 @@ export const extractWithCodeQL = async (sketchPath: string) => {
     // console.log("relevantHeaders: ", relevantHeaders);
     const knownTypeLocations = extractTypesAndLocations(CODEQL_PATH, path.join(QUERY_DIR, "imports.ql"), databasePath, targetPath);
     console.log("known type locations: ", knownTypeLocations)
-    // TODO:
-    const relevantHeaders = getRelevantHeaders3(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, holeType, relevantTypes);
-    console.log("relevantHeaders: ", Array.from(relevantHeaders));
-    // const relevantHeaders = getRelevantHeaders4(CODEQL_PATH, QUERY_DIR, databasePath, targetPath, headers, relevantTypes, knownTypeLocations);
+    // NOTE: switch between the two header extraction methods
+    // const relevantHeaders = getRelevantHeaders3(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, holeType, relevantTypes);
     // console.log("relevantHeaders: ", Array.from(relevantHeaders));
+    const relevantHeaders = getRelevantHeaders4(CODEQL_PATH, QUERY_DIR, databasePath, targetPath, headers, holeType, relevantTypes, knownTypeLocations);
+    console.log("relevantHeaders: ", Array.from(relevantHeaders));
     const end = Date.now()
     console.log("end: ", end)
     console.log("elapsed: ", end - start)

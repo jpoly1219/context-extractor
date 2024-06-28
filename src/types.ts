@@ -3,7 +3,7 @@ interface relevantTypeObject {
   typeName: string;
   typeDefinition: string;
   typeQLClass: string;
-  components: { name: string, qlClass: string }[];
+  components: typesObject[];
 }
 
 interface varsObject {
