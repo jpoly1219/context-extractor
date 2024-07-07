@@ -4,3 +4,7 @@ dist/
 *.txt
 *.csv
 *.json
+.env
+venv
+codeql
+*db
