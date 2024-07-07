@@ -3,10 +3,10 @@
 # Constants
 run_name=${1:-default}
 projectRoot=$(pwd)
-log_directory="$projectRoot/types-and-headers/testlog"
-collate_script="$projectRoot/collate_data.sh"
+log_directory="$projectRoot/starcoder-types-and-headers/testlog"
+collate_script="$projectRoot/types_and_headers_collate_data.sh"
 take_snapshot="$projectRoot/take_snapshot.sh"
-command_prefix="node --env-file=.env src/types-and-headers.mjs"
+command_prefix="node --env-file=.env src/starcoder-types-and-headers.mjs"
 # command_prefix="node src/testrunner-starcoder.mjs"
 
 command_timeout=120
@@ -22,22 +22,22 @@ num_runs=20
 # 	"/home/jacob/projects/testtslspclient/targets/starcoder-emojipaint/"
 # )
 source_folders=(
-	# "$projectRoot/targets/todo/"
-	# "$projectRoot/targets/playlist/"
-	"$projectRoot/targets/passwords/"
-	# "$projectRoot/targets/booking/"
-	# "$projectRoot/targets/emojipaint/"
+	"$projectRoot/targets/starcoder-todo/"
+	"$projectRoot/targets/starcoder-playlist/"
+	"$projectRoot/targets/starcoder-passwords/"
+	"$projectRoot/targets/starcoder-booking/"
+	"$projectRoot/targets/starcoder-emojipaint/"
 )
 
 # Optional argument variations
 opt_arg_variations=(
-	"--type-constraint false --relevant-ctx false --error_rounds_max 2"
-	"--type-constraint false --relevant-ctx true --error_rounds_max 2"
-	"--type-constraint true --relevant-ctx false --error_rounds_max 2"
-	"--type-constraint true --relevant-ctx true --error_rounds_max 2"
+	# "--type-constraint false --relevant-ctx false --error_rounds_max 2"
 	"--type-constraint false --relevant-ctx false --error_rounds_max 0"
+	# "--type-constraint false --relevant-ctx true --error_rounds_max 2"
 	"--type-constraint false --relevant-ctx true --error_rounds_max 0"
+	# "--type-constraint true --relevant-ctx false --error_rounds_max 2"
 	"--type-constraint true --relevant-ctx false --error_rounds_max 0"
+	# "--type-constraint true --relevant-ctx true --error_rounds_max 2"
 	"--type-constraint true --relevant-ctx true --error_rounds_max 0"
 )
 # "--type-constraint false --relevant-ctx false"

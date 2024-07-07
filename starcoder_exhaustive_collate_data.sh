@@ -2,10 +2,10 @@
 
 # Set the path to the testout folder
 projectRoot=$(pwd)
-testout_folder="$projectRoot/vector-retrieval/out/"
+testout_folder="$projectRoot/starcoder-exhaustive-retrieval/out/"
 
 # Set the output CSV file name
-output_file="${1}_vector_collated_data.csv"
+output_file="${1}_starcoder_exhaustive_collated_data.csv"
 
 # Initialize an array to store the keys (column headers)
 keys=()

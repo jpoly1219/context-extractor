@@ -1,26 +1,26 @@
 #!/bin/bash
 
 # Constants
-command_prefix="node --env-file=.env src/exhaustive-retrieval.mjs"
+command_prefix="node --env-file=.env src/starcoder-vector-retrieval.mjs"
 # api_key="--api-key $HOME/azure-4-api-key.txt"
 # api_key="--api-key /home/jacob/projects/testtslspclient/openai-key.txt"
 run_name=${1:-default}
 projectRoot=$(pwd)
-log_directory="$projectRoot/exhaustive-retrieval/testlog"
-collate_script="$projectRoot/exhaustive_collate_data.sh"
+log_directory="$projectRoot/starcoder-vector-retrieval/testlog"
+collate_script="$projectRoot/starcoder_vector_collate_data.sh"
 # warm_serials="warm_serials.sh"
 
 command_timeout=180
 wait_time=0
-num_runs=20
+num_runs=5
 
 # Source folders
 source_folders=(
-	"$projectRoot/targets/todo/"
-	"$projectRoot/targets/playlist/"
-	"$projectRoot/targets/booking/"
-	"$projectRoot/targets/emojipaint/"
-	"$projectRoot/targets/passwords/"
+	"$projectRoot/targets/starcoder-todo/"
+	"$projectRoot/targets/starcoder-playlist/"
+	"$projectRoot/targets/starcoder-booking/"
+	"$projectRoot/targets/starcoder-emojipaint/"
+	"$projectRoot/targets/starcoder-passwords/"
 )
 
 # Optional argument variations
@@ -36,8 +36,8 @@ opt_arg_variations=(
 	# "--temperature 0.6 --expected_type --error_rounds_max 0"
 	# "--temperature 0.3 --expected_type --error_rounds_max 0"
 
-	"--temperature 0.6 --error_rounds_max 2"
-	"--temperature 0.6 --error_rounds_max 0"
+	"--temperature 0.6 --rag prelude.haze --error_rounds_max 2"
+	"--temperature 0.6 --rag prelude.haze --error_rounds_max 0"
 
 	# Mammoth experiment
 	# "--temperature 0.6 --rag RAG.txt --error_rounds_max 2"
@@ -91,7 +91,7 @@ run_command() {
 	source_folder=$2
 	source=$(basename ${source_folder})
 	timestamp=$(date +%Y%m%d_%H%M%S)
-	log_file="$log_directory/${run_name}-${source}-exhaustive-${timestamp}.log"
+	log_file="$log_directory/${run_name}-${source}-vector-${timestamp}.log"
 
 	if $verbose; then
 		timeout --foreground "$command_timeout"s bash -c "$command_prefix --run_name \"$run_name\" $opt_args --source_folder \"$source_folder\" $timestamp | tee \"$log_file\"" &

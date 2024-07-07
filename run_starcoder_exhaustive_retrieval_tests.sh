@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Constants
-command_prefix="node --env-file=.env src/exhaustive-retrieval.mjs"
+command_prefix="node --env-file=.env src/starcoder-exhaustive-retrieval.mjs"
 # api_key="--api-key $HOME/azure-4-api-key.txt"
 # api_key="--api-key /home/jacob/projects/testtslspclient/openai-key.txt"
 run_name=${1:-default}
 projectRoot=$(pwd)
-log_directory="$projectRoot/exhaustive-retrieval/testlog"
-collate_script="$projectRoot/exhaustive_collate_data.sh"
+log_directory="$projectRoot/starcoder-exhaustive-retrieval/testlog"
+collate_script="$projectRoot/starcoder_exhaustive_collate_data.sh"
 # warm_serials="warm_serials.sh"
 
 command_timeout=180
@@ -16,11 +16,11 @@ num_runs=20
 
 # Source folders
 source_folders=(
-	"$projectRoot/targets/todo/"
-	"$projectRoot/targets/playlist/"
-	"$projectRoot/targets/booking/"
-	"$projectRoot/targets/emojipaint/"
-	"$projectRoot/targets/passwords/"
+	"$projectRoot/targets/starcoder-todo/"
+	"$projectRoot/targets/starcoder-playlist/"
+	"$projectRoot/targets/starcoder-booking/"
+	"$projectRoot/targets/starcoder-emojipaint/"
+	"$projectRoot/targets/starcoder-passwords/"
 )
 
 # Optional argument variations
@@ -36,7 +36,7 @@ opt_arg_variations=(
 	# "--temperature 0.6 --expected_type --error_rounds_max 0"
 	# "--temperature 0.3 --expected_type --error_rounds_max 0"
 
-	"--temperature 0.6 --error_rounds_max 2"
+	# "--temperature 0.6 --error_rounds_max 2"
 	"--temperature 0.6 --error_rounds_max 0"
 
 	# Mammoth experiment

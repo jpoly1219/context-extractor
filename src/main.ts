@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantContext } from "./core";
 import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractRelevantContextWithCodeQL, extractHeadersWithCodeQL, getRelevantHeaders, extractHoleType, getRelevantHeaders3, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
-import { CODEQL_PATH, QUERY_DIR } from "./constants.js";
+import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants.js";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
 export const extract = async (sketchPath: string) => {
@@ -161,48 +161,51 @@ export const extract = async (sketchPath: string) => {
     outputFile,
     1
   );
-  console.log("relevantTypes:", relevantTypes);
+  // console.log("relevantTypes:", relevantTypes);
 
-  logFile.end();
-  logFile.close();
-  outputFile.end();
-  outputFile.close();
+  // logFile.end();
+  // logFile.close();
+  // outputFile.end();
+  // outputFile.close();
 
   const preludeContent = fs.readFileSync(`${rootPath}/prelude.ts`).toString("utf8");
-  const relevantContext = extractRelevantContext(preludeContent, relevantTypes);
+  const relevantHeaders = extractRelevantContext(preludeContent, relevantTypes);
   // console.log(relevantContext);
-  return { holeContext: holeContext, relevantTypes: Array.from(relevantTypes), relevantContext: relevantContext };
+  // return { holeContext: holeContext, relevantTypes: Array.from(relevantTypes), relevantContext: relevantContext };
+  return { hole: holeContext.functionTypeSpan, relevantTypes: Array.from(relevantTypes, ([k, v]) => { return v }), relevantHeaders: relevantHeaders };
 }
 
 export const extractWithCodeQL = async (sketchPath: string) => {
   const start = Date.now();
-  console.log("start: ", start)
+  console.log("ROOT_DIR: ", ROOT_DIR);
+  console.log("DEPS_DIR: ", DEPS_DIR);
+  console.log("CODEQL_PATH: ", CODEQL_PATH);
   const targetPath = path.dirname(sketchPath);
 
   try {
     // extraction
     const databasePath = createDatabaseWithCodeQL(CODEQL_PATH, targetPath);
     const holeType = extractHoleType(CODEQL_PATH, path.join(QUERY_DIR, "hole.ql"), databasePath, targetPath);
-    console.log("holeType: ", holeType);
+    // console.log("holeType: ", holeType);
     const relevantTypes = extractRelevantTypesWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "relevant-types.ql"), databasePath, targetPath);
     // console.log("relevantTypes: ", Array.from(relevantTypes, ([k, v]) => { return v.typeAliasDeclaration; }));
-    console.log("relevantTypes: ", relevantTypes)
+    // console.log("relevantTypes: ", relevantTypes)
     const headers = extractHeadersWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "vars.ql"), databasePath, targetPath);
-    console.log("headers: ", headers)
+    // console.log("headers: ", headers)
     // const relevantContext = extractRelevantContextWithCodeQL(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, relevantTypes);
     // console.log("relevantContext: ", relevantContext);
     // const relevantHeaders = getRelevantHeaders(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, holeType);
     // console.log("relevantHeaders: ", relevantHeaders);
     const knownTypeLocations = extractTypesAndLocations(CODEQL_PATH, path.join(QUERY_DIR, "imports.ql"), databasePath, targetPath);
-    console.log("known type locations: ", knownTypeLocations)
+    // console.log("known type locations: ", knownTypeLocations)
     // NOTE: switch between the two header extraction methods
     // const relevantHeaders = getRelevantHeaders3(CODEQL_PATH, path.join(QUERY_DIR, "types.ql"), databasePath, targetPath, headers, holeType, relevantTypes);
     // console.log("relevantHeaders: ", Array.from(relevantHeaders));
     const relevantHeaders = getRelevantHeaders4(CODEQL_PATH, QUERY_DIR, databasePath, targetPath, headers, holeType, relevantTypes, knownTypeLocations);
-    console.log("relevantHeaders: ", Array.from(relevantHeaders));
+    // console.log("relevantHeaders: ", Array.from(relevantHeaders));
     const end = Date.now()
-    console.log("end: ", end)
-    console.log("elapsed: ", end - start)
+    // console.log("end: ", end)
+    // console.log("elapsed: ", end - start)
 
     return { hole: holeType.typeName, relevantTypes: Array.from(relevantTypes, ([k, v]) => { return JSON.stringify(v) }), relevantHeaders: Array.from(relevantHeaders) };
   } catch (err) {

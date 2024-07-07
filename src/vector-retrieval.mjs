@@ -1,10 +1,9 @@
 import OpenAI from "openai";
 import { execSync } from "child_process";
 import * as fs from "fs";
-import { generateVectorRetrievalPrompt, generateErrorCorrectionPrompt, joinFiles, fillHole } from "./testrunner-core.js";
-import { setDefaultAutoSelectFamilyAttemptTimeout } from "net";
+import * as path from "path"
+import { generateVectorRetrievalPrompt, generateErrorCorrectionPrompt, joinFiles, fillHole } from "./testrunner-core.mjs";
 
-// TODO: parse CLI args and setup logging information
 
 /* PHASE 1: INITIALIZATION */
 
@@ -91,17 +90,21 @@ fs.mkdirSync(outDirRoot, { recursive: true }, (err) => { if (err) throw err; });
 const logDirRoot = path.join(projectRoot, "vector-retrieval", "testlog");
 const backupDir = path.join(projectRoot, "vector-retrieval", "backup", `${runID}`);
 fs.mkdirSync(backupDir, { recursive: true }, (err) => { if (err) throw err; });
+const combinedFolder = path.join(projectRoot, "targets", "combined");
 
 
 /* PHASE 2: TYPE EXTRACTION */
 
-// TODO: run py scripts to generate RAG files
+// NOTE: run py scripts to generate RAG files. This is already done for the reviewers.
+execSync(`python3 ${path.join(projectRoot, "chunker2.py")}`)
+execSync(`python3 ${path.join(projectRoot, "generate_rags.py")}`)
 
 /* PHASE 3: LLM CODE SYNTHESIS */
 
 // ask LLM to complete the sketch using the returned types
 console.log("\n\n=== Generating Prompt ===\n\n");
-const ragCtx = fs.readFileSync(`${sourceFolder}RAG.txt`)
+const sketchFileContent = fs.readFileSync(path.join(sourceFolder, "sketch.ts"), "utf8");
+const ragCtx = fs.readFileSync(`${path.join(sourceFolder, "RAG.txt")}`)
 let prompt = [];
 prompt = generateVectorRetrievalPrompt(sketchFileContent, ragCtx);
 // console.log(JSON.stringify(prompt, "", 2));
@@ -241,9 +244,9 @@ for (let i = 0; i < parseInt(errorRoundsMax) + 1; i++) {
       const llmCompletedSketch = fillHole(sketchFileContent, llmResult.choices[0].message.content);
       fs.writeFileSync(`${path.join(sourceFolder, "vector_llm_completed_sketch.ts")}`, llmCompletedSketch);
       const testSuiteContent = joinFiles([
-        `${path.join(sourceFolder, "prelude.ts")}`,
-        `${path.join(sourceFoler, "vector_llm_completed_sketch.ts")}`,
-        `${path.join(sourceFolder, "epilogue.ts")}`
+        path.join(sourceFolder, "prelude.ts"),
+        path.join(sourceFolder, "vector_llm_completed_sketch.ts"),
+        path.join(sourceFolder, "epilogue.ts")
       ]);
 
       fs.writeFileSync(`${path.join(sourceFolder, "vector_test_suite.ts")}`, testSuiteContent);
@@ -261,7 +264,7 @@ runData["derived-total-tokens-used"] = totalTokensUsed;
 
 console.log("\n\n=== Running Test Suite ===\n\n")
 try {
-  const testResult = execSync(`node ${sourceFolder}vector_test_suite.js`);
+  const testResult = execSync(`node ${path.join(sourceFolder, "vector_test_suite.js")}`);
   console.log("testResult: ", testResult.toString().split("\n"));
   const splitTestResult = testResult.toString().split("\n");
   console.log(splitTestResult)
@@ -322,9 +325,6 @@ let runDataStr = "";
 for (const [k, v] of Object.entries(runData)) {
   runDataStr += k + ":" + v + "\n";
 }
-
-fs.writeFileSync(`${outDirRoot}/run.data`, runDataStr);
-fs.writeFileSync(`${backupDir}/run.data`, runDataStr);
 
 fs.writeFileSync(`${path.join(outDirRoot, "run.data")}`, runDataStr);
 fs.writeFileSync(`${path.join(outDirRoot, "PASS")}`, runDataStr);

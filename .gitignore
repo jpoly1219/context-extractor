@@ -8,3 +8,7 @@ dist/
 venv
 codeql
 *db
+*types-and-headers/
+*vector-retrieval/
+*exhaustive-retrieval/
+targets/**/*.js

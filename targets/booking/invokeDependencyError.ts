@@ -1,0 +1,13 @@
+let x: (model: Model, action: Action) => Model;
+let x: Weekday;
+let x: TimeOfDay;
+let x: Time;
+let x: User;
+let x: BookingID;
+let x: Booking;
+let x: BookingFormData;
+let x: Model;
+let x: AddBooking;
+let x: CancelBooking;
+let x: ClearBookings;
+let x: Action;

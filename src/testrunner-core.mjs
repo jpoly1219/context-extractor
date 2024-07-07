@@ -194,13 +194,10 @@ const generateVectorRetrievalPrompt = (sketchFileContent, ragCtx) => {
   let userPrompt = {
     role: "user",
     content:
-      `# Program Sketch to be completed: #\n${sketchFileContent}
+      `# Program Sketch to be completed: #\n${removeLines(sketchFileContent).join("\n")}
 
 # relevant snippets: #
 ${ragCtx}
-
-# Program Sketch to be completed: #
-${removeLines(sketchFileContent).join("\n")}
 
 `
   };
@@ -238,6 +235,47 @@ ${exhaustiveCtx}
   prompt.push(userPrompt);
   return prompt;
 };
+
+
+const generateStarcoderTypesAndHeadersPrompt = (sketchFileContent, relevantTypes, relevantHeaders) => {
+  const prompt = [];
+
+  if (relevantTypes) {
+    for (const rt of relevantTypes) {
+      prompt.push(`${rt}`);
+    }
+  }
+
+  if (relevantHeaders) {
+    for (const rh of relevantHeaders) {
+      prompt.push(`${rh}`);
+    }
+  }
+
+  prompt.push(`${sketchFileContent}`)
+  return prompt.join("\n");
+}
+
+
+const generateStarcoderVectorRetrievalPrompt = (sketchFileContent, ragCtx) => {
+  const prompt = [
+    "/*",
+    `${ragCtx}`,
+    "*/",
+    `${sketchFileContent}`
+  ].join("\n");
+  return prompt;
+}
+
+
+const generateStarcoderExhaustiveRetrievalPrompt = (sketchFileContent, exhaustiveCtx) => {
+  const prompt = [
+    `${exhaustiveCtx}`,
+    `${sketchFileContent}`
+  ].join("\n");
+  return prompt;
+}
+
 
 const mockLLM = (errorRound) => {
   let errorSketch1 = "const update: (m: Model, a: Action) => Model = (m, a) => {\n\
@@ -434,4 +472,4 @@ const fillHole = (fileContent, holeContent) => {
   return inserted.join("\n");
 }
 
-export { generatePrompt, generateTypesAndHeadersPrompt, generateVectorRetrievalPrompt, generateExhaustiveRetrievalPrompt, generateErrorCorrectionPrompt, mockLLM, joinFiles, fillHole };
+export { generatePrompt, generateTypesAndHeadersPrompt, generateVectorRetrievalPrompt, generateExhaustiveRetrievalPrompt, generateErrorCorrectionPrompt, generateStarcoderTypesAndHeadersPrompt, generateStarcoderVectorRetrievalPrompt, generateStarcoderExhaustiveRetrievalPrompt, mockLLM, joinFiles, fillHole };

@@ -4,7 +4,7 @@ import { execSync } from "child_process";
 import { escapeQuotes, parseCodeQLRelevantTypes, parseCodeQLVars, parseCodeQLTypes, isQLFunction, isQLTuple, isQLUnion, isQLArray, isQLLocalTypeAccess, isQLPredefined, isQLLiteral, isQLKeyword, isQLInterface, isQLLabel, isQLIdentifier, parseCodeQLTypesAndLocations, parseCodeQLLocationsAndTypes } from "./utils";
 import { relevantTypeObject, varsObject, typesObject, relevantTypeQueryResult, typeAndLocation } from "./types";
 import { OutliningSpanKind, getDefaultFormatCodeSettings, isLiteralTypeNode, resolveModuleName } from "typescript";
-import { QUERY_DIR } from "./constants";
+import { QUERY_DIR, ROOT_DIR } from "./constants";
 // import { CODEQL_PATH, ROOT_DIR, QUERY_DIR, BOOKING_DIR } from "./constants";
 
 
@@ -12,7 +12,7 @@ const createDatabaseWithCodeQL = (pathToCodeQL: string, targetPath: string): str
   const databaseName = path.basename(targetPath).concat("db");
   const pathToDatabase = path.join(targetPath, databaseName);
   try {
-    execSync(`${pathToCodeQL} database create ${pathToDatabase} --source-root=${targetPath} --overwrite --language=javascript-typescript`)
+    execSync(`${pathToCodeQL} database create ${pathToDatabase} --source-root=${targetPath} --overwrite --language=javascript-typescript 1> ${path.join(ROOT_DIR, "codeql-out", `${path.basename(targetPath)}-codeql-out.txt`)} 2> ${path.join(ROOT_DIR, "codeql-out", `${path.basename(targetPath)}-codeql-err.txt`)}`)
     return pathToDatabase;
   } catch (err) {
     console.error(`error while creating database: ${err}`);
@@ -130,7 +130,6 @@ const extractTypesAndLocations = (
   const typesAndLocationsContent = fs.readFileSync(pathToDecodedJSON);
   const locationsAndTypes = parseCodeQLLocationsAndTypes(JSON.parse(typesAndLocationsContent.toString()));
   const typesAndLocations = parseCodeQLTypesAndLocations(JSON.parse(typesAndLocationsContent.toString()));
-  console.log("extractTypesAndLocations result: ", typesAndLocations)
 
   return { locationToType: locationsAndTypes, typeToLocation: typesAndLocations };
 }
@@ -758,7 +757,6 @@ const getRelevantHeaders3 = (
 ) => {
   // console.log("getRelevantHeaders3 start: ", Date.now())
   const obj = generateTargetTypes3(pathToCodeQL, pathToQuery, pathToDatabase, outDir, holeType, relevantTypes);
-  console.log("target types:", obj)
   const targetTypes = obj.targetTypes;
   const knownNormalForms = obj.knownNormalForms;
   const relevantHeaders = new Set<string>();
@@ -1110,10 +1108,8 @@ const getRelevantHeaders4 = (
   // if it's an arrow type, recurse on the return type.
   // if it's a tuple type, recurse on the components.
   const relevantHeaders = new Set<string>();
-  console.log("headers: ", headers)
 
   const targetTypes = getTargetTypes(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, relevantTypes, holeType);
-  console.log("targetTypes", targetTypes);
 
   headers.forEach(header => {
     if (isRelevantHeader(pathToCodeQL, pathToQueryDir, pathToDatabase, outDir, header, targetTypes, relevantTypes, knownTypeLocations)) {
@@ -1247,8 +1243,6 @@ const isRelevantHeaderHelper = (
   relevantTypes: Map<string, relevantTypeObject>,
   knownTypeLocations: { locationToType: Map<string, string[]>, typeToLocation: Map<string, string> }
 ): boolean => {
-  console.log("===helper===")
-  console.log(`typ: ${JSON.stringify(typ)}`)
   if (targetTypes.has(typ.typeName)) {
     return true;
   }
@@ -1310,7 +1304,6 @@ const isConsistent = (
   comparisonTypes: string[],
   knownTypeLocations: { locationToType: Map<string, string[]>, typeToLocation: Map<string, string> }
 ): boolean => {
-  console.log(`===isConsistent===`)
 
   // TODO: this is still too slow. let's just import everything and compile everything
   // TODO: abstract this

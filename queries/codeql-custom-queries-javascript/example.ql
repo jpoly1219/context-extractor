@@ -6,11 +6,5 @@
 
 import javascript
 
-from File fi, TypeExpr t
-where
-    (
-        t.toString() = "Weekday" or
-        t.toString() = "TimeOfDay"
-    ) and
-    t.getFile() = fi
-select t.toString(), fi.toString()
+from Type t
+select t

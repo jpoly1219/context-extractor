@@ -1,8 +1,7 @@
-import OpenAI from "openai";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import { generatePrompt, generateErrorCorrectionPrompt, joinFiles, fillHole, generateTypesAndHeadersPrompt } from "./testrunner-core.mjs";
+import { joinFiles, generateStarcoderTypesAndHeadersPrompt } from "./testrunner-core.mjs";
 import { extractWithCodeQL } from "../dist/index.js";
 
 /* PHASE 1: INITIALIZATION */
@@ -86,26 +85,29 @@ runData["start-time"] = unixTimestamp;
 // directory defintions
 const projectRoot = process.cwd();
 const runID = `${runName}-${source}-types-and-headers-${bashTimestamp}`;
-const outDirRoot = path.join(projectRoot, "types-and-headers", "out", runID);
+const outDirRoot = path.join(projectRoot, "starcoder-types-and-headers", "out", runID);
 fs.mkdirSync(outDirRoot, { recursive: true }, (err) => { if (err) throw err; });
-const logDirRoot = path.join(projectRoot, "types-and-headers", "testlog");
-const backupDir = path.join(projectRoot, "types-and-headers", "backup", `${runID}`);
+const logDirRoot = path.join(projectRoot, "starcoder-types-and-headers", "testlog");
+const backupDir = path.join(projectRoot, "starcoder-types-and-headers", "backup", `${runID}`);
 fs.mkdirSync(backupDir, { recursive: true }, (err) => { if (err) throw err; });
 
 
 /* PHASE 2: TYPE EXTRACTION */
+
 
 const res = await extractWithCodeQL(path.join(sourceFolder, "sketch.ts"));
 const holeType = res.hole;
 const relevantTypes = res.relevantTypes;
 const relevantHeaders = res.relevantHeaders;
 
-const sketchFilePath = `${path.join(sourceFolder, "sketch.ts")}`;
+// create a new sketch that replaces the hole with an open curly brace (for starcoder comaptibility)
+
+const sketchFilePath = `${path.join(sourceFolder, "starcoder-sketch.ts")}`;
 const sketchFileContent = fs.readFileSync(sketchFilePath, "utf8");
 // let targetTypes = null;
 // if (typeConstraint === "true") {
 //   console.log("\n\n=== Extracting Types === \n\n");
-//   execSync(`node src/app.js ${sourceFolder} sketch.ts`)
+//   execSync(`node src / app.js ${ sourceFolder } sketch.ts`)
 //   targetTypes = fs.readFileSync("output.txt", "utf8");
 // }
 
@@ -115,53 +117,52 @@ const sketchFileContent = fs.readFileSync(sketchFilePath, "utf8");
 
 // ask LLM to complete the sketch using the returned types
 console.log("\n\n=== Generating Prompt ===\n\n");
-let prompt = [];
+let prompt = "";
 if (typeConstraint === "true" && contextConstraint === "true") {
-  prompt = generateTypesAndHeadersPrompt(sketchFileContent, holeType, relevantTypes, relevantHeaders);
+  prompt = generateStarcoderTypesAndHeadersPrompt(sketchFileContent, relevantTypes, relevantHeaders);
 } else if (typeConstraint === "true") {
-  prompt = generateTypesAndHeadersPrompt(sketchFileContent, holeType, relevantTypes, null);
+  prompt = generateStarcoderTypesAndHeadersPrompt(sketchFileContent, relevantTypes, null);
 } else if (contextConstraint === "true") {
-  prompt = generateTypesAndHeadersPrompt(sketchFileContent, holeType, null, relevantHeaders);
+  prompt = generateStarcoderTypesAndHeadersPrompt(sketchFileContent, null, relevantHeaders);
 } else {
-  prompt = generateTypesAndHeadersPrompt(sketchFileContent, holeType, null, null);
+  prompt = generateStarcoderTypesAndHeadersPrompt(sketchFileContent, null, null);
 }
 // console.log(JSON.stringify(prompt, "", 2));
-console.log(prompt);
+console.log("prompt: ", prompt);
 
-const apiBase = "https://hazel2.openai.azure.com";
-const deployment = "hazel-gpt-4";
-const model = "azure-gpt-4";
-const apiVersion = "2023-05-15";
-const apiKey = process.env.AZURE_KEY_CREDENTIAL;
+
 let totalTokensUsed = 0;
-
-const openai = new OpenAI({
-  apiKey,
-  baseURL: `${apiBase}/openai/deployments/${deployment}`,
-  defaultQuery: { 'api-version': apiVersion },
-  defaultHeaders: { 'api-key': apiKey }
-});
-
-const llmResult = await openai.chat.completions.create({
-  model,
-  messages: prompt,
-  temperature: 0.6
-});
+const callStarcoder = async () => {
+  const response = await fetch("http://20.115.44.142:8080/completion", {
+    method: "POST",
+    body: JSON.stringify({
+      prompt: prompt,
+      n_predict: 1000,
+      stop: ["\n}"],
+      model: "starcoder2"
+    }),
+    headers: {
+      "Content-Type": "application/json"
+    }
+  });
+  return await response.json();
+}
+let llmResult = await callStarcoder();
 
 console.log(JSON.stringify(llmResult, "", 2));
 fs.writeFileSync(`${path.join(outDirRoot, "llm_out.json")}`, JSON.stringify(llmResult, "", 2) + "\n");
-prompt.push(llmResult.choices[0].message);
+// prompt.push(llmResult.choices[0].message);
 
-runData["option-llm"] = model;
-runData["option-temperature"] = "0.6";
-runData["round-usage-prompt-tokens"] += llmResult.usage.prompt_tokens + ",";
-runData["round-usage-completion-tokens"] += llmResult.usage.completion_tokens + ",";
-runData["round-usage-total-tokens"] += llmResult.usage.total_tokens + ",";
-totalTokensUsed += llmResult.usage.total_tokens;
+// runData["option-llm"] = model;
+// runData["option-temperature"] = "0.6";
+// runData["round-usage-prompt-tokens"] += llmResult.usage.prompt_tokens + ",";
+// runData["round-usage-completion-tokens"] += llmResult.usage.completion_tokens + ",";
+// runData["round-usage-total-tokens"] += llmResult.usage.total_tokens + ",";
+// totalTokensUsed += llmResult.usage.total_tokens;
 
 // write completion to sketch
-const llmCompletedSketch = fillHole(sketchFileContent, llmResult.choices[0].message.content);
-fs.writeFileSync(`${path.join(sourceFolder, "types_and_headers_llm_completed_sketch.ts")}`, llmCompletedSketch);
+// const llmCompletedSketch = fillHole(sketchFileContent, llmResult["content"]);
+fs.writeFileSync(`${path.join(sourceFolder, "types_and_headers_llm_completed_sketch.ts")}`, sketchFileContent + llmResult.content + "\n}");
 
 
 /* PHASE 4: ERROR CORRECTION */
@@ -180,9 +181,9 @@ fs.writeFileSync(`${path.join(sourceFolder, "types_and_headers_test_suite.ts")}`
 
 for (let i = 0; i < parseInt(errorRoundsMax) + 1; i++) {
   try {
-    // res = execSync(`tsc ${sourceFolder}llm_completed_sketch.ts`);
+    // res = execSync(`tsc ${ sourceFolder } llm_completed_sketch.ts`);
     execSync(`tsc ${path.join(sourceFolder, "types_and_headers_test_suite.ts")}`);
-    // console.log(`==${res}==`)
+    // console.log(`== ${ res }== `)
     break;
   } catch (err) {
     if (i >= parseInt(errorRoundsMax)) {
@@ -191,11 +192,11 @@ for (let i = 0; i < parseInt(errorRoundsMax) + 1; i++) {
 
       // capture error messages
       const errorMsg = err.stdout.toString();
-      console.log(`error: \n ${err.toString()}`);
-      console.log(`stdout: \n ${errorMsg}`);
+      console.log(`error: \n ${err.toString()} `);
+      console.log(`stdout: \n ${errorMsg} `);
 
       // capture number of static errors
-      const numErrors = execSync(`echo \"${err.stdout.toString()}\" | grep "error TS" | wc -l`);
+      const numErrors = execSync(`echo \"${escape(err.stdout.toString())}\" | grep "error TS" | wc -l`);
       console.log("numErrors: ", numErrors.toString());
       runData["derived-final-static-errors"] = numErrors.toString().split("\n")[0];
 
@@ -234,33 +235,25 @@ for (let i = 0; i < parseInt(errorRoundsMax) + 1; i++) {
       console.log(`stdout: \n ${errorMsg}`);
 
       // capture number of static errors
-      const numErrors = execSync(`echo \"${err.stdout.toString()}\" | grep "error TS" | wc -l`);
+      const numErrors = execSync(`echo \"${escape(err.stdout.toString())}\" | grep "error TS" | wc -l`);
       console.log("numErrors: ", numErrors.toString());
       runData["derived-final-static-errors"] = numErrors.toString().split("\n")[0];
 
-      const errorCorrectionPrompt = generateErrorCorrectionPrompt(prompt, errorMsg);
       // console.log(`errorCorrectionPrompt:\n${JSON.stringify(errorCorrectionPrompt, "", 2)}`);
-      prompt = errorCorrectionPrompt;
-      console.log(errorCorrectionPrompt)
 
       // call the llm again
-      const llmResult = await openai.chat.completions.create({
-        model,
-        messages: errorCorrectionPrompt
-      });
+      llmResult = await callStarcoder();
 
       console.log(JSON.stringify(llmResult, "", 2))
       fs.writeFileSync(path.join(outDirRoot, "llm_out.json"), JSON.stringify(llmResult, "", 2) + "\n");
-      prompt.push(llmResult.choices[0].message);
+      // prompt.push(llmResult["content"]);
 
-      runData["round-usage-prompt-tokens"] += llmResult.usage.prompt_tokens + ",";
-      runData["round-usage-completion-tokens"] += llmResult.usage.completion_tokens + ",";
-      runData["round-usage-total-tokens"] += llmResult.usage.total_tokens + ",";
-      totalTokensUsed += llmResult.usage.total_tokens;
+      // runData["round-usage-prompt-tokens"] += llmResult.usage.prompt_tokens + ",";
+      // runData["round-usage-completion-tokens"] += llmResult.usage.completion_tokens + ",";
+      // runData["round-usage-total-tokens"] += llmResult.usage.total_tokens + ",";
+      // totalTokensUsed += llmResult.usage.total_tokens;
 
-      const llmCompletedSketch = fillHole(sketchFileContent, llmResult.choices[0].message.content);
-
-      fs.writeFileSync(`${sourceFolder}types_and_headers_llm_completed_sketch.ts`, llmCompletedSketch);
+      fs.writeFileSync(`${path.join(sourceFolder, "types_and_headers_llm_completed_sketch.ts")}`, sketchFileContent + llmResult.content + "\n}");
       const testSuiteContent = joinFiles([
         path.join(sourceFolder, "prelude.ts"),
         path.join(sourceFolder, "types_and_headers_llm_completed_sketch.ts"),

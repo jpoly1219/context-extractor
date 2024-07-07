@@ -135,7 +135,7 @@ for source_folder in "${source_folders[@]}"; do
 done
 
 # Call the collate_data script
-bash "$collate_script"
+bash "$collate_script" "$run_name"
 
 # Print the summary and error summary
 echo -e "\n$summary"

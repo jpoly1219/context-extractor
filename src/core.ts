@@ -320,12 +320,12 @@ const extractRelevantTypes = async (
   depth: number): Promise<Map<string, string>> => {
 
   if (!foundSoFar.has(typeName)) {
-    foundSoFar.set(typeName, typeSpan);
+    foundSoFar.set(typeName, fullHoverResult);
     outputFile.write(`${fullHoverResult};\n`);
 
     // approach 1: go to type definition and hover
     const content = fs.readFileSync(currentFile.slice(7), "utf8");
-    const charInLine = execSync(`wc -m <<< "${content.split("\n")[linePosition].slice(characterPosition)}"`);
+    const charInLine = execSync(`wc -m <<< "${content.split("\n")[linePosition].slice(characterPosition)}"`, { shell: "/bin/bash" });
 
     for (let i = 0; i < Math.min(parseInt(charInLine.toString()), typeSpan.length); i++) {
       try {
