@@ -1,4 +1,4 @@
-import { LspClient, MarkupContent, Location } from "../../ts-lsp-client/build/src/main.js"
+import { LspClient, MarkupContent, Location } from "../ts-lsp-client-dist/src/main.js"
 import { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias } from "./utils.js";
 import * as fs from "fs";
 import { execSync } from "child_process";
