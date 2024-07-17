@@ -4,6 +4,8 @@ Extract relevant context from a TypeScript codebase using PL theory concepts.
 
 ## Installation
 
+Clone this repo.
+
 Install the following dependencies:
 
 ```text
@@ -20,8 +22,6 @@ https://github.com/jpoly1219/ts-lsp-client
 
 ```text
 cd ts-lsp-client
-git checkout -b completion
-git pull origin completion
 npm install
 npm run build
 ```
@@ -33,6 +33,12 @@ npm run build
 1. Determine the type of the hole.
 2. Extract relevant types.
 3. Extract relevant headers.
+
+This library exposes two APIs: `extract` and `extractWithCodeQL`.
+The difference between them lies in the two backends that they use: typescript-language-server and CodeQL.
+Use `extract` to use typescript-language-server (recommended).
+Use `extractWithCodeQL` to use CodeQL. Note that this will require additional setup.
+Contact the maintainers for a specially compiled version of CodeQL.
 
 ### Determining the type of the hole
 
