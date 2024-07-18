@@ -14,8 +14,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "json-rpc-2.0": "^1.7.0",
     "openai": "^4.30.0",
-    "ts-node": "^10.9.2"
+    "pino": "^9.3.1",
+    "ts-node": "^10.9.2",
+    "tslib": "^2.6.3"
   },
   "devDependencies": {
     "typescript": "^5.4.5"
