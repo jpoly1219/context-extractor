@@ -49,6 +49,44 @@ const escapeQuotes = (typeSpan: string): string => {
   return typeSpan.replace(/"/g, `\\"`);
 }
 
+const parseTypeArrayString = (typeStr: string): string[] => {
+  // Remove all spaces
+  const cleaned = typeStr.replace(/\s/g, '');
+
+  // Remove the outermost square brackets
+  const inner = cleaned.slice(1, -1);
+
+  // Split the string, respecting nested structures
+  const result: string[] = [];
+  let currentItem = '';
+  let nestLevel = 0;
+
+  for (const char of inner) {
+    if (char === '[') nestLevel++;
+    if (char === ']') nestLevel--;
+
+    if (char === ',' && nestLevel === 0) {
+      // check if currentItem is a name: type pair or just type
+      if (currentItem.includes(":")) {
+        result.push(currentItem.split(":")[1]);
+      } else {
+        result.push(currentItem);
+      }
+      currentItem = '';
+    } else {
+      currentItem += char;
+    }
+  }
+
+  if (currentItem.includes(":")) {
+    result.push(currentItem.split(":")[1]);
+  } else {
+    result.push(currentItem);
+  }
+
+  return result;
+}
+
 const parseCodeQLRelevantTypes = (table: relevantTypeQueryResult): Map<string, relevantTypeObject> => {
   const m = new Map<string, relevantTypeObject>();
 
@@ -220,6 +258,7 @@ export {
   isPrimitive,
   isTypeAlias,
   escapeQuotes,
+  parseTypeArrayString,
   parseCodeQLRelevantTypes,
   parseCodeQLVars,
   parseCodeQLTypes,
