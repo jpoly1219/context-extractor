@@ -169,7 +169,7 @@ export const extract = async (sketchPath: string) => {
   // outputFile.close();
 
   const preludeContent = fs.readFileSync(`${rootPath}/prelude.ts`).toString("utf8");
-  const relevantHeaders = extractRelevantContext(preludeContent, relevantTypes);
+  const relevantHeaders = extractRelevantContext(preludeContent, relevantTypes, holeContext.functionTypeSpan);
   // console.log(relevantContext);
   // return { holeContext: holeContext, relevantTypes: Array.from(relevantTypes), relevantContext: relevantContext };
   return { hole: holeContext.functionTypeSpan, relevantTypes: Array.from(relevantTypes, ([k, v]) => { return v }), relevantHeaders: relevantHeaders };
