@@ -1,7 +1,8 @@
 import { LspClient, MarkupContent, Location } from "../ts-lsp-client-dist/src/main.js"
-import { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias } from "./utils.js";
+import { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseTypeArrayString } from "./utils.js";
 import * as fs from "fs";
 import { execSync } from "child_process";
+import { isStringLiteralOrJsxExpression } from "typescript";
 
 // get context of the hole
 // currently only matching ES6 arrow functions
@@ -394,11 +395,15 @@ const extractRelevantTypes = async (
 // this would be akin to a LSP completion menu, but better
 // filter the typing context for values whose types stand in a certain relation to these target types
 // assign scores to each element of the resulting list, and return the prefix of that list truncated at some scoring and length thresholds
-const extractRelevantContext = (preludeContent: string, relevantTypes: Map<string, string>) => {
+const extractRelevantContext = (preludeContent: string, relevantTypes: Map<string, string>, holeType: string) => {
   // TODO:
-  // assign scores to each element of the resulting list, and return the prefix of that list truncated at some scoring and length thresholds
+  // assign scores to each element of the resulting list, and return const ts = require('typescript');
 
+  // console.log(`\n\nrelevantTypes: ${[...relevantTypes.entries()]}\n`)
   const relevantContext = new Set<string>();
+
+  const targetTypes = generateTargetTypes(relevantTypes, holeType);
+  console.log(`targetTypes: ${[...targetTypes.values()]}`)
 
   // only consider lines that start with let or const
   const filteredLines = preludeContent.split("\n").filter((line) => {
@@ -411,17 +416,59 @@ const extractRelevantContext = (preludeContent: string, relevantTypes: Map<strin
 
     const typeSpanPattern = /(^[^:]*: )(.+)/;
     const returnTypeSpan = splittedLine.match(typeSpanPattern)![2];
-
-    extractRelevantContextHelper(returnTypeSpan, relevantTypes, relevantContext, splittedLine);
+    if (!isPrimitive(returnTypeSpan.split(" => ")[1])) {
+      extractRelevantContextHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine);
+    }
   });
 
   return Array.from(relevantContext);
 }
 
+const generateTargetTypes = (relevantTypes: Map<string, string>, holeType: string) => {
+  const targetTypes = new Set<string>();
+  targetTypes.add(holeType);
+  getTargetTypesHelper(relevantTypes, holeType, targetTypes);
+
+  return targetTypes;
+}
+
+const getTargetTypesHelper = (
+  relevantTypes: Map<string, string>,
+  currType: string,
+  targetTypes: Set<string>
+) => {
+  // console.log("===Helper===")
+  // console.log("currType: ", currType)
+  if (isFunction(currType)) {
+    const functionPattern = /(\(.+\))( => )(.+)/;
+    const rettype = currType.match(functionPattern)![3];
+    targetTypes.add(rettype);
+    getTargetTypesHelper(relevantTypes, rettype, targetTypes);
+
+  } else if (isTuple(currType)) {
+    const elements = parseTypeArrayString(currType)
+
+    elements.forEach(element => {
+      targetTypes.add(element)
+      getTargetTypesHelper(relevantTypes, element, targetTypes);
+    });
+  } else if (isArray(currType)) {
+    const elementType = currType.split("[]")[0];
+
+    targetTypes.add(elementType)
+    getTargetTypesHelper(relevantTypes, elementType, targetTypes);
+  } else {
+    if (relevantTypes.has(currType)) {
+      const definition = relevantTypes.get(currType)!.split(" = ")[1];
+      getTargetTypesHelper(relevantTypes, definition, targetTypes);
+    }
+  }
+}
+
 // resursive helper for extractRelevantContext
 // checks for nested type equivalence
-const extractRelevantContextHelper = (typeSpan: string, relevantTypes: Map<string, string>, relevantContext: Set<string>, line: string) => {
-  relevantTypes.forEach(typ => {
+const extractRelevantContextHelper = (typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, string>, relevantContext: Set<string>, line: string) => {
+  targetTypes.forEach(typ => {
     if (isTypeEquivalent(typeSpan, typ, relevantTypes)) {
       relevantContext.add(line);
     }
@@ -430,29 +477,32 @@ const extractRelevantContextHelper = (typeSpan: string, relevantTypes: Map<strin
       const functionPattern = /(\(.+\))( => )(.+)/;
       const rettype = typeSpan.match(functionPattern)![3];
 
-      extractRelevantContextHelper(rettype, relevantTypes, relevantContext, line);
+      extractRelevantContextHelper(rettype, targetTypes, relevantTypes, relevantContext, line);
 
     } else if (isTuple(typeSpan)) {
-      const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
+      const elements = parseTypeArrayString(typeSpan)
+      // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
 
       elements.forEach(element => {
-        extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
+        extractRelevantContextHelper(element, targetTypes, relevantTypes, relevantContext, line);
       });
 
-    } else if (isUnion(typeSpan)) {
-      const elements = typeSpan.split(" | ");
-
-      elements.forEach(element => {
-        extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
-      });
-
-    } else if (isArray(typeSpan)) {
-      const element = typeSpan.split("[]")[0];
-
-      if (isTypeEquivalent(element, typ, relevantTypes)) {
-        extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
-      }
     }
+
+    // else if (isUnion(typeSpan)) {
+    //   const elements = typeSpan.split(" | ");
+    //
+    //   elements.forEach(element => {
+    //     extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
+    //   });
+    //
+    // else if (isArray(typeSpan)) {
+    //   const elementType = typeSpan.split("[]")[0];
+    //
+    //   if (isTypeEquivalent(elementType, typ, relevantTypes)) {
+    //     extractRelevantContextHelper(elementType, targetTypes, relevantTypes, relevantContext, line);
+    //   }
+    // }
   });
 }
 
@@ -460,13 +510,14 @@ const extractRelevantContextHelper = (typeSpan: string, relevantTypes: Map<strin
 const isTypeEquivalent = (t1: string, t2: string, relevantTypes: Map<string, string>) => {
   const normT1 = normalize(t1, relevantTypes);
   const normT2 = normalize(t2, relevantTypes);
+  // console.log(`t1: ${t1}, t2: ${t2}, normT1: ${normT1}, normT2: ${normT2}, ${normT1 === normT2}`)
   return normT1 === normT2;
 }
 
 // return the normal form given a type span and a set of relevant types
 // TODO: replace type checking with information from the AST?
 const normalize = (typeSpan: string, relevantTypes: Map<string, string>) => {
-  const normalForm = "";
+  let normalForm = "";
 
   // pattern matching for typeSpan
   if (isPrimitive(typeSpan)) {
@@ -474,37 +525,41 @@ const normalize = (typeSpan: string, relevantTypes: Map<string, string>) => {
 
   } else if (isObject(typeSpan)) {
     const elements = typeSpan.slice(1, typeSpan.length - 2).split(";");
-    normalForm.concat("{");
+    normalForm += "{";
 
     elements.forEach(element => {
       const kv = element.split(": ");
-      normalForm.concat(kv[0].slice(1, kv[0].length), ": ", normalize(kv[1], relevantTypes), "; ");
+      normalForm += kv[0].slice(1, kv[0].length), ": ", normalize(kv[1], relevantTypes);
+      normalForm += "; ";
     });
 
-    normalForm.concat("}");
+    normalForm += "}";
     return normalForm;
 
   } else if (isTuple(typeSpan)) {
-    const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
-    normalForm.concat("[");
+    // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
+    const elements = parseTypeArrayString(typeSpan)
+    normalForm += "[";
 
     elements.forEach((element, i) => {
-      normalForm.concat(normalize(element, relevantTypes));
+      normalForm += normalize(element, relevantTypes);
       if (i < elements.length - 1) {
-        normalForm.concat(", ");
+        normalForm += ", ";
       }
     });
 
-    normalForm.concat("]");
+    normalForm += "]";
     return normalForm;
 
   } else if (isUnion(typeSpan)) {
     const elements = typeSpan.split(" | ");
 
     elements.forEach((element, i) => {
-      normalForm.concat("(", normalize(element, relevantTypes), ")");
+      normalForm += "("
+      normalForm += normalize(element, relevantTypes)
+      normalForm += ")";
       if (i < elements.length - 1) {
-        normalForm.concat(" | ");
+        normalForm += " | ";
       }
     });
 
@@ -513,16 +568,17 @@ const normalize = (typeSpan: string, relevantTypes: Map<string, string>) => {
   } else if (isArray(typeSpan)) {
     const element = typeSpan.split("[]")[0];
 
-    normalForm.concat(normalize(element, relevantTypes), "[]");
+    normalForm += normalize(element, relevantTypes)
+    normalForm += "[]";
     return normalForm;
 
   } else if (isTypeAlias(typeSpan)) {
-    const typ = relevantTypes.get(typeSpan);
+    const typ = relevantTypes.get(typeSpan)?.split(" = ")[1];
     if (typ === undefined) {
       return typeSpan;
     }
 
-    normalForm.concat(normalize(typ, relevantTypes));
+    normalForm += normalize(typ, relevantTypes);
     return normalForm;
 
   } else {
