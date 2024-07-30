@@ -8,10 +8,16 @@ const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
 }
 
 const formatTypeSpan = (typeSpan: string) => {
-  return typeSpan.split("").reduce((acc, curr) => {
-    if ((curr === "\n" || curr === " ") && acc.slice(-1) === " ") return acc;
+  const formatted = typeSpan.split("").reduce((acc, curr) => {
+    // if (curr === "\n" || (curr === " " && acc.slice(-1) === " ")) return acc;
+    if (curr === "\n") return acc;
+    if (curr === " " && acc.slice(-1) === " ") return acc;
+    if (curr === "{") return acc + "{ ";
+    if (curr === "}") return acc + " }";
     return acc + curr;
   }, "")
+
+  return formatted + ";";
 }
 
 const isTuple = (typeSpan: string) => {
