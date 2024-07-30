@@ -321,7 +321,7 @@ const extractRelevantTypes = async (
   depth: number): Promise<Map<string, string>> => {
 
   if (!foundSoFar.has(typeName)) {
-    foundSoFar.set(typeName, fullHoverResult);
+    foundSoFar.set(typeName, formatTypeSpan(fullHoverResult));
     outputFile.write(`${fullHoverResult};\n`);
 
     // approach 1: go to type definition and hover
@@ -369,18 +369,20 @@ const extractRelevantTypes = async (
             // This could be buggy if there are multi-line type signatures.
             // Because hover returns a formatted type signature, it could also include newlines.
             // This means that iterating over typeSpan.length might crash if it steps off the edge.
+
+            const formattedTypeSpan = formatTypeSpan(typeContext!.typeSpan);
+
             await extractRelevantTypes(
               c,
               formattedHoverResult,
               typeContext!.typeName,
-              formatTypeSpan(typeContext!.typeSpan),
+              formattedTypeSpan,
               (typeDefinitionResult[0] as Location).range.start.line,
               (typeDefinitionResult[0] as Location).range.end.character + 2,
               foundSoFar,
               (typeDefinitionResult[0] as Location).uri, outputFile, depth + 1);
           }
         } else {
-          // pass
         }
 
       } catch (err) {
