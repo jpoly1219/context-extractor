@@ -321,7 +321,7 @@ const extractRelevantTypes = async (
   depth: number): Promise<Map<string, string>> => {
 
   if (!foundSoFar.has(typeName)) {
-    foundSoFar.set(typeName, formatTypeSpan(fullHoverResult));
+    foundSoFar.set(typeName, fullHoverResult);
     outputFile.write(`${fullHoverResult};\n`);
 
     // approach 1: go to type definition and hover
@@ -405,7 +405,6 @@ const extractRelevantContext = (preludeContent: string, relevantTypes: Map<strin
   const relevantContext = new Set<string>();
 
   const targetTypes = generateTargetTypes(relevantTypes, holeType);
-  console.log(`targetTypes: ${[...targetTypes.values()]}`)
 
   // only consider lines that start with let or const
   const filteredLines = preludeContent.split("\n").filter((line) => {
@@ -440,9 +439,8 @@ const getTargetTypesHelper = (
   targetTypes: Set<string>
 ) => {
   // console.log("===Helper===")
-  // console.log("currType: ", currType)
   if (isFunction(currType)) {
-    const functionPattern = /(\(.+\))( => )(.+)/;
+    const functionPattern = /(\(.+\))( => )(.+)(;*)/;
     const rettype = currType.match(functionPattern)![3];
     targetTypes.add(rettype);
     getTargetTypesHelper(relevantTypes, rettype, targetTypes);

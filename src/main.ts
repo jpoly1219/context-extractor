@@ -5,6 +5,7 @@ import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantContext } from "./core";
 import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractRelevantContextWithCodeQL, extractHeadersWithCodeQL, getRelevantHeaders, extractHoleType, getRelevantHeaders3, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
 import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants.js";
+import { formatTypeSpan } from "./utils.js";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
 export const extract = async (sketchPath: string) => {
@@ -170,6 +171,13 @@ export const extract = async (sketchPath: string) => {
 
   const preludeContent = fs.readFileSync(`${rootPath}/prelude.ts`).toString("utf8");
   const relevantHeaders = extractRelevantContext(preludeContent, relevantTypes, holeContext.functionTypeSpan);
+  for (const [k, v] of relevantTypes.entries()) {
+    relevantTypes.set(k, formatTypeSpan(v));
+  }
+
+  for (let i = 0; i < relevantHeaders.length; ++i) {
+    relevantHeaders[i] += ";";
+  }
   // console.log(relevantContext);
   // return { holeContext: holeContext, relevantTypes: Array.from(relevantTypes), relevantContext: relevantContext };
   return { hole: holeContext.functionTypeSpan, relevantTypes: Array.from(relevantTypes, ([k, v]) => { return v }), relevantHeaders: relevantHeaders };
