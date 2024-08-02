@@ -1,5 +1,5 @@
-import { LspClient, MarkupContent, Location } from "../ts-lsp-client-dist/src/main.js"
-import { indexOfRegexGroup, formatTypeSpan, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseTypeArrayString } from "./utils.js";
+import { LspClient, MarkupContent, Location, SymbolInformation, Range } from "../ts-lsp-client-dist/src/main.js"
+import { indexOfRegexGroup, formatTypeSpan, extractSnippet, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseTypeArrayString } from "./utils.js";
 import * as fs from "fs";
 import { execSync } from "child_process";
 import { isStringLiteralOrJsxExpression } from "typescript";
@@ -318,7 +318,8 @@ const extractRelevantTypes = async (
   foundSoFar: Map<string, string>,
   currentFile: string,
   outputFile: fs.WriteStream,
-  depth: number): Promise<Map<string, string>> => {
+  depth: number
+): Promise<Map<string, string>> => {
 
   if (!foundSoFar.has(typeName)) {
     foundSoFar.set(typeName, fullHoverResult);
@@ -328,7 +329,8 @@ const extractRelevantTypes = async (
     const content = fs.readFileSync(currentFile.slice(7), "utf8");
     const charInLine = execSync(`wc -m <<< "${content.split("\n")[linePosition].slice(characterPosition)}"`, { shell: "/bin/bash" });
 
-    for (let i = 0; i < Math.min(parseInt(charInLine.toString()), typeSpan.length); i++) {
+    // -1 is done to avoid tsserver errors
+    for (let i = 0; i < Math.min(parseInt(charInLine.toString()), typeSpan.length) - 1; i++) {
       try {
         const typeDefinitionResult = await c.typeDefinition({
           textDocument: {
@@ -341,47 +343,82 @@ const extractRelevantTypes = async (
         });
 
         if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
-          // try hover on the goto result
-          const hoverResult = await c.hover({
+          // use documentSymbol instead of hover.
+          // this prevents type alias "squashing" done by tsserver.
+          // this also allows for grabbing the entire definition range and not just the symbol range.
+          const documentSymbolResult = await c.documentSymbol({
             textDocument: {
               uri: (typeDefinitionResult[0] as Location).uri
-            },
-            position: {
-              character: (typeDefinitionResult[0] as Location).range.start.character,
-              line: (typeDefinitionResult[0] as Location).range.start.line
             }
           });
-          // console.log("hoverResult: ", hoverResult)
+          // grab if the line number of typeDefinitionResult and documentSymbolResult matches
+          const dsMap = documentSymbolResult!.reduce((m, obj) => {
+            m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
+            return m;
+          }, new Map<number, Range>());
 
-          if (hoverResult != null) {
-            const formattedHoverResult = (hoverResult.contents as MarkupContent).value.split("\n").reduce((acc, curr) => {
-              if (curr != "" && curr != "```typescript" && curr != "```") {
-                return acc + curr;
-              } else {
-                return acc;
-              }
-            }, "");
-
-            const typeContext = getTypeContext(formattedHoverResult);
-            // console.log("typeContext: ", typeContext);
-
-            // TODO:
-            // This could be buggy if there are multi-line type signatures.
-            // Because hover returns a formatted type signature, it could also include newlines.
-            // This means that iterating over typeSpan.length might crash if it steps off the edge.
-
-            const formattedTypeSpan = formatTypeSpan(typeContext!.typeSpan);
+          const matchingSymbolRange: Range | undefined = dsMap.get((typeDefinitionResult[0] as Location).range.start.line);
+          if (matchingSymbolRange) {
+            const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
+            const typeContext = getTypeContext(snippetInRange);
+            const formattedTypeSpan = formatTypeSpan(snippetInRange);
 
             await extractRelevantTypes(
               c,
-              formattedHoverResult,
+              snippetInRange,
               typeContext!.typeName,
               formattedTypeSpan,
               (typeDefinitionResult[0] as Location).range.start.line,
               (typeDefinitionResult[0] as Location).range.end.character + 2,
               foundSoFar,
-              (typeDefinitionResult[0] as Location).uri, outputFile, depth + 1);
+              (typeDefinitionResult[0] as Location).uri, outputFile, depth + 1
+            );
+
           }
+
+          // // try hover on the goto result
+          // const hoverResult = await c.hover({
+          //   textDocument: {
+          //     uri: (typeDefinitionResult[0] as Location).uri
+          //   },
+          //   position: {
+          //     character: (typeDefinitionResult[0] as Location).range.start.character,
+          //     line: (typeDefinitionResult[0] as Location).range.start.line
+          //   }
+          // });
+          // // console.log("hoverResult: ", hoverResult)
+          //
+          // if (hoverResult != null) {
+          //   console.log(`${JSON.stringify(typeDefinitionResult)}\n${JSON.stringify(hoverResult)}\n`);
+          //   const formattedHoverResult = (hoverResult.contents as MarkupContent).value.split("\n").reduce((acc, curr) => {
+          //     if (curr != "" && curr != "```typescript" && curr != "```") {
+          //       return acc + curr;
+          //     } else {
+          //       return acc;
+          //     }
+          //   }, "");
+          //
+          //   const typeContext = getTypeContext(formattedHoverResult);
+          //   // console.log("typeContext: ", typeContext);
+          //
+          //   // TODO:
+          //   // This could be buggy if there are multi-line type signatures.
+          //   // Because hover returns a formatted type signature, it could also include newlines.
+          //   // This means that iterating over typeSpan.length might crash if it steps off the edge.
+          //
+          //   const formattedTypeSpan = formatTypeSpan(typeContext!.typeSpan);
+          //   console.log(`opt 2: ${formattedHoverResult}\n${typeContext}\n${formattedTypeSpan}`)
+          //
+          //   await extractRelevantTypes(
+          //     c,
+          //     formattedHoverResult,
+          //     typeContext!.typeName,
+          //     formattedTypeSpan,
+          //     (typeDefinitionResult[0] as Location).range.start.line,
+          //     (typeDefinitionResult[0] as Location).range.end.character + 2,
+          //     foundSoFar,
+          //     (typeDefinitionResult[0] as Location).uri, outputFile, depth + 1);
+          // }
         } else {
         }
 
@@ -528,9 +565,11 @@ const normalize = (typeSpan: string, relevantTypes: Map<string, string>) => {
     normalForm += "{";
 
     elements.forEach(element => {
-      const kv = element.split(": ");
-      normalForm += kv[0].slice(1, kv[0].length), ": ", normalize(kv[1], relevantTypes);
-      normalForm += "; ";
+      if (element !== "") {
+        const kv = element.split(": ");
+        normalForm += kv[0].slice(1, kv[0].length), ": ", normalize(kv[1], relevantTypes);
+        normalForm += "; ";
+      }
     });
 
     normalForm += "}";
