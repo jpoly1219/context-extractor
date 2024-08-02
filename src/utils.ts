@@ -7,17 +7,41 @@ const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
   }, match.index as number)
 }
 
-const formatTypeSpan = (typeSpan: string) => {
+const formatTypeSpan = (typeSpan: string): string => {
   const formatted = typeSpan.split("").reduce((acc, curr) => {
     // if (curr === "\n" || (curr === " " && acc.slice(-1) === " ")) return acc;
     if (curr === "\n") return acc;
     if (curr === " " && acc.slice(-1) === " ") return acc;
-    if (curr === "{") return acc + "{ ";
-    if (curr === "}") return acc + " }";
+    // if (curr === "{") return acc + "{ ";
+    // if (curr === "}") return acc + " }";
     return acc + curr;
   }, "")
 
-  return formatted + ";";
+  return formatted;
+}
+
+const extractSnippet = (documentContent: string, start: { line: number, character: number }, end: { line: number, character: number }): string => {
+  const lines = documentContent.split('\n');
+  const snippet: string[] = [];
+
+  for (let lineNumber = start.line; lineNumber <= end.line; lineNumber++) {
+    const line = lines[lineNumber];
+    if (lineNumber === start.line && lineNumber === end.line) {
+      // Single-line range
+      snippet.push(line.substring(start.character, end.character));
+    } else if (lineNumber === start.line) {
+      // Starting line of the range
+      snippet.push(line.substring(start.character));
+    } else if (lineNumber === end.line) {
+      // Ending line of the range
+      snippet.push(line.substring(0, end.character));
+    } else {
+      // Entire line within the range
+      snippet.push(line);
+    }
+  }
+
+  return snippet.join('\n');
 }
 
 const isTuple = (typeSpan: string) => {
@@ -61,6 +85,7 @@ const parseTypeArrayString = (typeStr: string): string[] => {
 
   // Remove the outermost square brackets
   const inner = cleaned.slice(1, -1);
+  // const inner = cleaned.slice(-1) === ";" ? cleaned.slice(1, -2) : cleaned.slice(1, -1);
 
   // Split the string, respecting nested structures
   const result: string[] = [];
@@ -256,6 +281,7 @@ const isQLIdentifier = (typeQLClass: string): boolean => {
 export {
   indexOfRegexGroup,
   formatTypeSpan,
+  extractSnippet,
   isTuple,
   isUnion,
   isArray,
