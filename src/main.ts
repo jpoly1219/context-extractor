@@ -162,6 +162,12 @@ export const extract = async (sketchPath: string) => {
     outputFile,
     1
   );
+
+  relevantTypes.delete("_");
+  relevantTypes.delete("_()");
+  for (const [k, v] of relevantTypes.entries()) {
+    relevantTypes.set(k, v.slice(0, -1));
+  }
   // console.log("relevantTypes:", relevantTypes);
 
   // logFile.end();
@@ -171,8 +177,9 @@ export const extract = async (sketchPath: string) => {
 
   const preludeContent = fs.readFileSync(`${rootPath}/prelude.ts`).toString("utf8");
   const relevantHeaders = extractRelevantContext(preludeContent, relevantTypes, holeContext.functionTypeSpan);
+
   for (const [k, v] of relevantTypes.entries()) {
-    relevantTypes.set(k, formatTypeSpan(v));
+    relevantTypes.set(k, v + ";");
   }
 
   for (let i = 0; i < relevantHeaders.length; ++i) {
