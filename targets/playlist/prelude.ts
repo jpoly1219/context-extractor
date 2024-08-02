@@ -2,23 +2,23 @@
 type Id = number;
 
 // Actions user can do in a playlist
-type PlaySong = { type: "PlaySong", id: Id };
+type PlaySong = { type: "PlaySong"; id: Id; };
 
-type PauseCurrentSong = { type: "PauseCurrentSong" };
+type PauseCurrentSong = { type: "PauseCurrentSong"; };
 
-type RemoveSong = { type: "RemoveSong", id: Id };
+type RemoveSong = { type: "RemoveSong"; id: Id; };
 
 // Add to the from of the playList, ignore duplication
-type AddSong = { type: "AddSong", id: Id };
+type AddSong = { type: "AddSong"; id: Id; };
 
 type PlayListAction = PlaySong | PauseCurrentSong | RemoveSong | AddSong;
 
 // The state of the playlist
-type Playing = { type: "Playing", id: Id };
+type Playing = { type: "Playing"; id: Id; };
 
-type PausedOn = { type: "PausedOn", id: Id };
+type PausedOn = { type: "PausedOn"; id: Id; };
 
-type NoSongSelected = { type: "NoSongSelected" };
+type NoSongSelected = { type: "NoSongSelected"; };
 
 type PlayListState = Playing | PausedOn | NoSongSelected;
 
