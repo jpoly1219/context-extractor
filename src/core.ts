@@ -2,7 +2,7 @@ import { LspClient, MarkupContent, Location, SymbolInformation, Range } from "..
 import { indexOfRegexGroup, formatTypeSpan, extractSnippet, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseTypeArrayString } from "./utils.js";
 import * as fs from "fs";
 import { execSync } from "child_process";
-import { isStringLiteralOrJsxExpression } from "typescript";
+import { isStringLiteralOrJsxExpression, isTupleTypeNode } from "typescript";
 
 // get context of the hole
 // currently only matching ES6 arrow functions
@@ -466,6 +466,7 @@ const generateTargetTypes = (relevantTypes: Map<string, string>, holeType: strin
   const targetTypes = new Set<string>();
   targetTypes.add(holeType);
   getTargetTypesHelper(relevantTypes, holeType, targetTypes);
+  console.log(targetTypes)
 
   return targetTypes;
 }
@@ -489,12 +490,14 @@ const getTargetTypesHelper = (
       targetTypes.add(element)
       getTargetTypesHelper(relevantTypes, element, targetTypes);
     });
-  } else if (isArray(currType)) {
-    const elementType = currType.split("[]")[0];
-
-    targetTypes.add(elementType)
-    getTargetTypesHelper(relevantTypes, elementType, targetTypes);
-  } else {
+  }
+  // else if (isArray(currType)) {
+  //   const elementType = currType.split("[]")[0];
+  //
+  //   targetTypes.add(elementType)
+  //   getTargetTypesHelper(relevantTypes, elementType, targetTypes);
+  // } 
+  else {
     if (relevantTypes.has(currType)) {
       const definition = relevantTypes.get(currType)!.split(" = ")[1];
       getTargetTypesHelper(relevantTypes, definition, targetTypes);
@@ -513,6 +516,7 @@ const extractRelevantContextHelper = (typeSpan: string, targetTypes: Set<string>
     if (isFunction(typeSpan)) {
       const functionPattern = /(\(.+\))( => )(.+)/;
       const rettype = typeSpan.match(functionPattern)![3];
+      console.log(typeSpan, rettype)
 
       extractRelevantContextHelper(rettype, targetTypes, relevantTypes, relevantContext, line);
 
@@ -547,7 +551,7 @@ const extractRelevantContextHelper = (typeSpan: string, targetTypes: Set<string>
 const isTypeEquivalent = (t1: string, t2: string, relevantTypes: Map<string, string>) => {
   const normT1 = normalize(t1, relevantTypes);
   const normT2 = normalize(t2, relevantTypes);
-  // console.log(`t1: ${t1}, t2: ${t2}, normT1: ${normT1}, normT2: ${normT2}, ${normT1 === normT2}`)
+  if (t1 === "PasswordCriteria[]") console.log(`t1: ${t1}, t2: ${t2}, normT1: ${normT1}, normT2: ${normT2}, ${normT1 === normT2}`)
   return normT1 === normT2;
 }
 
