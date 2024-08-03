@@ -97,11 +97,11 @@ interface TextEdit {
     range: Range;
     newText: string;
 }
-interface Range {
+export interface Range {
     start: Position;
     end: Position;
 }
-interface Position {
+export interface Position {
     line: uinteger;
     character: uinteger;
 }
