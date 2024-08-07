@@ -1,13 +1,13 @@
 // PASSWORDS MVU
-type RequireUppercase = { type: "RequireUppercase" };
+type RequireUppercase = { type: "RequireUppercase"; };
 
-type RequireLowercase = { type: "RequireLowercase" };
+type RequireLowercase = { type: "RequireLowercase"; };
 
-type MinimumLength = { type: "MinimumLength"; length: number };
+type MinimumLength = { type: "MinimumLength"; length: number; };
 
-type RequireNumber = { type: "RequireNumber" };
+type RequireNumber = { type: "RequireNumber"; };
 
-type RequireSpecialChar = { type: "RequireSpecialChar" };
+type RequireSpecialChar = { type: "RequireSpecialChar"; };
 
 type PasswordCriteria = RequireUppercase | RequireLowercase | MinimumLength | RequireNumber | RequireSpecialChar;
 
@@ -33,10 +33,10 @@ const initialModel: Model = [
   "Weak",
 ];
 
-type UpdatePassword = { type: "UpdatePassword"; password: string };
-type ClearCriteria = { type: "ClearCriteria" };
-type AddCriterion = { type: "AddCriterion"; criterion: PasswordCriteria };
-type RemoveCriterion = { type: "RemoveCriterion"; criterion: PasswordCriteria };
+type UpdatePassword = { type: "UpdatePassword"; password: string; };
+type ClearCriteria = { type: "ClearCriteria"; };
+type AddCriterion = { type: "AddCriterion"; criterion: PasswordCriteria; };
+type RemoveCriterion = { type: "RemoveCriterion"; criterion: PasswordCriteria; };
 
 type Action = UpdatePassword | ClearCriteria | AddCriterion | RemoveCriterion;
 
@@ -91,8 +91,8 @@ const meetsCriterion: (password: Password, criterion: PasswordCriteria) => boole
   }
 };
 
-const metCriteria: (password: Password, criteria: PasswordCriteria[]) => PasswordCriteria[] = (password, criteria) => {
-  return criteria.filter((c: PasswordCriteria) => meetsCriterion(password, c));
+const metCriteria: (password: Password, criteria: PasswordCriteria[]) => boolean[] = (password, criteria) => {
+  return criteria.filter((c: PasswordCriteria) => meetsCriterion(password, c)).map((_: PasswordCriteria) => true);
 };
 
 const strength_of: (num_criteria_met: number) => PasswordStrength = (num_criteria_met) => {

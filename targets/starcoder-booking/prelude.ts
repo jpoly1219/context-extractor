@@ -16,15 +16,15 @@ type BookingFormData = [Time, User];
 
 type Model = [BookingFormData, Booking[], BookingID];
 
-type AddBooking = { type: "AddBooking"; user: User; weekday: Weekday; timeOfDay: TimeOfDay };
+type AddBooking = { type: "AddBooking"; user: User; weekday: Weekday; timeOfDay: TimeOfDay; };
 
-type CancelBooking = { type: "CancelBooking"; user: User; id: number };
+type CancelBooking = { type: "CancelBooking"; user: User; id: number; };
 
-type ClearBookings = { type: "ClearBookings" };
+type ClearBookings = { type: "ClearBookings"; };
 
 type Action = AddBooking | CancelBooking | ClearBookings;
 
-const initFormState: BookingFormData = [["M", "AM"], ""];
+const initFormState: [[Weekday, TimeOfDay], string] = [["M", "AM"], ""];
 
 const Model_init: Model = [initFormState, [], 0];
 

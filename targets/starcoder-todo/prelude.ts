@@ -6,27 +6,27 @@ type Todo = [string, boolean];
 // A description input buffer and a todo list
 type Model = [string, Todo[]];
 
-type AddTodo = { type: "AddTodo" };
+type AddTodo = { type: "AddTodo"; };
 
-type RemoveTodo = { type: "RemoveTodo"; id: number };
+type RemoveTodo = { type: "RemoveTodo"; id: number; };
 
-type ToggleTodo = { type: "ToggleTodo"; id: number };
+type ToggleTodo = { type: "ToggleTodo"; id: number; };
 
-type UpdateBuffer = { type: "UpdateBuffer"; name: string };
+type UpdateBuffer = { type: "UpdateBuffer"; name: string; };
 
 type Action = AddTodo | RemoveTodo | ToggleTodo | UpdateBuffer;
 
 type Update = (m: Model, a: Action) => Model;
 
-const todo_eq: (t1: Todo, t2: Todo) => Boolean = ([d1, s1], [d2, s2]) => {
+const todo_eq: (t1: Todo, t2: Todo) => boolean = ([d1, s1], [d2, s2]) => {
   return d1 === d2 && s1 === s2;
 }
 
-const todo_array_eq: (ta1: Todo[], ta2: Todo[]) => Boolean = (ta1, ta2) => {
+const todo_array_eq: (ta1: Todo[], ta2: Todo[]) => boolean = (ta1, ta2) => {
   return ta1.length === ta2.length && ta1.every((el, i) => { return todo_eq(el, ta2[i]); });
 }
 
-const model_eq: (m1: Model, m2: Model) => Boolean = ([b1, ts1], [b2, ts2]) => {
+const model_eq: (m1: Model, m2: Model) => boolean = ([b1, ts1], [b2, ts2]) => {
   return b1 === b2 && todo_array_eq(ts1, ts2);
 }
 

@@ -5,17 +5,13 @@ type Row = number;
 type Col = number;
 type Grid = Emoji[][];
 
-type Model = [
-  Grid,     // The 2D grid of emojis
-  Emoji,    // The currently selected emoji
-  Emoji[]   // The list of available emojis
-];
+type Model = [Grid, Emoji, Emoji[]];
 
-type SelectEmoji = { type: "SelectEmoji"; emoji: Emoji }    // Set the currently selected emoji
-type StampEmoji = { type: "StampEmoji"; row: Row; col: Col }  // Stamp the current emoji at the specified position
-type ClearCell = { type: "ClearCell"; row: Row; col: Col }   // Clear the emoji at the specified position
-type ClearGrid = { type: "ClearGrid" }             // Clear the entire grid
-type FillRow = { type: "FillRow"; row: Row };          // Fill the specified row with the current emoji
+type SelectEmoji = { type: "SelectEmoji"; emoji: Emoji; };    // Set the currently selected emoji
+type StampEmoji = { type: "StampEmoji"; row: Row; col: Col; };  // Stamp the current emoji at the specified position
+type ClearCell = { type: "ClearCell"; row: Row; col: Col; };   // Clear the emoji at the specified position
+type ClearGrid = { type: "ClearGrid"; };             // Clear the entire grid
+type FillRow = { type: "FillRow"; row: Row; };          // Fill the specified row with the current emoji
 
 type Action = SelectEmoji | StampEmoji | ClearCell | ClearGrid | FillRow;
 

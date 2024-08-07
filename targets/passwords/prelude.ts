@@ -91,8 +91,8 @@ const meetsCriterion: (password: Password, criterion: PasswordCriteria) => boole
   }
 };
 
-const metCriteria: (password: Password, criteria: PasswordCriteria[]) => PasswordCriteria[] = (password, criteria) => {
-  return criteria.filter((c: PasswordCriteria) => meetsCriterion(password, c));
+const metCriteria: (password: Password, criteria: PasswordCriteria[]) => boolean[] = (password, criteria) => {
+  return criteria.filter((c: PasswordCriteria) => meetsCriterion(password, c)).map((_: PasswordCriteria) => true);
 };
 
 const strength_of: (num_criteria_met: number) => PasswordStrength = (num_criteria_met) => {
