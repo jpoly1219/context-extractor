@@ -466,7 +466,6 @@ const generateTargetTypes = (relevantTypes: Map<string, string>, holeType: strin
   const targetTypes = new Set<string>();
   targetTypes.add(holeType);
   getTargetTypesHelper(relevantTypes, holeType, targetTypes);
-  console.log(targetTypes)
 
   return targetTypes;
 }
@@ -516,7 +515,6 @@ const extractRelevantContextHelper = (typeSpan: string, targetTypes: Set<string>
     if (isFunction(typeSpan)) {
       const functionPattern = /(\(.+\))( => )(.+)/;
       const rettype = typeSpan.match(functionPattern)![3];
-      console.log(typeSpan, rettype)
 
       extractRelevantContextHelper(rettype, targetTypes, relevantTypes, relevantContext, line);
 
@@ -551,7 +549,6 @@ const extractRelevantContextHelper = (typeSpan: string, targetTypes: Set<string>
 const isTypeEquivalent = (t1: string, t2: string, relevantTypes: Map<string, string>) => {
   const normT1 = normalize(t1, relevantTypes);
   const normT2 = normalize(t2, relevantTypes);
-  if (t1 === "PasswordCriteria[]") console.log(`t1: ${t1}, t2: ${t2}, normT1: ${normT1}, normT2: ${normT2}, ${normT1 === normT2}`)
   return normT1 === normT2;
 }
 
