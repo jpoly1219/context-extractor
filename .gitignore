@@ -12,3 +12,4 @@ codeql
 *vector-retrieval/
 *exhaustive-retrieval/
 targets/**/*.js
+_opam
