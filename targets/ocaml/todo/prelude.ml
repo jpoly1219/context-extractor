@@ -13,7 +13,11 @@ type model = string * todo list
 (*   + RemoveTodo(Int) *)
 (*   + ToggleTodo(Int) *)
 (*   + UpdateBuffer(String) in *)
-type action = AddTodo | RemoveTodo of int | ToggleTodo of int | UpdateBuffer of string
+type action =
+  | AddTodo
+  | RemoveTodo of int
+  | ToggleTodo of int
+  | UpdateBuffer of string
 
 (* type Update = (Model, Action) -> Model in *)
 type update = (model * action) -> model
