@@ -37,7 +37,7 @@ type playlist = id list * playlist_state
 (*     songs  *)
 (* in *)
 let get_songs (playlist : playlist) : id list =
-  let songs, current = playlist in
+  let songs, _ = playlist in
   songs
 
 (* Get the id of the currently playing song *)
@@ -47,5 +47,5 @@ let get_songs (playlist : playlist) : id list =
 (*     state *)
 (* in *)
 let get_state (playlist : playlist) : playlist_state =
-  let songs, state = playlist in
+  let _, state = playlist in
   state
