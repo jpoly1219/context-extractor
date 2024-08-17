@@ -13,3 +13,4 @@ codeql
 *exhaustive-retrieval/
 targets/**/*.js
 _opam
+_build
