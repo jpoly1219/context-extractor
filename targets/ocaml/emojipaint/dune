@@ -1,0 +1,3 @@
+(library
+ (name emojipaint)
+ (modules prelude sketch))
