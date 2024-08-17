@@ -1,4 +1,4 @@
 (* Update Playlist app model based on an action *)
 open Prelude
 
-let update ((m, a) : model * action) : model = _
+let update ((pl, pla) : playlist * playlist_action) : playlist = _
