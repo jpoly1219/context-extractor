@@ -5,7 +5,7 @@ import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantHeaders } from "./core";
 import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractRelevantContextWithCodeQL, extractHeadersWithCodeQL, getRelevantHeaders, extractHoleType, getRelevantHeaders3, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
 import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants.js";
-import { formatTypeSpan, extractSnippet } from "./utils.js";
+import { formatTypeSpan, extractSnippet, supportsHole } from "./utils.js";
 import { LanguageDriver, Language } from "./types.js";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
@@ -233,10 +233,10 @@ export const extractWithCodeQL = async (sketchPath: string) => {
 
 
 class App {
+  private language: Language;
   private languageDriver: LanguageDriver;
   private lspClient: LspClient;
   private sketchPath: string; // not prefixed with file://
-  // private injectedSketchPath: string | null = null;
   private result: {
     hole: string;
     relevantTypes: string[];
@@ -244,7 +244,9 @@ class App {
   } | null = null;
 
   constructor(language: Language, sketchPath: string) {
+    this.language = language;
     this.sketchPath = sketchPath;
+
     const r = (() => {
       switch (language) {
         case Language.TypeScript: {
@@ -285,7 +287,7 @@ class App {
       holeContext.holeTypeDefLinePos,
       holeContext.holeTypeDefCharPos,
       new Map<string, string>(),
-      `file://${this.sketchPath}`, // TODO: this needs to be injected_sketch for languages without hole support
+      supportsHole(this.language) ? `file://${this.sketchPath}` : `file://${path.dirname(this.sketchPath)}/injected_sketch.${path.extname(this.sketchPath)}`,
       outputFile,
       1
     );
