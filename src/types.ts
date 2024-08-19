@@ -59,8 +59,7 @@ interface LanguageDriver {
   init: (lspClient: LspClient, sketchPath: string) => Promise<void>;
   getHoleContext: (
     lspClient: LspClient,
-    injectedSketchFilePath: string,
-    injectedSketchFileContent: string
+    sketchFilePath: string,
   ) => Promise<{
     fullHoverResult: string;
     functionName: string;
