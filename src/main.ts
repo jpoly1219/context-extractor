@@ -1,11 +1,11 @@
-import { JSONRPCEndpoint, LspClient, ClientCapabilities, MarkupContent } from "../ts-lsp-client-dist/src/main.js"
-import { spawn } from "child_process";
+import { JSONRPCEndpoint, LspClient, ClientCapabilities, MarkupContent, Location, SymbolInformation, Range } from "../ts-lsp-client-dist/src/main.js"
+import { spawn, execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantHeaders } from "./core";
 import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractRelevantContextWithCodeQL, extractHeadersWithCodeQL, getRelevantHeaders, extractHoleType, getRelevantHeaders3, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
 import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants.js";
-import { formatTypeSpan } from "./utils.js";
+import { formatTypeSpan, extractSnippet } from "./utils.js";
 import { LanguageDriver, Language } from "./types.js";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
@@ -282,10 +282,10 @@ class App {
       holeContext.fullHoverResult,
       holeContext.functionName,
       holeContext.functionTypeSpan,
-      0,
-      "declare function _(): ".length, // TODO: somehow use holeContext results
+      holeContext.holeTypeDefLinePos,
+      holeContext.holeTypeDefCharPos,
       new Map<string, string>(),
-      this.injectedSketchPath ? `file://${this.injectedSketchPath}` : `file://${this.sketchPath}`,
+      `file://${this.sketchPath}`,
       outputFile,
       1
     );
@@ -418,7 +418,7 @@ class TypeScriptDriver implements LanguageDriver {
     const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
     fs.writeFileSync(injectedSketchFilePath, injectedSketchFileContent);
 
-    // doucment sync client and server by notifying that the client has opened all the files inside the target directory
+    // Sync client and server by notifying that the client has opened all the files inside the target directory.
     fs.readdirSync(sketchDir).map(fileName => {
       if (fs.lstatSync(path.join(sketchDir, fileName)).isFile()) {
         lspClient.didOpen({
@@ -432,6 +432,7 @@ class TypeScriptDriver implements LanguageDriver {
       }
     });
 
+    // Get hole context.
     const holePattern = /_\(\)/;
     const firstPatternIndex = injectedSketchFileContent.search(holePattern);
     const linePosition = (injectedSketchFileContent.substring(0, firstPatternIndex).match(/\n/g))!.length;
@@ -461,7 +462,6 @@ class TypeScriptDriver implements LanguageDriver {
     const functionName = "_()";
     const functionTypeSpan = match![4];
 
-
     // Clean up and inject the true hole function without the generic type signature.
     const trueHoleFunction = `declare function _(): ${functionTypeSpan}`
     const trueInjectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
@@ -477,7 +477,15 @@ class TypeScriptDriver implements LanguageDriver {
       }]
     });
 
-    return { fullHoverResult: formattedHoverResult, functionName: functionName, functionTypeSpan: functionTypeSpan, linePosition: linePosition, characterPosition: characterPosition };
+    return {
+      fullHoverResult: formattedHoverResult,
+      functionName: functionName,
+      functionTypeSpan: functionTypeSpan,
+      linePosition: linePosition,
+      characterPosition: characterPosition,
+      holeTypeDefLinePos: 0,
+      holeTypeDefCharPos: "declare function _(): ".length
+    };
   }
 
   async extractRelevantTypes(
@@ -492,7 +500,67 @@ class TypeScriptDriver implements LanguageDriver {
     outputFile: fs.WriteStream,
     depth: number
   ) {
-    return new Map<string, string>();
+    if (!foundSoFar.has(typeName)) {
+      foundSoFar.set(typeName, fullHoverResult);
+      outputFile.write(`${fullHoverResult};\n`);
+
+      const content = fs.readFileSync(currentFile.slice(7), "utf8");
+      const charInLine = execSync(`wc -m <<< "${content.split("\n")[linePosition].slice(characterPosition)}"`, { shell: "/bin/bash" });
+
+      // -1 is done to avoid tsserver errors
+      for (let i = 0; i < Math.min(parseInt(charInLine.toString()), typeSpan.length) - 1; i++) {
+        try {
+          const typeDefinitionResult = await lspClient.typeDefinition({
+            textDocument: {
+              uri: currentFile
+            },
+            position: {
+              character: characterPosition + i,
+              line: linePosition
+            }
+          });
+
+          if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
+            // Use documentSymbol instead of hover.
+            // This prevents type alias "squashing" done by tsserver.
+            // This also allows for grabbing the entire definition range and not just the symbol range.
+            // TODO: feels like this could be memoized to improve performance.
+            const documentSymbolResult = await lspClient.documentSymbol({
+              textDocument: {
+                uri: (typeDefinitionResult[0] as Location).uri
+              }
+            });
+            // grab if the line number of typeDefinitionResult and documentSymbolResult matches
+            const dsMap = documentSymbolResult!.reduce((m, obj) => {
+              m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
+              return m;
+            }, new Map<number, Range>());
+
+            const matchingSymbolRange: Range | undefined = dsMap.get((typeDefinitionResult[0] as Location).range.start.line);
+            if (matchingSymbolRange) {
+              const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
+              const typeContext = getTypeContext(snippetInRange);
+              const formattedTypeSpan = formatTypeSpan(snippetInRange);
+
+              await extractRelevantTypes(
+                lspClient,
+                snippetInRange,
+                typeContext!.typeName,
+                formattedTypeSpan,
+                (typeDefinitionResult[0] as Location).range.start.line,
+                (typeDefinitionResult[0] as Location).range.end.character + 2,
+                foundSoFar,
+                (typeDefinitionResult[0] as Location).uri, outputFile, depth + 1
+              );
+
+            }
+          }
+        } catch (err) {
+          console.log(`${err}`)
+        }
+      }
+    }
+    return foundSoFar;
   }
 
   extractRelevantHeaders(
