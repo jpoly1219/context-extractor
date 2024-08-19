@@ -271,8 +271,8 @@ class App {
   }
 
   async run() {
-    const injectedSketchUri = `file://${this.injectedSketchPath}`;
     const outputFile = fs.createWriteStream("output.txt");
+
     const holeContext = await this.languageDriver.getHoleContext(
       this.lspClient,
       this.injectedSketchPath ? this.injectedSketchPath : this.sketchPath,
@@ -285,9 +285,9 @@ class App {
       holeContext.functionName,
       holeContext.functionTypeSpan,
       0,
-      "declare function _(): ".length,
+      "declare function _(): ".length, // TODO: somehow use holeContext results
       new Map<string, string>(),
-      injectedSketchUri,
+      this.injectedSketchPath ? `file://${this.injectedSketchPath}` : `file://${this.sketchPath}`,
       outputFile,
       1
     );
@@ -414,7 +414,6 @@ class TypeScriptDriver implements LanguageDriver {
     // inject hole function
     const sketchFileName = path.basename(sketchPath);
     const injectedSketchPath = `${rootPath}/injected_${sketchFileName}`;
-    const injectedSketchUri = `file://${injectedSketchPath}`;
 
     const sketchFileContent = fs.readFileSync(sketchPath, "utf8");
     const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
@@ -467,8 +466,9 @@ class TypeScriptDriver implements LanguageDriver {
 
     return { fullHoverResult: formattedHoverResult, functionName: functionName, functionTypeSpan: functionTypeSpan, linePosition: linePosition, characterPosition: characterPosition };
   }
+
   async extractRelevantTypes(
-    c: LspClient,
+    lspClient: LspClient,
     fullHoverResult: string,
     typeName: string,
     typeSpan: string,
@@ -481,6 +481,7 @@ class TypeScriptDriver implements LanguageDriver {
   ) {
     return new Map<string, string>();
   }
+
   extractRelevantHeaders(
     preludeContent: string,
     relevantTypes: Map<string, string>,
@@ -493,7 +494,6 @@ class TypeScriptDriver implements LanguageDriver {
 
 export const extractWithNew = async (language: Language, sketchPath: string) => {
   const app = new App(language, sketchPath);
-  app.run();
-  app.save();
+  await app.run();
   return app.getSavedResult();
 }
