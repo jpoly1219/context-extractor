@@ -285,17 +285,10 @@ class App {
       holeContext.holeTypeDefLinePos,
       holeContext.holeTypeDefCharPos,
       new Map<string, string>(),
-      `file://${this.sketchPath}`,
+      `file://${this.sketchPath}`, // TODO: this needs to be injected_sketch for languages without hole support
       outputFile,
       1
     );
-
-    // TODO: move this to extractRelevantTypes
-    relevantTypes.delete("_");
-    relevantTypes.delete("_()");
-    for (const [k, v] of relevantTypes.entries()) {
-      relevantTypes.set(k, v.slice(0, -1));
-    }
 
     const preludeContent = fs.readFileSync(path.join(path.dirname(this.sketchPath), "prelude.ts")).toString("utf8");
     const relevantHeaders = this.languageDriver.extractRelevantHeaders(
@@ -412,6 +405,7 @@ class TypeScriptDriver implements LanguageDriver {
 
   async getHoleContext(lspClient: LspClient, sketchFilePath: string) {
     // For TypeScript programs, we need to inject the hole function before getting its context.
+    // TODO: this can be abstracted to its own method?
     const sketchDir = path.dirname(sketchFilePath);
     const injectedSketchFilePath = path.join(sketchDir, "injected_sketch.ts");
     const sketchFileContent = fs.readFileSync(sketchFilePath, "utf8");
@@ -463,6 +457,7 @@ class TypeScriptDriver implements LanguageDriver {
     const functionTypeSpan = match![4];
 
     // Clean up and inject the true hole function without the generic type signature.
+    // TODO: this can be abstracted to its own method?
     const trueHoleFunction = `declare function _(): ${functionTypeSpan}`
     const trueInjectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
     fs.writeFileSync(injectedSketchFilePath, trueInjectedSketchFileContent);
@@ -539,6 +534,8 @@ class TypeScriptDriver implements LanguageDriver {
             const matchingSymbolRange: Range | undefined = dsMap.get((typeDefinitionResult[0] as Location).range.start.line);
             if (matchingSymbolRange) {
               const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
+              // TODO: this can potentially be its own method. the driver would require some way to get type context.
+              // potentially, this type checker can be its own class.
               const typeContext = getTypeContext(snippetInRange);
               const formattedTypeSpan = formatTypeSpan(snippetInRange);
 
@@ -560,6 +557,14 @@ class TypeScriptDriver implements LanguageDriver {
         }
       }
     }
+
+    // Postprocess the map.
+    foundSoFar.delete("_");
+    foundSoFar.delete("_()");
+    for (const [k, v] of foundSoFar.entries()) {
+      foundSoFar.set(k, v.slice(0, -1));
+    }
+
     return foundSoFar;
   }
 
