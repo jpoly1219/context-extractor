@@ -236,7 +236,7 @@ class App {
   private languageDriver: LanguageDriver;
   private lspClient: LspClient;
   private sketchPath: string; // not prefixed with file://
-  private injectedSketchPath: string | null = null;
+  // private injectedSketchPath: string | null = null;
   private result: {
     hole: string;
     relevantTypes: string[];
@@ -249,7 +249,6 @@ class App {
       switch (language) {
         case Language.TypeScript: {
           this.languageDriver = new TypeScriptDriver();
-          this.injectedSketchPath = path.join(path.dirname(this.sketchPath), "injected_sktech.ts");
           return spawn("typescript-language-server", ["--stdio"]);
         }
         case Language.OCaml: {
@@ -275,8 +274,7 @@ class App {
 
     const holeContext = await this.languageDriver.getHoleContext(
       this.lspClient,
-      this.injectedSketchPath ? this.injectedSketchPath : this.sketchPath,
-      fs.readFileSync(this.injectedSketchPath ? this.injectedSketchPath : this.sketchPath, "utf8")
+      this.sketchPath,
     );
 
     const relevantTypes = await this.languageDriver.extractRelevantTypes(
@@ -410,31 +408,30 @@ class TypeScriptDriver implements LanguageDriver {
         }
       }
     });
+  }
 
-    // inject hole function
-    const sketchFileName = path.basename(sketchPath);
-    const injectedSketchPath = `${rootPath}/injected_${sketchFileName}`;
-
-    const sketchFileContent = fs.readFileSync(sketchPath, "utf8");
+  async getHoleContext(lspClient: LspClient, sketchFilePath: string) {
+    // For TypeScript programs, we need to inject the hole function before getting its context.
+    const sketchDir = path.dirname(sketchFilePath);
+    const injectedSketchFilePath = path.join(sketchDir, "injected_sketch.ts");
+    const sketchFileContent = fs.readFileSync(sketchFilePath, "utf8");
     const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
-    fs.writeFileSync(injectedSketchPath, injectedSketchFileContent);
+    fs.writeFileSync(injectedSketchFilePath, injectedSketchFileContent);
 
     // doucment sync client and server by notifying that the client has opened all the files inside the target directory
-    fs.readdirSync(rootPath).map(fileName => {
-      if (fs.lstatSync(`${rootPath}/${fileName}`).isFile()) {
+    fs.readdirSync(sketchDir).map(fileName => {
+      if (fs.lstatSync(path.join(sketchDir, fileName)).isFile()) {
         lspClient.didOpen({
           textDocument: {
-            uri: `file://${rootPath}/${fileName}`,
+            uri: `file://${sketchDir}/${fileName}`,
             languageId: 'typescript',
-            text: fs.readFileSync(`${rootPath}/${fileName}`).toString("ascii"),
+            text: fs.readFileSync(`${sketchDir}/${fileName}`).toString("ascii"),
             version: 1
           }
         });
       }
     });
-  }
 
-  async getHoleContext(lspClient: LspClient, injectedSketchFilePath: string, injectedSketchFileContent: string) {
     const holePattern = /_\(\)/;
     const firstPatternIndex = injectedSketchFileContent.search(holePattern);
     const linePosition = (injectedSketchFileContent.substring(0, firstPatternIndex).match(/\n/g))!.length;
@@ -463,6 +460,22 @@ class TypeScriptDriver implements LanguageDriver {
     const match = formattedHoverResult.match(holeFunctionPattern);
     const functionName = "_()";
     const functionTypeSpan = match![4];
+
+
+    // Clean up and inject the true hole function without the generic type signature.
+    const trueHoleFunction = `declare function _(): ${functionTypeSpan}`
+    const trueInjectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
+    fs.writeFileSync(injectedSketchFilePath, trueInjectedSketchFileContent);
+
+    lspClient.didChange({
+      textDocument: {
+        uri: `file://${injectedSketchFilePath}`,
+        version: 2
+      },
+      contentChanges: [{
+        text: trueInjectedSketchFileContent
+      }]
+    });
 
     return { fullHoverResult: formattedHoverResult, functionName: functionName, functionTypeSpan: functionTypeSpan, linePosition: linePosition, characterPosition: characterPosition };
   }
