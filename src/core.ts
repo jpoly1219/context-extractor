@@ -434,7 +434,7 @@ const extractRelevantTypes = async (
 // this would be akin to a LSP completion menu, but better
 // filter the typing context for values whose types stand in a certain relation to these target types
 // assign scores to each element of the resulting list, and return the prefix of that list truncated at some scoring and length thresholds
-const extractRelevantContext = (preludeContent: string, relevantTypes: Map<string, string>, holeType: string) => {
+const extractRelevantHeaders = (preludeContent: string, relevantTypes: Map<string, string>, holeType: string) => {
   // TODO:
   // assign scores to each element of the resulting list, and return const ts = require('typescript');
 
@@ -455,7 +455,7 @@ const extractRelevantContext = (preludeContent: string, relevantTypes: Map<strin
     const typeSpanPattern = /(^[^:]*: )(.+)/;
     const returnTypeSpan = splittedLine.match(typeSpanPattern)![2];
     if (!isPrimitive(returnTypeSpan.split(" => ")[1])) {
-      extractRelevantContextHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine);
+      extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine);
     }
   });
 
@@ -506,7 +506,7 @@ const getTargetTypesHelper = (
 
 // resursive helper for extractRelevantContext
 // checks for nested type equivalence
-const extractRelevantContextHelper = (typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, string>, relevantContext: Set<string>, line: string) => {
+const extractRelevantHeadersHelper = (typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, string>, relevantContext: Set<string>, line: string) => {
   targetTypes.forEach(typ => {
     if (isTypeEquivalent(typeSpan, typ, relevantTypes)) {
       relevantContext.add(line);
@@ -516,14 +516,14 @@ const extractRelevantContextHelper = (typeSpan: string, targetTypes: Set<string>
       const functionPattern = /(\(.+\))( => )(.+)/;
       const rettype = typeSpan.match(functionPattern)![3];
 
-      extractRelevantContextHelper(rettype, targetTypes, relevantTypes, relevantContext, line);
+      extractRelevantHeadersHelper(rettype, targetTypes, relevantTypes, relevantContext, line);
 
     } else if (isTuple(typeSpan)) {
       const elements = parseTypeArrayString(typeSpan)
       // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
 
       elements.forEach(element => {
-        extractRelevantContextHelper(element, targetTypes, relevantTypes, relevantContext, line);
+        extractRelevantHeadersHelper(element, targetTypes, relevantTypes, relevantContext, line);
       });
 
     }
@@ -626,4 +626,4 @@ const normalize = (typeSpan: string, relevantTypes: Map<string, string>) => {
   }
 }
 
-export { getAnnotatedFunctionHoleContext, getHoleContext, extractRelevantTypes, extractRelevantContext, normalize };
+export { getAnnotatedFunctionHoleContext, getHoleContext, extractRelevantTypes, extractRelevantHeaders, normalize };
