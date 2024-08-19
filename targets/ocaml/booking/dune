@@ -1,3 +1,4 @@
 (library
  (name booking)
- (modules prelude sketch))
+ (modules prelude sketch epilogue)
+ (libraries ounit2))
