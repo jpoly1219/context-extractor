@@ -1,4 +1,4 @@
-import { relevantTypeObject, varsObject, typesObject, typesQueryResult, varsQueryResult, relevantTypeQueryResult, typesAndLocationsQueryResult } from "./types";
+import { relevantTypeObject, varsObject, typesObject, typesQueryResult, varsQueryResult, relevantTypeQueryResult, typesAndLocationsQueryResult, Language } from "./types";
 
 const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
   return match.reduce((acc, curr, i) => {
@@ -278,6 +278,11 @@ const isQLIdentifier = (typeQLClass: string): boolean => {
   return typeQLClass === "Identifier";
 }
 
+const supportsHole = (lang: Language): boolean => {
+  const supportedLangs = [Language.OCaml];
+  return supportedLangs.includes(lang);
+}
+
 export {
   indexOfRegexGroup,
   formatTypeSpan,
@@ -306,5 +311,6 @@ export {
   isQLLiteral,
   isQLKeyword,
   isQLLabel,
-  isQLIdentifier
+  isQLIdentifier,
+  supportsHole
 };
