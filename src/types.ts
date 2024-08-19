@@ -1,3 +1,7 @@
+import { LspClient } from "../ts-lsp-client-dist/src/lspClient";
+import * as fs from "fs"
+import * as path from "path";
+
 interface relevantTypeObject {
   typeAliasDeclaration: string;
   typeName: string;
@@ -51,4 +55,41 @@ interface typesAndLocationsQueryResult {
   }
 }
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult }
+interface LanguageDriver {
+  init: (lspClient: LspClient, sketchPath: string) => Promise<void>;
+  getHoleContext: (
+    lspClient: LspClient,
+    injectedSketchFilePath: string,
+    injectedSketchFileContent: string
+  ) => Promise<{
+    fullHoverResult: string;
+    functionName: string;
+    functionTypeSpan: string;
+    linePosition: number;
+    characterPosition: number;
+  }>;
+  extractRelevantTypes: (
+    lspClient: LspClient,
+    fullHoverResult: string,
+    typeName: string,
+    typeSpan: string,
+    linePosition: number,
+    characterPosition: number,
+    foundSoFar: Map<string, string>,
+    currentFile: string,
+    outputFile: fs.WriteStream,
+    depth: number
+  ) => Promise<Map<string, string>>;
+  extractRelevantHeaders: (
+    preludeContent: string,
+    relevantTypes: Map<string, string>,
+    holeType: string
+  ) => string[];
+}
+
+enum Language {
+  TypeScript,
+  OCaml
+}
+
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language }
