@@ -20,6 +20,7 @@ export const extract = async (sketchPath: string) => {
   const r = spawn('typescript-language-server', ['--stdio']);
   const e = new JSONRPCEndpoint(r.stdin, r.stdout);
   const c = new LspClient(e);
+  console.log(JSON.stringify(c));
 
   const capabilities: ClientCapabilities = {
     'textDocument': {
@@ -230,8 +231,6 @@ export const extractWithCodeQL = async (sketchPath: string) => {
 }
 
 
-
-
 class App {
   private language: Language;
   private languageDriver: LanguageDriver;
@@ -242,6 +241,7 @@ class App {
     relevantTypes: string[];
     relevantHeaders: string[];
   } | null = null;
+
 
   constructor(language: Language, sketchPath: string) {
     this.language = language;
@@ -267,12 +267,16 @@ class App {
     r.stdout.on('data', (d) => logFile.write(d));
   }
 
+
   async init() {
     await this.languageDriver.init(this.lspClient, this.sketchPath);
   }
 
+
   async run() {
     const outputFile = fs.createWriteStream("output.txt");
+
+    await this.init();
 
     const holeContext = await this.languageDriver.getHoleContext(
       this.lspClient,
@@ -287,7 +291,7 @@ class App {
       holeContext.holeTypeDefLinePos,
       holeContext.holeTypeDefCharPos,
       new Map<string, string>(),
-      supportsHole(this.language) ? `file://${this.sketchPath}` : `file://${path.dirname(this.sketchPath)}/injected_sketch.${path.extname(this.sketchPath)}`,
+      supportsHole(this.language) ? `file://${this.sketchPath}` : `file://${path.dirname(this.sketchPath)}/injected_sketch${path.extname(this.sketchPath)}`,
       outputFile,
       1
     );
@@ -306,10 +310,12 @@ class App {
     };
   }
 
+
   save() {
     // TODO:
     throw "unimplimented"
   }
+
 
   getSavedResult() {
     return this.result;
@@ -318,6 +324,7 @@ class App {
 
 class TypeScriptDriver implements LanguageDriver {
   typeChecker: TypeScriptTypeChecker = new TypeScriptTypeChecker();
+
 
   async init(lspClient: LspClient, sketchPath: string) {
     const capabilities: ClientCapabilities = {
@@ -408,6 +415,7 @@ class TypeScriptDriver implements LanguageDriver {
     });
   }
 
+
   async getHoleContext(lspClient: LspClient, sketchFilePath: string) {
     // For TypeScript programs, we need to inject the hole function before getting its context.
     // NOTE: this can be abstracted to its own method?
@@ -423,7 +431,7 @@ class TypeScriptDriver implements LanguageDriver {
         lspClient.didOpen({
           textDocument: {
             uri: `file://${sketchDir}/${fileName}`,
-            languageId: 'typescript',
+            languageId: "typescript",
             text: fs.readFileSync(`${sketchDir}/${fileName}`).toString("ascii"),
             version: 1
           }
@@ -487,6 +495,7 @@ class TypeScriptDriver implements LanguageDriver {
       holeTypeDefCharPos: "declare function _(): ".length
     };
   }
+
 
   async extractRelevantTypes(
     lspClient: LspClient,
@@ -574,14 +583,205 @@ class TypeScriptDriver implements LanguageDriver {
     return foundSoFar;
   }
 
+
   extractRelevantHeaders(
     preludeContent: string,
     relevantTypes: Map<string, string>,
     holeType: string
   ): string[] {
-    return [];
+    const relevantContext = new Set<string>();
+
+    const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
+
+    // only consider lines that start with let or const
+    const filteredLines = preludeContent.split("\n").filter((line) => {
+      return line.slice(0, 3) === "let" || line.slice(0, 5) === "const";
+    });
+
+    // check for relationship between each line and relevant types
+    filteredLines.forEach(line => {
+      const splittedLine = line.split(" = ")[0];
+
+      const typeSpanPattern = /(^[^:]*: )(.+)/;
+      const returnTypeSpan = splittedLine.match(typeSpanPattern)![2];
+      if (!this.typeChecker.isPrimitive(returnTypeSpan.split(" => ")[1])) {
+        this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine);
+      }
+    });
+
+    return Array.from(relevantContext);
+  }
+
+
+  generateTargetTypes(relevantTypes: Map<string, string>, holeType: string) {
+    const targetTypes = new Set<string>();
+    targetTypes.add(holeType);
+    this.getTargetTypesHelper(relevantTypes, holeType, targetTypes);
+
+    return targetTypes;
+  }
+
+
+  getTargetTypesHelper(
+    relevantTypes: Map<string, string>,
+    currType: string,
+    targetTypes: Set<string>
+  ) {
+    // console.log("===Helper===")
+    if (this.typeChecker.isFunction(currType)) {
+      const functionPattern = /(\(.+\))( => )(.+)(;*)/;
+      const rettype = currType.match(functionPattern)![3];
+      targetTypes.add(rettype);
+      this.getTargetTypesHelper(relevantTypes, rettype, targetTypes);
+
+    } else if (this.typeChecker.isTuple(currType)) {
+      const elements = this.typeChecker.parseTypeArrayString(currType)
+
+      elements.forEach(element => {
+        targetTypes.add(element)
+        this.getTargetTypesHelper(relevantTypes, element, targetTypes);
+      });
+    }
+    // else if (isArray(currType)) {
+    //   const elementType = currType.split("[]")[0];
+    //
+    //   targetTypes.add(elementType)
+    //   getTargetTypesHelper(relevantTypes, elementType, targetTypes);
+    // } 
+    else {
+      if (relevantTypes.has(currType)) {
+        const definition = relevantTypes.get(currType)!.split(" = ")[1];
+        this.getTargetTypesHelper(relevantTypes, definition, targetTypes);
+      }
+    }
+  }
+
+
+  // resursive helper for extractRelevantContext
+  // checks for nested type equivalence
+  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, string>, relevantContext: Set<string>, line: string) {
+    targetTypes.forEach(typ => {
+      if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
+        relevantContext.add(line);
+      }
+
+      if (this.typeChecker.isFunction(typeSpan)) {
+        const functionPattern = /(\(.+\))( => )(.+)/;
+        const rettype = typeSpan.match(functionPattern)![3];
+
+        this.extractRelevantHeadersHelper(rettype, targetTypes, relevantTypes, relevantContext, line);
+
+      } else if (this.typeChecker.isTuple(typeSpan)) {
+        const elements = this.typeChecker.parseTypeArrayString(typeSpan)
+        // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
+
+        elements.forEach(element => {
+          this.extractRelevantHeadersHelper(element, targetTypes, relevantTypes, relevantContext, line);
+        });
+
+      }
+
+      // else if (isUnion(typeSpan)) {
+      //   const elements = typeSpan.split(" | ");
+      //
+      //   elements.forEach(element => {
+      //     extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
+      //   });
+      //
+      // else if (isArray(typeSpan)) {
+      //   const elementType = typeSpan.split("[]")[0];
+      //
+      //   if (isTypeEquivalent(elementType, typ, relevantTypes)) {
+      //     extractRelevantContextHelper(elementType, targetTypes, relevantTypes, relevantContext, line);
+      //   }
+      // }
+    });
+  }
+
+
+  // two types are equivalent if they have the same normal forms
+  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, string>) {
+    const normT1 = this.normalize(t1, relevantTypes);
+    const normT2 = this.normalize(t2, relevantTypes);
+    return normT1 === normT2;
+  }
+
+
+  // return the normal form given a type span and a set of relevant types
+  // TODO: replace type checking with information from the AST?
+  normalize(typeSpan: string, relevantTypes: Map<string, string>) {
+    let normalForm = "";
+
+    // pattern matching for typeSpan
+    if (this.typeChecker.isPrimitive(typeSpan)) {
+      return typeSpan;
+
+    } else if (this.typeChecker.isObject(typeSpan)) {
+      const elements = typeSpan.slice(1, typeSpan.length - 2).split(";");
+      normalForm += "{";
+
+      elements.forEach(element => {
+        if (element !== "") {
+          const kv = element.split(": ");
+          normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize(kv[1], relevantTypes);
+          normalForm += "; ";
+        }
+      });
+
+      normalForm += "}";
+      return normalForm;
+
+    } else if (this.typeChecker.isTuple(typeSpan)) {
+      // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
+      const elements = this.typeChecker.parseTypeArrayString(typeSpan)
+      normalForm += "[";
+
+      elements.forEach((element, i) => {
+        normalForm += this.normalize(element, relevantTypes);
+        if (i < elements.length - 1) {
+          normalForm += ", ";
+        }
+      });
+
+      normalForm += "]";
+      return normalForm;
+
+    } else if (this.typeChecker.isUnion(typeSpan)) {
+      const elements = typeSpan.split(" | ");
+
+      elements.forEach((element, i) => {
+        normalForm += "("
+        normalForm += this.normalize(element, relevantTypes)
+        normalForm += ")";
+        if (i < elements.length - 1) {
+          normalForm += " | ";
+        }
+      });
+
+      return normalForm;
+
+    } else if (this.typeChecker.isArray(typeSpan)) {
+      const element = typeSpan.split("[]")[0];
+
+      normalForm += this.normalize(element, relevantTypes)
+      normalForm += "[]";
+      return normalForm;
+
+    } else if (this.typeChecker.isTypeAlias(typeSpan)) {
+      const typ = relevantTypes.get(typeSpan)?.split(" = ")[1];
+      if (typ === undefined) {
+        return typeSpan;
+      }
+
+      normalForm += this.normalize(typ, relevantTypes);
+      return normalForm;
+
+    } else {
+      return typeSpan;
+    }
   }
 }
+
 
 class TypeScriptTypeChecker implements TypeChecker {
   getTypeContextFromDecl(typeDecl: string) {
@@ -611,6 +811,7 @@ class TypeScriptTypeChecker implements TypeChecker {
   // ideally this should be checked for before we do the for loop
   // return typeSpan;
 
+
   // check if hover result is from a primitive type
   checkPrimitive(typeDecl: string) {
     // type _ = boolean
@@ -628,6 +829,7 @@ class TypeScriptTypeChecker implements TypeChecker {
     }
     return null;
   }
+
 
   // check if hover result is from an import
   checkImports(typeDecl: string) {
@@ -660,6 +862,7 @@ class TypeScriptTypeChecker implements TypeChecker {
     return null;
   }
 
+
   // check if hover result is from a module
   checkModule(typeDecl: string) {
     // module "path/to/module"
@@ -678,6 +881,7 @@ class TypeScriptTypeChecker implements TypeChecker {
 
     return null;
   }
+
 
   // check if hover result is from an object
   checkObject(typeDecl: string) {
@@ -700,6 +904,7 @@ class TypeScriptTypeChecker implements TypeChecker {
     return null;
   }
 
+
   // check if hover result is from a union
   checkUnion(typeDecl: string) {
     // type _ = A | B | C
@@ -717,6 +922,7 @@ class TypeScriptTypeChecker implements TypeChecker {
     }
     return null;
   }
+
 
   // check if hover result is from a function
   checkFunction(typeDecl: string) {
@@ -773,6 +979,7 @@ class TypeScriptTypeChecker implements TypeChecker {
     return null;
   }
 
+
   // check if hover result is from a hole
   checkHole(typeDecl: string) {
     // (type parameter) T in _<T>(): T
@@ -786,6 +993,7 @@ class TypeScriptTypeChecker implements TypeChecker {
 
     return null;
   }
+
 
   // check if hover result is from a parameter
   checkParameter(typeDecl: string) {
@@ -804,8 +1012,90 @@ class TypeScriptTypeChecker implements TypeChecker {
     // }
     return null;
   }
-}
 
+
+  isTuple(typeSpan: string) {
+    return typeSpan[0] === "[" && typeSpan[typeSpan.length - 1] === "]";
+  }
+
+
+  isUnion(typeSpan: string) {
+    return typeSpan.includes(" | ");
+  }
+
+
+  isArray(typeSpan: string) {
+    return typeSpan.slice(-2) === "[]";
+  }
+
+
+  isObject(typeSpan: string) {
+    return typeSpan[0] === "{" && typeSpan[typeSpan.length - 1] === "}";
+  }
+
+
+  // this is a very rudimentary check, so it should be expanded upon
+  isFunction(typeSpan: string) {
+    return typeSpan.includes("=>");
+  }
+
+
+  isPrimitive(typeSpan: string) {
+    const primitives = ["string", "number", "boolean"];
+    return primitives.includes(typeSpan);
+  }
+
+
+  isTypeAlias(typeSpan: string) {
+    const caps = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    return caps.includes(typeSpan[0]);
+  }
+
+
+  escapeQuotes(typeSpan: string): string {
+    return typeSpan.replace(/"/g, `\\"`);
+  }
+
+
+  parseTypeArrayString(typeStr: string): string[] {
+    // Remove all spaces
+    const cleaned = typeStr.replace(/\s/g, '');
+
+    // Remove the outermost square brackets
+    const inner = cleaned.slice(1, -1);
+    // const inner = cleaned.slice(-1) === ";" ? cleaned.slice(1, -2) : cleaned.slice(1, -1);
+
+    // Split the string, respecting nested structures
+    const result: string[] = [];
+    let currentItem = '';
+    let nestLevel = 0;
+
+    for (const char of inner) {
+      if (char === '[') nestLevel++;
+      if (char === ']') nestLevel--;
+
+      if (char === ',' && nestLevel === 0) {
+        // check if currentItem is a name: type pair or just type
+        if (currentItem.includes(":")) {
+          result.push(currentItem.split(":")[1]);
+        } else {
+          result.push(currentItem);
+        }
+        currentItem = '';
+      } else {
+        currentItem += char;
+      }
+    }
+
+    if (currentItem.includes(":")) {
+      result.push(currentItem.split(":")[1]);
+    } else {
+      result.push(currentItem);
+    }
+
+    return result;
+  }
+}
 
 export const extractWithNew = async (language: Language, sketchPath: string) => {
   const app = new App(language, sketchPath);
