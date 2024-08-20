@@ -93,4 +93,11 @@ enum Language {
   OCaml
 }
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language }
+interface TypeChecker {
+  // Given a type declaration, get the type context. Call checktype().
+  getTypeContextFromDecl: (typeDecl: string) => { identifier: string, span: string } | null;
+  // Lex and parse the given type declaration using language-appropriate techniques, then return its type.
+  // checkType: (typeDecl: string) => object;
+}
+
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker }
