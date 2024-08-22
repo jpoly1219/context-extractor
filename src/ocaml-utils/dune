@@ -1,0 +1,4 @@
+(executable
+ (name test_parser)
+ ; (modules test_parser)
+ (libraries compiler-libs.common))
