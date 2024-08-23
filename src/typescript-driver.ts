@@ -234,7 +234,6 @@ export class TypeScriptDriver implements LanguageDriver {
               const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
               // TODO: this can potentially be its own method. the driver would require some way to get type context.
               // potentially, this type checker can be its own class.
-              // FIX: think about how to add the typechecking functionality at this point
               const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
               const formattedTypeSpan = formatTypeSpan(snippetInRange);
 
@@ -293,13 +292,13 @@ export class TypeScriptDriver implements LanguageDriver {
   generateTargetTypes(relevantTypes: Map<string, string>, holeType: string) {
     const targetTypes = new Set<string>();
     targetTypes.add(holeType);
-    this.getTargetTypesHelper(relevantTypes, holeType, targetTypes);
+    this.generateTargetTypesHelper(relevantTypes, holeType, targetTypes);
 
     return targetTypes;
   }
 
 
-  getTargetTypesHelper(
+  generateTargetTypesHelper(
     relevantTypes: Map<string, string>,
     currType: string,
     targetTypes: Set<string>
@@ -310,14 +309,14 @@ export class TypeScriptDriver implements LanguageDriver {
       const functionPattern = /(\(.+\))( => )(.+)(;*)/;
       const rettype = currType.match(functionPattern)![3];
       targetTypes.add(rettype);
-      this.getTargetTypesHelper(relevantTypes, rettype, targetTypes);
+      this.generateTargetTypesHelper(relevantTypes, rettype, targetTypes);
 
     } else if (this.typeChecker.isTuple(currType)) {
       const elements = this.typeChecker.parseTypeArrayString(currType)
 
       elements.forEach(element => {
         targetTypes.add(element)
-        this.getTargetTypesHelper(relevantTypes, element, targetTypes);
+        this.generateTargetTypesHelper(relevantTypes, element, targetTypes);
       });
     }
     // else if (isArray(currType)) {
@@ -329,7 +328,7 @@ export class TypeScriptDriver implements LanguageDriver {
     else {
       if (relevantTypes.has(currType)) {
         const definition = relevantTypes.get(currType)!.split(" = ")[1];
-        this.getTargetTypesHelper(relevantTypes, definition, targetTypes);
+        this.generateTargetTypesHelper(relevantTypes, definition, targetTypes);
       }
     }
   }
