@@ -3,7 +3,9 @@ import * as path from "path";
 import { spawn } from "child_process";
 import { LspClient, JSONRPCEndpoint } from "../ts-lsp-client-dist/src/main";
 import { Language, LanguageDriver } from "./types";
+// TODO: Bundle the drivers as barrel exports.
 import { TypeScriptDriver } from "./typescript-driver";
+import { OcamlDriver } from "./ocaml-driver";
 import { supportsHole } from "./utils";
 
 
@@ -30,7 +32,7 @@ export class App {
           return spawn("typescript-language-server", ["--stdio"]);
         }
         case Language.OCaml: {
-          this.languageDriver = new TypeScriptDriver();
+          this.languageDriver = new OcamlDriver();
           return spawn("ocamllsp", ["--stdio"]);
         }
       }
