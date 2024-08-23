@@ -104,6 +104,8 @@
   "exclude": [
     "./node_modules/**/*",
     "./build/**/*",
-    "./targets/**/*"
+    "./targets/**/*",
+    "./ts-lsp-client-dist/**/*",
+    "./ts-lsp-client-dist-bak/**/*"
   ]
 }
