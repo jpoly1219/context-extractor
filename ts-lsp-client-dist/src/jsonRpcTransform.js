@@ -15,7 +15,7 @@ class JSONRPCTransform extends stream_1.Transform {
             }
         });
         this._curChunk = Buffer.from([]);
-        this._state = 'content-length';
+        this._state = 'header';
     }
     _transform(chunk, encoding, done) {
         encoding = encoding || 'utf8';
@@ -26,12 +26,16 @@ class JSONRPCTransform extends stream_1.Transform {
         const prefixMinLength = Buffer.byteLength('Content-Length: 0\r\n\r\n', encoding);
         const prefixLength = Buffer.byteLength('Content-Length: ', encoding);
         const prefixRegex = /^Content-Length: /i;
+        const contentTypeLength = Buffer.byteLength('Content-Type: ', encoding);
+        const contentTypeRe = /^Content-Type: /i;
         const digitLength = Buffer.byteLength('0', encoding);
         const digitRe = /^[0-9]/;
         const suffixLength = Buffer.byteLength('\r\n\r\n', encoding);
-        const suffixRe = /^\r\n\r\n/;
+        const suffixRe = /\r\n\r\n/;
+        const crlfLength = Buffer.byteLength('\r\n', encoding);
+        const crlfRe = /^\r\n/;
         while (true) {
-            if (this._state === 'content-length') {
+            if (this._state === 'header') {
                 if (this._curChunk.length < prefixMinLength)
                     break;
                 const leading = this._curChunk.slice(0, prefixLength);
@@ -48,19 +52,39 @@ class JSONRPCTransform extends stream_1.Transform {
                     numString += ch;
                     position += 1;
                 }
-                if (position === leading.length || this._curChunk.length - position < suffixLength || !suffixRe.test(this._curChunk.slice(position, position + suffixLength).toString(encoding))) {
+                if (position === leading.length || this._curChunk.length - position < crlfLength) {
                     done(new Error(`[_transform] Bad header: ${this._curChunk.toString(encoding)}`));
                     return;
                 }
                 this._curContentLength = Number(numString);
-                this._curChunk = this._curChunk.slice(position + suffixLength);
+                this._curChunk = this._curChunk.slice(position + crlfLength);
+                const ctyp = this._curChunk.slice(0, contentTypeLength);
+                const noCtyp = this._curChunk.slice(0, crlfLength);
+                const isCtyp = contentTypeRe.test(ctyp.toString(encoding));
+                const isNoCtyp = crlfRe.test(noCtyp.toString(encoding));
+                if (!isNoCtyp && !isCtyp) {
+                    done(new Error(`[_transform] Bad header: ${this._curChunk.toString(encoding)}`));
+                    return;
+                }
+                if (isNoCtyp) {
+                    this._curChunk = this._curChunk.slice(crlfLength);
+                }
+                if (isCtyp) {
+                    const index = this._curChunk.toString(encoding).search(suffixRe);
+                    if (index === -1) {
+                        done(new Error(`[_transform] Bad header: ${this._curChunk.toString(encoding)}`));
+                        return;
+                    }
+                    position = index;
+                    this._curChunk = this._curChunk.slice(position + suffixLength);
+                }
                 this._state = 'jsonrpc';
             }
             if (this._state === 'jsonrpc') {
                 if (this._curChunk.length >= this._curContentLength) {
                     this.push(this._reencode(this._curChunk.slice(0, this._curContentLength), encoding));
                     this._curChunk = this._curChunk.slice(this._curContentLength);
-                    this._state = 'content-length';
+                    this._state = 'header';
                     continue;
                 }
             }

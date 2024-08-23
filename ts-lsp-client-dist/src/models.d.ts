@@ -863,4 +863,7 @@ export interface TypeHierarchyItem {
     selectionRange: Range;
     data?: LSPAny;
 }
+export interface OcamlTypedHoleParams {
+    uri: DocumentUri;
+}
 export {};

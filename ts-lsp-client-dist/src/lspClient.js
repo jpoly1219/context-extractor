@@ -60,6 +60,9 @@ class LspClient {
     prepareTypeHierarchy(params) {
         return this.endpoint.send('textDocument/prepareTypeHierarchy', params);
     }
+    ocamlTypedHole(params) {
+        return this.endpoint.send('ocamllsp/typedHoles', params);
+    }
 }
 exports.LspClient = LspClient;
 //# sourceMappingURL=lspClient.js.map
