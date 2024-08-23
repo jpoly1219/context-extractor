@@ -32,7 +32,6 @@ let rec print_expression (expr : Parsetree.expression) indent =
   | _ -> Printf.printf "%sOther expression\n" indent_str
 
 (* Print the parsed structure. *)
-
 let print_structure_item (item : Parsetree.structure_item) indent =
   let indent_str = String.make indent ' ' in
   match item.pstr_desc with
