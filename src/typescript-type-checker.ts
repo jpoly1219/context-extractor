@@ -3,6 +3,13 @@ import { indexOfRegexGroup } from "./utils";
 
 
 export class TypeScriptTypeChecker implements TypeChecker {
+  getIdentifierFromDecl(typeDecl: string) {
+    const declRe = /(.+ )(.+)( = )(.+)/;
+    const match = typeDecl.match(declRe);
+    if (!match) return "";
+    return match[2];
+  }
+
   getTypeContextFromDecl(typeDecl: string) {
     if (this.checkHole(typeDecl)) {
       return this.checkHole(typeDecl);
