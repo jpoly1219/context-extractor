@@ -235,13 +235,13 @@ export class TypeScriptDriver implements LanguageDriver {
               // TODO: this can potentially be its own method. the driver would require some way to get type context.
               // potentially, this type checker can be its own class.
               // FIX: think about how to add the typechecking functionality at this point
-              const typeContext = this.typeChecker.getTypeContextFromDecl(snippetInRange);
+              const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
               const formattedTypeSpan = formatTypeSpan(snippetInRange);
 
               await this.extractRelevantTypes(
                 lspClient,
                 snippetInRange,
-                typeContext!.identifier,
+                identifier,
                 formattedTypeSpan,
                 (typeDefinitionResult[0] as Location).range.start.line,
                 (typeDefinitionResult[0] as Location).range.end.character + 2,
