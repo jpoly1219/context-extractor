@@ -33,6 +33,7 @@ export class App {
         }
         case Language.OCaml: {
           this.languageDriver = new OcamlDriver();
+          // TODO: Spawn a dune build -w on sketch directory.
           return spawn("ocamllsp", ["--stdio"]);
         }
       }
