@@ -120,10 +120,11 @@ export class OcamlDriver implements LanguageDriver {
 
     // Get hole context.
     // ocamllsp supports finding holes natively.
-    const holeRes = await lspClient.ocamlTypedHole({
-      uri: `file://${sketchFilePath}`
-    })
-    console.log(JSON.stringify(holeRes))
+    // const holeRes = await lspClient.ocamlTypedHole({
+    //   uri: `file://${sketchFilePath}`
+    // })
+    // console.log(JSON.stringify(holeRes))
+    // console.log(await lspClient.documentSymbol({ textDocument: { uri: `file://${sketchFilePath}` } }))
 
     // const holePattern = /_\(\)/;
     // const firstPatternIndex = injectedSketchFileContent.search(holePattern);
