@@ -82,7 +82,7 @@ export class App {
       relevantTypes.set(k, v.slice(0, -1));
     }
 
-    const preludeContent = fs.readFileSync(path.join(path.dirname(this.sketchPath), "prelude.ts")).toString("utf8");
+    const preludeContent = fs.readFileSync(path.join(path.dirname(this.sketchPath), `prelude${path.extname(this.sketchPath)}`)).toString("utf8");
     const relevantHeaders = this.languageDriver.extractRelevantHeaders(
       preludeContent,
       relevantTypes,
@@ -97,9 +97,9 @@ export class App {
   }
 
 
-  save() {
+  close() {
     // TODO:
-    throw "unimplimented"
+    this.lspClient.shutdown();
   }
 
 
