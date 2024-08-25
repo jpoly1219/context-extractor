@@ -5,7 +5,7 @@ import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolIn
 import { LanguageDriver } from "./types";
 import { OcamlTypeChecker } from "./ocaml-type-checker";
 import { extractSnippet, formatTypeSpan } from "./utils";
-import { walkUpBindingElementsAndPatterns } from "typescript";
+import { hasOnlyExpressionInitializer, walkUpBindingElementsAndPatterns } from "typescript";
 
 
 export class OcamlDriver implements LanguageDriver {
@@ -133,21 +133,47 @@ export class OcamlDriver implements LanguageDriver {
     });
 
     // Get hole context.
-    // ocamllsp supports finding holes natively.
-    const holePosition = await lspClient.ocamlTypedHole({
-      uri: `file://${sketchFilePath}`
-    })
+    const holeCtx = (await lspClient.ocamlMerlinCallCompatible({
+      uri: `file://${sketchFilePath}`,
+      command: "holes",
+      args: [],
+      resultAsSexp: false
+    }))
+    console.log(JSON.parse(holeCtx.result))
+    console.log(holeCtx.result)
 
-    // TODO: Once position is found, find its type.
+    console.log(JSON.stringify(await lspClient.documentSymbol({
+      textDocument: {
+        uri: `file://${sketchFilePath}`,
+      }
+    })));
+    // console.log(JSON.stringify(await lspClient.documentSymbol({
+    //   textDocument: {
+    //     uri: `file://${sketchDir}/prelude.ml`,
+    //   }
+    // }), null, 2));
+
+
+    // NOTE:
+    // The quick and dirty way is to rely on the fact that the hole is in the place of the entire body expression.
+    // Then we can just get document symbols, then find the one symbol whose range spans over the hole's position.
+    // Afterwards we use the parser to get the type of the symbol.
+    // However, this wouldn't work for holes that are part of an expression.
+    // A more robust way would be to use merlin directly, or to augment ocamllsp.
+    // Or use diagnostics method to get the type (uses ocamllsp under the hood).
+    // ocamllsp does not provide a public API to get the type of the hole.
+    // The hole is not parseable as it's not considered a valid Ocaml code.
+    // Works differntly for OCaml than in TS...
+    // 
 
     return {
-      fullHoverResult: "",
-      functionName: "",
-      functionTypeSpan: "",
-      linePosition: 0,
-      characterPosition: 0,
-      holeTypeDefLinePos: 0,
-      holeTypeDefCharPos: "declare function _(): ".length
+      fullHoverResult: "", //
+      functionName: "_", // _
+      functionTypeSpan: "model * action -> model", // model * action -> model
+      linePosition: 3, // hole's line
+      characterPosition: 47, // hole's character
+      holeTypeDefLinePos: 3, // 
+      holeTypeDefCharPos: 0 // "
     };
   }
 
@@ -172,7 +198,8 @@ export class OcamlDriver implements LanguageDriver {
       const charInLine = execSync(`wc -m <<< "${content.split("\n")[linePosition].slice(characterPosition)}"`, { shell: "/bin/bash" });
 
       // -1 is done to avoid tsserver errors
-      for (let i = 0; i < Math.min(parseInt(charInLine.toString()), typeSpan.length) - 1; i++) {
+      // TODO: Make this a double for loop where outer loops the lines and inner loops the characters
+      for (let i = 0; i < Math.min(parseInt(charInLine.toString()), typeSpan.length); i++) {
         try {
           const typeDefinitionResult = await lspClient.typeDefinition({
             textDocument: {
