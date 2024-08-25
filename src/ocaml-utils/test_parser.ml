@@ -29,6 +29,7 @@ let rec print_expression (expr : Parsetree.expression) indent =
       Printf.printf "%sApply:\n" indent_str;
       print_expression func (indent + 2);
       List.iter (fun (_, arg) -> print_expression arg (indent + 2)) args
+  | Pexp_unreachable -> print_string "hhh"
   | _ -> Printf.printf "%sOther expression\n" indent_str
 
 (* Print the parsed structure. *)
@@ -95,7 +96,7 @@ let print_structure structure =
 
 (* Example usage *)
 let () =
-  let str = "let update ((m, a) : model * action) : model = m" in
+  let str = "let update ((m, a) : model * action) : model = _" in
   match parse_from_string str with
   | Some parsed_str ->
       print_endline "Structure parsed successfully!";
