@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InlayHintKind = exports.InsertTextFormat = exports.CompletionTriggerKind = exports.SignatureHelpTriggerKind = exports.TextDocumentSyncKind = exports.CodeActionKind = exports.CompletionItemKind = exports.SymbolKind = void 0;
+exports.DocumentDiagnosticReportKind = exports.DiagnosticSeverity = exports.InlayHintKind = exports.InsertTextFormat = exports.CompletionTriggerKind = exports.SignatureHelpTriggerKind = exports.TextDocumentSyncKind = exports.CodeActionKind = exports.CompletionItemKind = exports.SymbolKind = void 0;
 var SymbolKind;
 (function (SymbolKind) {
     SymbolKind[SymbolKind["File"] = 1] = "File";
@@ -97,4 +97,16 @@ var InlayHintKind;
     InlayHintKind[InlayHintKind["Type"] = 1] = "Type";
     InlayHintKind[InlayHintKind["Parameter"] = 2] = "Parameter";
 })(InlayHintKind = exports.InlayHintKind || (exports.InlayHintKind = {}));
+var DiagnosticSeverity;
+(function (DiagnosticSeverity) {
+    DiagnosticSeverity[DiagnosticSeverity["Error"] = 1] = "Error";
+    DiagnosticSeverity[DiagnosticSeverity["Warning"] = 2] = "Warning";
+    DiagnosticSeverity[DiagnosticSeverity["Information"] = 3] = "Information";
+    DiagnosticSeverity[DiagnosticSeverity["Hint"] = 4] = "Hint";
+})(DiagnosticSeverity = exports.DiagnosticSeverity || (exports.DiagnosticSeverity = {}));
+var DocumentDiagnosticReportKind;
+(function (DocumentDiagnosticReportKind) {
+    DocumentDiagnosticReportKind["Full"] = "full";
+    DocumentDiagnosticReportKind["Unchanged"] = "unchanged";
+})(DocumentDiagnosticReportKind = exports.DocumentDiagnosticReportKind || (exports.DocumentDiagnosticReportKind = {}));
 //# sourceMappingURL=models.js.map

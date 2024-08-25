@@ -29,7 +29,6 @@ class JSONRPCEndpoint extends stream_1.EventEmitter {
                 }
                 else {
                     logger_1.Logger.log(`[transform] ${jsonRPCResponseOrRequest}`, logger_1.LoggerLevel.ERROR);
-                    this.emit('error', `[transform] Received id mismatch! Got ${jsonRPCResponse.id}, expected ${this.nextId - 1}`);
                 }
             }
             else {

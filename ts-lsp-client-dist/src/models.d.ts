@@ -3,6 +3,7 @@ export type uinteger = number;
 export type decimal = number;
 type ProgressToken = integer | string;
 type DocumentUri = string;
+type URI = string;
 export type TraceValue = 'off' | 'messages' | 'verbose';
 export type LSPObject = {
     [key: string]: LSPAny;
@@ -863,7 +864,86 @@ export interface TypeHierarchyItem {
     selectionRange: Range;
     data?: LSPAny;
 }
-export interface OcamlTypedHoleParams {
+export interface Diagnostic {
+    range: Range;
+    severity?: DiagnosticSeverity;
+    code?: integer | string;
+    codeDescription?: CodeDescription;
+    source?: string;
+    message: string;
+    tags?: DiagnosticTag[];
+    relatedInformation?: DiagnosticRelatedInformation[];
+    data?: LSPAny;
+}
+export declare enum DiagnosticSeverity {
+    Error = 1,
+    Warning = 2,
+    Information = 3,
+    Hint = 4
+}
+export interface DiagnosticRelatedInformation {
+    location: Location;
+    message: string;
+}
+export interface CodeDescription {
+    href: URI;
+}
+export interface DocumentDiagnosticParams extends WorkDoneProgressParams, PartialResultParams {
+    textDocument: TextDocumentIdentifier;
+    identifier?: string;
+    previousResultId?: string;
+}
+export declare enum DocumentDiagnosticReportKind {
+    Full = "full",
+    Unchanged = "unchanged"
+}
+export interface FullDocumentDiagnosticReport {
+    kind: DocumentDiagnosticReportKind.Full;
+    resultId?: string;
+    items: Diagnostic[];
+}
+export interface UnchangedDocumentDiagnosticReport {
+    kind: DocumentDiagnosticReportKind.Unchanged;
+    resultId: string;
+}
+export type DocumentDiagnosticReport = RelatedFullDocumentDiagnosticReport | RelatedUnchangedDocumentDiagnosticReport;
+export interface RelatedFullDocumentDiagnosticReport extends FullDocumentDiagnosticReport {
+    relatedDocuments?: FullDocumentDiagnosticReport | UnchangedDocumentDiagnosticReport;
+}
+export interface RelatedUnchangedDocumentDiagnosticReport extends UnchangedDocumentDiagnosticReport {
+    relatedDocuments?: FullDocumentDiagnosticReport | UnchangedDocumentDiagnosticReport;
+}
+export interface OcamlTypedHolesParams {
     uri: DocumentUri;
+}
+export interface OcamlHoverExtendedParams {
+    textDocument: TextDocumentIdentifier;
+    position: Position;
+    verbosity?: number;
+}
+export type OcamlInferIntfParams = DocumentUri;
+export interface OcamlInferIntfResponse {
+    result: string;
+}
+export interface OcamlMerlinCallCompatibleParams {
+    uri: DocumentUri;
+    command: string;
+    args: string[];
+    resultAsSexp: boolean;
+}
+export interface OcamlMerlinCallCompatibleResponse {
+    resultAsSexp: boolean;
+    result: string;
+}
+export interface OcamlTypeEnclosingParams {
+    uri: TextDocumentIdentifier;
+    at: (Position | Range);
+    index: number;
+    verbosity?: number;
+}
+export interface OcamlTypeEnclosingResponse {
+    enclosings: Range[];
+    index: number;
+    type: string;
 }
 export {};

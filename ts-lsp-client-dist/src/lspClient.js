@@ -60,8 +60,23 @@ class LspClient {
     prepareTypeHierarchy(params) {
         return this.endpoint.send('textDocument/prepareTypeHierarchy', params);
     }
-    ocamlTypedHole(params) {
+    diagnostics(params) {
+        return this.endpoint.send('textDocument/diagnostic', params);
+    }
+    ocamlTypedHoles(params) {
         return this.endpoint.send('ocamllsp/typedHoles', params);
+    }
+    ocamlHoverExtended(params) {
+        return this.endpoint.send('ocamllsp/hoverExtended', params);
+    }
+    ocamlInferIntf(params) {
+        return this.endpoint.send('ocamllsp/inferIntf', params);
+    }
+    ocamlMerlinCallCompatible(params) {
+        return this.endpoint.send('ocamllsp/merlinCallCompatible', params);
+    }
+    ocamlTypeEnclosing(params) {
+        return this.endpoint.send('ocamllsp/typeEnclosing', params);
     }
 }
 exports.LspClient = LspClient;

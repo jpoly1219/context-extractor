@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { JSONRPCEndpoint } from "./jsonRpcEndpoint";
-import { DefinitionParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbol, DocumentSymbolParams, InitializeParams, InitializeResult, LocationLink, ReferenceParams, ResponseError, ShutdownResult, SignatureHelp, SignatureHelpParams, SymbolInformation, TypeDefinitionParams, Location, HoverParams, Hover, DeclarationParams, CompletionParams, CompletionItem, CompletionList, InlayHintParams, InlayHint, TypeHierarchyPrepareParams, TypeHierarchyItem, OcamlTypedHoleParams } from "./models";
+import { DefinitionParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbol, DocumentSymbolParams, InitializeParams, InitializeResult, LocationLink, ReferenceParams, ResponseError, ShutdownResult, SignatureHelp, SignatureHelpParams, SymbolInformation, TypeDefinitionParams, Location, HoverParams, Hover, DeclarationParams, CompletionParams, CompletionItem, CompletionList, InlayHintParams, InlayHint, TypeHierarchyPrepareParams, TypeHierarchyItem, Range, DocumentDiagnosticParams, DocumentDiagnosticReport, OcamlTypedHolesParams, OcamlHoverExtendedParams, OcamlInferIntfParams, OcamlMerlinCallCompatibleParams, OcamlMerlinCallCompatibleResponse, OcamlTypeEnclosingParams, OcamlTypeEnclosingResponse, OcamlInferIntfResponse } from "./models";
 import { once } from 'events';
 export declare class LspClient {
     private endpoint;
@@ -23,5 +23,10 @@ export declare class LspClient {
     completion(params: CompletionParams): PromiseLike<CompletionItem[] | CompletionList | null>;
     inlayHint(params: InlayHintParams): PromiseLike<InlayHint[] | null>;
     prepareTypeHierarchy(params: TypeHierarchyPrepareParams): PromiseLike<TypeHierarchyItem[] | null>;
-    ocamlTypedHole(params: OcamlTypedHoleParams): PromiseLike<Range[] | null>;
+    diagnostics(params: DocumentDiagnosticParams): PromiseLike<DocumentDiagnosticReport | null>;
+    ocamlTypedHoles(params: OcamlTypedHolesParams): PromiseLike<Range[] | null>;
+    ocamlHoverExtended(params: OcamlHoverExtendedParams): PromiseLike<Hover>;
+    ocamlInferIntf(params: OcamlInferIntfParams): PromiseLike<OcamlInferIntfResponse | null>;
+    ocamlMerlinCallCompatible(params: OcamlMerlinCallCompatibleParams): PromiseLike<OcamlMerlinCallCompatibleResponse>;
+    ocamlTypeEnclosing(params: OcamlTypeEnclosingParams): PromiseLike<OcamlTypeEnclosingResponse>;
 }
