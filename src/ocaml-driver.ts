@@ -5,6 +5,7 @@ import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolIn
 import { LanguageDriver } from "./types";
 import { OcamlTypeChecker } from "./ocaml-type-checker";
 import { extractSnippet, formatTypeSpan } from "./utils";
+import { walkUpBindingElementsAndPatterns } from "typescript";
 
 
 export class OcamlDriver implements LanguageDriver {
@@ -107,10 +108,23 @@ export class OcamlDriver implements LanguageDriver {
     // Sync client and server by notifying that the client has opened all the files inside the target directory.
     fs.readdirSync(sketchDir).map(fileName => {
       if (fs.lstatSync(path.join(sketchDir, fileName)).isFile()) {
+        const langType = (() => {
+          switch (fileName) {
+            case "dune":
+              return "dune";
+            case "dune-project":
+              return "dune-project";
+            case ".ocamlformat":
+              return ".ocamlformat";
+            default:
+              return "ocaml";
+          }
+        })();
+
         lspClient.didOpen({
           textDocument: {
             uri: `file://${sketchDir}/${fileName}`,
-            languageId: "ocaml",
+            languageId: langType,
             text: fs.readFileSync(`${sketchDir}/${fileName}`).toString("ascii"),
             version: 1
           }
@@ -120,50 +134,12 @@ export class OcamlDriver implements LanguageDriver {
 
     // Get hole context.
     // ocamllsp supports finding holes natively.
-    // const holeRes = await lspClient.ocamlTypedHole({
-    //   uri: `file://${sketchFilePath}`
-    // })
-    // console.log(JSON.stringify(holeRes))
-    // console.log(await lspClient.documentSymbol({ textDocument: { uri: `file://${sketchFilePath}` } }))
+    const holePosition = await lspClient.ocamlTypedHole({
+      uri: `file://${sketchFilePath}`
+    })
 
-    // const holePattern = /_\(\)/;
-    // const firstPatternIndex = injectedSketchFileContent.search(holePattern);
-    // const linePosition = (injectedSketchFileContent.substring(0, firstPatternIndex).match(/\n/g))!.length;
-    // const characterPosition = firstPatternIndex - injectedSketchFileContent.split("\n", linePosition).join("\n").length - 1;
-    //
-    // const holeHoverResult = await lspClient.hover({
-    //   textDocument: {
-    //     uri: injectedSketchFilePath
-    //   },
-    //   position: {
-    //     character: characterPosition,
-    //     line: linePosition
-    //   }
-    // });
-    //
-    // const formattedHoverResult = (holeHoverResult.contents as MarkupContent).value.split("\n").reduce((acc: string, curr: string) => {
-    //   if (curr != "" && curr != "```typescript" && curr != "```") {
-    //     return acc + curr;
-    //   } else {
-    //     return acc;
-    //   }
-    // }, "");
-    //
-    // // function _<(a: Apple, c: Cherry, b: Banana) => Cherry > (): (a: Apple, c: Cherry, b: Banana) => Cherry
-    // const holeFunctionPattern = /(function _)(\<.+\>)(\(\): )(.+)/;
-    // const match = formattedHoverResult.match(holeFunctionPattern);
-    // const functionName = "_()";
-    // const functionTypeSpan = match![4];
+    // TODO: Once position is found, find its type.
 
-    // return {
-    //   fullHoverResult: formattedHoverResult,
-    //   functionName: functionName,
-    //   functionTypeSpan: functionTypeSpan,
-    //   linePosition: linePosition,
-    //   characterPosition: characterPosition,
-    //   holeTypeDefLinePos: 0,
-    //   holeTypeDefCharPos: "declare function _(): ".length
-    // };
     return {
       fullHoverResult: "",
       functionName: "",
