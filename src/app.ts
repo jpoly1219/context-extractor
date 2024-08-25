@@ -61,6 +61,7 @@ export class App {
       this.lspClient,
       this.sketchPath,
     );
+    console.log(holeContext)
 
     const relevantTypes = await this.languageDriver.extractRelevantTypes(
       this.lspClient,
@@ -78,8 +79,10 @@ export class App {
     // Postprocess the map.
     relevantTypes.delete("_");
     relevantTypes.delete("_()");
-    for (const [k, v] of relevantTypes.entries()) {
-      relevantTypes.set(k, v.slice(0, -1));
+    if (this.language === Language.TypeScript) {
+      for (const [k, v] of relevantTypes.entries()) {
+        relevantTypes.set(k, v.slice(0, -1));
+      }
     }
 
     const preludeContent = fs.readFileSync(path.join(path.dirname(this.sketchPath), `prelude${path.extname(this.sketchPath)}`)).toString("utf8");
