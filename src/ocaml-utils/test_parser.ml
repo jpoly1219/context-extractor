@@ -95,14 +95,7 @@ let print_structure structure =
 
 (* Example usage *)
 let () =
-  let str =
-    "\n\
-     type action =\n\
-    \  | AddTodo\n\
-    \  | RemoveTodo of int\n\
-    \  | ToggleTodo of int\n\
-    \  | UpdateBuffer of string\n"
-  in
+  let str = "let update ((m, a) : model * action) : model = m" in
   match parse_from_string str with
   | Some parsed_str ->
       print_endline "Structure parsed successfully!";
