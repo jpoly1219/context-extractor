@@ -1,6 +1,7 @@
 import { LspClient } from "../ts-lsp-client-dist/src/lspClient";
 import * as fs from "fs"
 import * as path from "path";
+import { Range } from "../ts-lsp-client-dist/src/models";
 
 interface relevantTypeObject {
   typeAliasDeclaration: string;
@@ -68,18 +69,17 @@ interface LanguageDriver {
     characterPosition: number;
     holeTypeDefLinePos: number;
     holeTypeDefCharPos: number;
+    range: Range;
   }>;
   extractRelevantTypes: (
     lspClient: LspClient,
     fullHoverResult: string,
     typeName: string,
-    typeSpan: string,
-    linePosition: number,
-    characterPosition: number,
+    startLine: number,
+    endLine: number,
     foundSoFar: Map<string, string>,
     currentFile: string,
     outputFile: fs.WriteStream,
-    depth: number
   ) => Promise<Map<string, string>>;
   extractRelevantHeaders: (
     preludeContent: string,
