@@ -61,19 +61,16 @@ export class App {
       this.lspClient,
       this.sketchPath,
     );
-    console.log(holeContext)
 
     const relevantTypes = await this.languageDriver.extractRelevantTypes(
       this.lspClient,
       holeContext.fullHoverResult,
       holeContext.functionName,
-      holeContext.functionTypeSpan,
-      holeContext.holeTypeDefLinePos,
-      holeContext.holeTypeDefCharPos,
+      holeContext.range.start.line,
+      holeContext.range.end.line,
       new Map<string, string>(),
       supportsHole(this.language) ? `file://${this.sketchPath}` : `file://${path.dirname(this.sketchPath)}/injected_sketch${path.extname(this.sketchPath)}`,
-      outputFile,
-      1
+      outputFile
     );
 
     // Postprocess the map.
