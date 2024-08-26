@@ -142,11 +142,12 @@ export class OcamlDriver implements LanguageDriver {
     console.log(JSON.parse(holeCtx.result))
     console.log(holeCtx.result)
 
-    console.log(JSON.stringify(await lspClient.documentSymbol({
+    const docSymbol = await lspClient.documentSymbol({
       textDocument: {
         uri: `file://${sketchFilePath}`,
       }
-    })));
+    });
+    console.log(JSON.stringify(docSymbol))
     // console.log(JSON.stringify(await lspClient.documentSymbol({
     //   textDocument: {
     //     uri: `file://${sketchDir}/prelude.ml`,
@@ -173,7 +174,8 @@ export class OcamlDriver implements LanguageDriver {
       linePosition: 3, // hole's line
       characterPosition: 47, // hole's character
       holeTypeDefLinePos: 3, // 
-      holeTypeDefCharPos: 0 // "
+      holeTypeDefCharPos: 0, // "
+      range: (docSymbol![0] as SymbolInformation).location.range
     };
   }
 
@@ -182,74 +184,74 @@ export class OcamlDriver implements LanguageDriver {
     lspClient: LspClient,
     fullHoverResult: string,
     typeName: string,
-    typeSpan: string,
-    linePosition: number,
-    characterPosition: number,
+    startLine: number,
+    endLine: number,
     foundSoFar: Map<string, string>,
     currentFile: string,
     outputFile: fs.WriteStream,
-    depth: number
   ) {
     if (!foundSoFar.has(typeName)) {
+      console.log("params:", startLine, endLine)
       foundSoFar.set(typeName, fullHoverResult);
       outputFile.write(`${fullHoverResult};\n`);
 
       const content = fs.readFileSync(currentFile.slice(7), "utf8");
-      const charInLine = execSync(`wc -m <<< "${content.split("\n")[linePosition].slice(characterPosition)}"`, { shell: "/bin/bash" });
 
-      // -1 is done to avoid tsserver errors
-      // TODO: Make this a double for loop where outer loops the lines and inner loops the characters
-      for (let i = 0; i < Math.min(parseInt(charInLine.toString()), typeSpan.length); i++) {
-        try {
-          const typeDefinitionResult = await lspClient.typeDefinition({
-            textDocument: {
-              uri: currentFile
-            },
-            position: {
-              character: characterPosition + i,
-              line: linePosition
-            }
-          });
+      for (let linePos = startLine; linePos <= endLine; ++linePos) {
+        const numOfCharsInLine = parseInt(execSync(`wc -m <<< "${content.split("\n")[linePos]}"`, { shell: "/bin/bash" }).toString());
 
-          if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
-            // Use documentSymbol instead of hover.
-            // This prevents type alias "squashing" done by tsserver.
-            // This also allows for grabbing the entire definition range and not just the symbol range.
-            // TODO: feels like this could be memoized to improve performance.
-            const documentSymbolResult = await lspClient.documentSymbol({
+        for (let charPos = 0; charPos < numOfCharsInLine; ++charPos) {
+          try {
+            const typeDefinitionResult = await lspClient.typeDefinition({
               textDocument: {
-                uri: (typeDefinitionResult[0] as Location).uri
+                uri: currentFile
+              },
+              position: {
+                character: charPos,
+                line: linePos
               }
             });
-            // grab if the line number of typeDefinitionResult and documentSymbolResult matches
-            const dsMap = documentSymbolResult!.reduce((m, obj) => {
-              m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
-              return m;
-            }, new Map<number, Range>());
 
-            const matchingSymbolRange: Range | undefined = dsMap.get((typeDefinitionResult[0] as Location).range.start.line);
-            if (matchingSymbolRange) {
-              const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
-              // TODO: this can potentially be its own method. the driver would require some way to get type context.
-              // potentially, this type checker can be its own class.
-              const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
-              const formattedTypeSpan = formatTypeSpan(snippetInRange);
+            if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
+              // Use documentSymbol instead of hover.
+              // This prevents type alias "squashing" done by tsserver.
+              // This also allows for grabbing the entire definition range and not just the symbol range.
+              // PERF: feels like this could be memoized to improve performance.
+              const documentSymbolResult = await lspClient.documentSymbol({
+                textDocument: {
+                  uri: (typeDefinitionResult[0] as Location).uri
+                }
+              });
 
-              await this.extractRelevantTypes(
-                lspClient,
-                snippetInRange,
-                identifier,
-                formattedTypeSpan,
-                (typeDefinitionResult[0] as Location).range.start.line,
-                (typeDefinitionResult[0] as Location).range.end.character + 2,
-                foundSoFar,
-                (typeDefinitionResult[0] as Location).uri, outputFile, depth + 1
-              );
+              // grab if the line number of typeDefinitionResult and documentSymbolResult matches
+              const dsMap = documentSymbolResult!.reduce((m, obj) => {
+                m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
+                return m;
+              }, new Map<number, Range>());
 
+              const matchingSymbolRange: Range | undefined = dsMap.get((typeDefinitionResult[0] as Location).range.start.line);
+              if (matchingSymbolRange) {
+                const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
+                // TODO: this can potentially be its own method. the driver would require some way to get type context.
+                // potentially, this type checker can be its own class.
+                const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
+
+                await this.extractRelevantTypes(
+                  lspClient,
+                  snippetInRange,
+                  identifier,
+                  matchingSymbolRange.start.line,
+                  matchingSymbolRange.end.line,
+                  foundSoFar,
+                  (typeDefinitionResult[0] as Location).uri,
+                  outputFile,
+                );
+
+              }
             }
+          } catch (err) {
+            console.log(`${err}`)
           }
-        } catch (err) {
-          console.log(`${err}`)
         }
       }
     }
