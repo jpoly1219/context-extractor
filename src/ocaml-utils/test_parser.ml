@@ -12,6 +12,40 @@ let parse_from_string str =
       prerr_endline "An error occurred!";
       None
 
+let rec print_core_type (core_type : Parsetree.core_type) indent print_desc =
+  let indent_str = String.make indent ' ' in
+  match core_type.ptyp_desc with
+  | Ptyp_tuple elements ->
+      Printf.printf "%sTuple core types:\n" indent_str;
+      List.iter (fun el -> print_core_type el (indent + 2) true) elements
+  (* | Ptyp_constr (loc, []) -> *)
+  (*     Printf.printf "%sIdentifier: %s\n" indent_str *)
+  (*       (match loc.txt with Longident.Lident li -> li | _ -> "Other constr") *)
+  | Ptyp_constr (loc, core_types) ->
+      if print_desc then Printf.printf "%s Constr core types: " indent_str;
+      List.iter
+        (fun ctyp ->
+          print_core_type ctyp indent false;
+          Printf.printf " ")
+        core_types;
+      Printf.printf "%s"
+        (match loc.txt with Longident.Lident li -> li | _ -> "Other constr");
+      if print_desc then Printf.printf "\n"
+  | _ -> Printf.printf "%sOther core_type\n" indent_str
+
+let rec print_pattern (pattern : Parsetree.pattern) indent =
+  let indent_str = String.make indent ' ' in
+  match pattern.ppat_desc with
+  | Parsetree.Ppat_var loc -> Printf.printf "%sVar: %s\n" indent_str loc.txt
+  | Parsetree.Ppat_tuple pats ->
+      Printf.printf "%sTuple:\n" indent_str;
+      List.iter (fun pat -> print_pattern pat (indent + 2)) pats
+  | Parsetree.Ppat_constraint (pat, core_type) ->
+      Printf.printf "%sConstraint:\n" indent_str;
+      print_pattern pat (indent + 2);
+      print_core_type core_type (indent + 2) true
+  | _ -> Printf.printf "%sOther pattern\n" indent_str
+
 (* Print the expression tree. *)
 let rec print_expression (expr : Parsetree.expression) indent =
   let indent_str = String.make indent ' ' in
@@ -29,7 +63,21 @@ let rec print_expression (expr : Parsetree.expression) indent =
       Printf.printf "%sApply:\n" indent_str;
       print_expression func (indent + 2);
       List.iter (fun (_, arg) -> print_expression arg (indent + 2)) args
-  | Pexp_unreachable -> print_string "hhh"
+  | Pexp_tuple elements ->
+      Printf.printf "%sTuple:\n" indent_str;
+      List.iter (fun el -> print_expression el (indent + 2)) elements
+  | Pexp_function (params, _, _) ->
+      Printf.printf "%sFunction:\n" indent_str;
+      List.iter
+        (fun (param : Parsetree.function_param) ->
+          match param.pparam_desc with
+          | Pparam_val (Nolabel, None, pat) ->
+              Printf.printf "%s  Params:\n" indent_str;
+              print_pattern pat (indent + 4)
+          | Pparam_newtype loc ->
+              Printf.printf "%sNewtype Param: %s\n" indent_str loc.txt
+          | _ -> Printf.printf "%sOther params\n" indent_str)
+        params
   | _ -> Printf.printf "%sOther expression\n" indent_str
 
 (* Print the parsed structure. *)
@@ -44,7 +92,7 @@ let print_structure_item (item : Parsetree.structure_item) indent =
           Printf.printf "%s  Pattern: %s\n" indent_str
             (Format.asprintf "%a" Pprintast.pattern vb.pvb_pat);
           Printf.printf "%s  Expression:\n" indent_str;
-          print_expression vb.pvb_expr (indent + 2))
+          print_expression vb.pvb_expr (indent + 4))
         bindings
   | Pstr_type (_, type_decls) ->
       Printf.printf "%sType declarations:\n" indent_str;
@@ -94,9 +142,19 @@ let print_structure structure =
 (* Function to print the parsed expression *)
 (* let print_expression expr = print_expression_tree expr 0 *)
 
+let read_file filename =
+  let ch = open_in_bin filename in
+  let s = really_input_string ch (in_channel_length ch) in
+  close_in ch;
+  s
+
 (* Example usage *)
 let () =
-  let str = "let update ((m, a) : model * action) : model = _" in
+  (* let str = "let update ((m, a) : model * action) : model = _" in *)
+  let str =
+    read_file
+      "/home/jacob/projects/context-extractor/targets/ocaml/todo/prelude.ml"
+  in
   match parse_from_string str with
   | Some parsed_str ->
       print_endline "Structure parsed successfully!";
