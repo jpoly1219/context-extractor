@@ -16,13 +16,21 @@ let rec print_core_type (core_type : Parsetree.core_type) indent print_desc =
   let indent_str = String.make indent ' ' in
   match core_type.ptyp_desc with
   | Ptyp_tuple elements ->
-      Printf.printf "%sTuple core types:\n" indent_str;
-      List.iter (fun el -> print_core_type el (indent + 2) true) elements
+      if print_desc then Printf.printf "%sTuple core types: " indent_str;
+      Printf.printf "%s%s" indent_str
+        (Format.asprintf "%a" Pprintast.core_type core_type);
+      let len = List.length elements in
+      List.iteri
+        (fun i el ->
+          print_core_type el (indent + 2) false;
+          if i < len - 1 then Printf.printf " * ")
+        elements;
+      if print_desc then Printf.printf "\n"
   (* | Ptyp_constr (loc, []) -> *)
   (*     Printf.printf "%sIdentifier: %s\n" indent_str *)
   (*       (match loc.txt with Longident.Lident li -> li | _ -> "Other constr") *)
   | Ptyp_constr (loc, core_types) ->
-      if print_desc then Printf.printf "%s Constr core types: " indent_str;
+      if print_desc then Printf.printf "%sConstr core types: " indent_str;
       List.iter
         (fun ctyp ->
           print_core_type ctyp indent false;
@@ -30,6 +38,12 @@ let rec print_core_type (core_type : Parsetree.core_type) indent print_desc =
         core_types;
       Printf.printf "%s"
         (match loc.txt with Longident.Lident li -> li | _ -> "Other constr");
+      if print_desc then Printf.printf "\n"
+  | Ptyp_arrow (_, t1, t2) ->
+      if print_desc then Printf.printf "%sArrow core type: " indent_str;
+      print_core_type t1 (indent + 2) false;
+      Printf.printf " -> ";
+      print_core_type t2 (indent + 2) false;
       if print_desc then Printf.printf "\n"
   | _ -> Printf.printf "%sOther core_type\n" indent_str
 
@@ -66,7 +80,7 @@ let rec print_expression (expr : Parsetree.expression) indent =
   | Pexp_tuple elements ->
       Printf.printf "%sTuple:\n" indent_str;
       List.iter (fun el -> print_expression el (indent + 2)) elements
-  | Pexp_function (params, _, _) ->
+  | Pexp_function (params, rettype, _) -> (
       Printf.printf "%sFunction:\n" indent_str;
       List.iter
         (fun (param : Parsetree.function_param) ->
@@ -77,7 +91,15 @@ let rec print_expression (expr : Parsetree.expression) indent =
           | Pparam_newtype loc ->
               Printf.printf "%sNewtype Param: %s\n" indent_str loc.txt
           | _ -> Printf.printf "%sOther params\n" indent_str)
-        params
+        params;
+      match rettype with
+      | Some pcon -> (
+          match pcon with
+          | Pconstraint ret ->
+              Printf.printf "%s  Return:\n" indent_str;
+              print_core_type ret (indent + 4) true
+          | _ -> Printf.printf "%sOther rettype" indent_str)
+      | _ -> Printf.printf "%sOther type_constraint\n" indent_str)
   | _ -> Printf.printf "%sOther expression\n" indent_str
 
 (* Print the parsed structure. *)
@@ -125,6 +147,7 @@ let print_structure_item (item : Parsetree.structure_item) indent =
         type_decls
   | _ -> Printf.printf "%sOther structure item\n" indent_str
 
+(* Print the structure. *)
 let print_structure structure =
   List.iter (fun item -> print_structure_item item 0) structure
 
@@ -142,19 +165,22 @@ let print_structure structure =
 (* Function to print the parsed expression *)
 (* let print_expression expr = print_expression_tree expr 0 *)
 
-let read_file filename =
-  let ch = open_in_bin filename in
-  let s = really_input_string ch (in_channel_length ch) in
-  close_in ch;
-  s
+(* let read_file filename = *)
+(*   let ch = open_in_bin filename in *)
+(*   let s = really_input_string ch (in_channel_length ch) in *)
+(*   close_in ch; *)
+(*   s *)
 
 (* Example usage *)
 let () =
-  (* let str = "let update ((m, a) : model * action) : model = _" in *)
   let str =
-    read_file
-      "/home/jacob/projects/context-extractor/targets/ocaml/todo/prelude.ml"
+    "let toggle ((index, todos) : int * todo list) : (todo list) -> (int * \
+     bool) = (1, false)"
   in
+  (* let str = *)
+  (*   read_file *)
+  (*     "/home/jacob/projects/context-extractor/targets/ocaml/todo/prelude.ml" *)
+  (* in *)
   match parse_from_string str with
   | Some parsed_str ->
       print_endline "Structure parsed successfully!";
