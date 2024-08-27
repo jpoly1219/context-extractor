@@ -271,10 +271,11 @@ export class OcamlDriver implements LanguageDriver {
 
     // only consider lines that start with let or const
     const filteredLines = preludeContent.split("\n").filter((line) => {
-      return line.slice(0, 3) === "let" || line.slice(0, 5) === "const";
+      return line.slice(0, 3) === "let";
     });
 
     // check for relationship between each line and relevant types
+    // TODO: Use the test parser to detect these.
     filteredLines.forEach(line => {
       const splittedLine = line.split(" = ")[0];
 
