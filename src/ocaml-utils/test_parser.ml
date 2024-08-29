@@ -17,14 +17,8 @@ let rec print_core_type (core_type : Parsetree.core_type) indent print_desc =
   match core_type.ptyp_desc with
   | Ptyp_tuple elements ->
       if print_desc then Printf.printf "%sTuple core types: " indent_str;
-      Printf.printf "%s%s" indent_str
-        (Format.asprintf "%a" Pprintast.core_type core_type);
-      let len = List.length elements in
-      List.iteri
-        (fun i el ->
-          print_core_type el (indent + 2) false;
-          if i < len - 1 then Printf.printf " * ")
-        elements;
+      Printf.printf "%s\n" (Format.asprintf "%a" Pprintast.core_type core_type);
+      List.iter (fun el -> print_core_type el (indent + 2) false) elements;
       if print_desc then Printf.printf "\n"
   (* | Ptyp_constr (loc, []) -> *)
   (*     Printf.printf "%sIdentifier: %s\n" indent_str *)
@@ -170,6 +164,18 @@ let print_structure structure =
 (*   let s = really_input_string ch (in_channel_length ch) in *)
 (*   close_in ch; *)
 (*   s *)
+
+let extract_core_type (parsed : Parsetree.core_type) : string list = _
+
+let parse_from_type_span s =
+  let lexbuf = Lexing.from_string s in
+  Parse.core_type lexbuf
+
+(* Walk the AST and extract target types. *)
+let extract_target_types (type_span : string) =
+  let parsed = parse_from_type_span type_span in
+  print_endline "Structure parsed successfully!";
+  extract_core_type parsed
 
 (* Example usage *)
 let () =
