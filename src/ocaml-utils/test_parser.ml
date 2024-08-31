@@ -205,16 +205,29 @@ let extract_target_types (type_span : string) =
 
 (* Example usage *)
 let () =
-  let str = "int * todo list list -> todo list list" in
+  let strs =
+    [
+      "todo * todo -> bool";
+      "model * model -> bool";
+      "model";
+      "model -> todo list";
+      "int * todo list -> todo list";
+      "int * todo list -> todo list * bool";
+      "int * todo list -> (todo * action) * (string -> bool)";
+    ]
+  in
   (* let str = *)
   (*   read_file *)
   (*     "/home/jacob/projects/context-extractor/targets/ocaml/todo/prelude.ml" *)
   (* in *)
   List.iter
-    (fun el ->
-      print_string el;
-      print_string " ; ")
-    (extract_target_types str)
+    (fun str ->
+      List.iter
+        (fun el ->
+          print_string el;
+          print_string " ; ")
+        (extract_target_types str))
+    strs
 (* match parse_from_string str with *)
 (* | Some parsed_str -> *)
 (*     print_endline "Structure parsed successfully!"; *)
