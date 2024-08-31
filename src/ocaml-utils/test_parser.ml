@@ -187,7 +187,8 @@ let rec extract_core_type (ctyp : Parsetree.core_type) =
         (fun acc curr -> List.append (extract_core_type curr) acc)
         [] types
   | Ptyp_constr ({ txt = Lident id; _ }, []) -> id :: []
-  | Ptyp_constr (_, [ ctyps ]) -> string_of_type ctyps :: []
+  | Ptyp_constr ({ txt = Lident id; _ }, [ ctyps ]) ->
+      [ string_of_type ctyps ^ " " ^ id ]
   | _ ->
       Printf.printf "Other core type";
       []
