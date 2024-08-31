@@ -169,12 +169,11 @@ export class TypeScriptDriver implements LanguageDriver {
       }]
     });
 
-    const docSymbol = await lspClient.documentSymbol({
+    const sketchSymbol = await lspClient.documentSymbol({
       textDocument: {
         uri: `file://${injectedSketchFilePath}`,
       }
     });
-    console.log(JSON.stringify(docSymbol))
 
     return {
       fullHoverResult: formattedHoverResult,
@@ -185,7 +184,7 @@ export class TypeScriptDriver implements LanguageDriver {
       holeTypeDefLinePos: 0,
       holeTypeDefCharPos: "declare function _(): ".length,
       // range: { start: { line: 0, character: 0 }, end: { line: 0, character: 52 } }
-      range: (docSymbol![0] as SymbolInformation).location.range
+      range: (sketchSymbol![0] as SymbolInformation).location.range
     };
   }
 
@@ -268,16 +267,18 @@ export class TypeScriptDriver implements LanguageDriver {
   }
 
 
-  extractRelevantHeaders(
-    preludeContent: string,
+  async extractRelevantHeaders(
+    _: LspClient,
+    preludeFilePath: string,
     relevantTypes: Map<string, string>,
     holeType: string
-  ): string[] {
+  ): Promise<string[]> {
     const relevantContext = new Set<string>();
 
     const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
 
     // only consider lines that start with let or const
+    const preludeContent = fs.readFileSync(preludeFilePath).toString("utf8");
     const filteredLines = preludeContent.split("\n").filter((line) => {
       return line.slice(0, 3) === "let" || line.slice(0, 5) === "const";
     });
