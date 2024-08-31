@@ -142,18 +142,18 @@ export class OcamlDriver implements LanguageDriver {
     console.log(JSON.parse(holeCtx.result))
     console.log(holeCtx.result)
 
+    const sketchSymbol = await lspClient.documentSymbol({
+      textDocument: {
+        uri: `file://${sketchFilePath}`
+      }
+    })
 
-    // NOTE:
-    // The quick and dirty way is to rely on the fact that the hole is in the place of the entire body expression.
-    // Then we can just get document symbols, then find the one symbol whose range spans over the hole's position.
-    // Afterwards we use the parser to get the type of the symbol.
-    // However, this wouldn't work for holes that are part of an expression.
-    // A more robust way would be to use merlin directly, or to augment ocamllsp.
-    // Or use diagnostics method to get the type (uses ocamllsp under the hood).
-    // ocamllsp does not provide a public API to get the type of the hole.
-    // The hole is not parseable as it's not considered a valid Ocaml code.
-    // Works differntly for OCaml than in TS...
-    // 
+
+    // NOTE: This can be improved to make it check for a document symbol where
+    // its range covers that of the hole's.
+    // The current won't work if the sketch file has a lot of symbols,
+    // because we are not guaranteed to have the sketch function with the hole
+    // will always be at the top of the file.
 
     return {
       fullHoverResult: "", //
@@ -163,7 +163,7 @@ export class OcamlDriver implements LanguageDriver {
       characterPosition: 47, // hole's character
       holeTypeDefLinePos: 3, // 
       holeTypeDefCharPos: 0, // "
-      range: (docSymbols![0] as SymbolInformation).location.range
+      range: (sketchSymbol![0] as SymbolInformation).location.range
     };
   }
 
@@ -248,6 +248,28 @@ export class OcamlDriver implements LanguageDriver {
   }
 
 
+  async extractRelevantHeaders(
+    lspClient: LspClient,
+    preludeFilePath: string,
+    _: Map<string, string>,
+    holeType: string
+  ): Promise<string[]> {
+    const relevantContext = new Set<string>();
+
+    const headerTypeSpans = await this.extractHeaderTypeSpans(lspClient, preludeFilePath);
+    const targetTypes = this.generateTargetTypes(holeType, preludeFilePath);
+
+    for (const hts of headerTypeSpans) {
+      const recursiveChildTypes: string[] = callOcamlParser(hts, null);
+      if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
+        relevantContext.add(hts);
+      }
+    }
+
+    return Array.from(relevantContext);
+  }
+
+
   async extractHeaderTypeSpans(
     lspClient: LspClient,
     preludeFilePath: string
@@ -294,42 +316,13 @@ export class OcamlDriver implements LanguageDriver {
   }
 
 
-  extractRelevantHeaders(
-    preludeContent: string,
-    relevantTypes: Map<string, string>,
-    holeType: string
-  ): string[] {
-    const relevantContext = new Set<string>();
+  generateTargetTypes(holeType: string, preludeFilePath: string) {
+    // TODO: Call the custom OCaml parser to get a list of target types.
+    const targetTypes: string[] = callOCamlParser([holeType], preludeFilePath);
+    const targetTypesSet = new Set<string>(targetTypes);
+    targetTypesSet.add(holeType);
 
-    const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
-
-    // only consider lines that start with let or const
-    const filteredLines = preludeContent.split("\n").filter((line) => {
-      return line.slice(0, 3) === "let";
-    });
-
-    // check for relationship between each line and relevant types
-    // TODO: Use the test parser to detect these.
-    filteredLines.forEach(line => {
-      const splittedLine = line.split(" = ")[0];
-
-      const typeSpanPattern = /(^[^:]*: )(.+)/;
-      const returnTypeSpan = splittedLine.match(typeSpanPattern)![2];
-      if (!this.typeChecker.isPrimitive(returnTypeSpan.split(" => ")[1])) {
-        this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine);
-      }
-    });
-
-    return Array.from(relevantContext);
-  }
-
-
-  generateTargetTypes(relevantTypes: Map<string, string>, holeType: string) {
-    const targetTypes = new Set<string>();
-    targetTypes.add(holeType);
-    this.generateTargetTypesHelper(relevantTypes, holeType, targetTypes);
-
-    return targetTypes;
+    return targetTypesSet;
   }
 
 
