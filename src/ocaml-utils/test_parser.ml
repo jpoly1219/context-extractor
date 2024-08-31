@@ -205,6 +205,7 @@ let extract_target_types (type_span : string) =
 
 (* Example usage *)
 let () =
+  (* TODO: How do we extract this type span string? *)
   let strs =
     [
       "todo * todo -> bool";
