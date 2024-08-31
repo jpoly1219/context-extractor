@@ -142,18 +142,6 @@ export class OcamlDriver implements LanguageDriver {
     console.log(JSON.parse(holeCtx.result))
     console.log(holeCtx.result)
 
-    const docSymbol = await lspClient.documentSymbol({
-      textDocument: {
-        uri: `file://${sketchFilePath}`,
-      }
-    });
-    console.log(JSON.stringify(docSymbol))
-    // console.log(JSON.stringify(await lspClient.documentSymbol({
-    //   textDocument: {
-    //     uri: `file://${sketchDir}/prelude.ml`,
-    //   }
-    // }), null, 2));
-
 
     // NOTE:
     // The quick and dirty way is to rely on the fact that the hole is in the place of the entire body expression.
@@ -175,7 +163,7 @@ export class OcamlDriver implements LanguageDriver {
       characterPosition: 47, // hole's character
       holeTypeDefLinePos: 3, // 
       holeTypeDefCharPos: 0, // "
-      range: (docSymbol![0] as SymbolInformation).location.range
+      range: (docSymbols![0] as SymbolInformation).location.range
     };
   }
 
@@ -257,6 +245,52 @@ export class OcamlDriver implements LanguageDriver {
     }
 
     return foundSoFar;
+  }
+
+
+  async extractHeaderTypeSpans(
+    lspClient: LspClient,
+    preludeFilePath: string
+  ): Promise<string[]> {
+    const docSymbols = await lspClient.documentSymbol({
+      textDocument: {
+        uri: `file://${preludeFilePath}`,
+      }
+    });
+
+    if (docSymbols && docSymbols.length > 0) {
+      const headerTypeSpans: string[] = [];
+
+      for (const docSymbol of docSymbols) {
+        const ds: SymbolInformation = docSymbol as SymbolInformation;
+        const isVar = fs.readFileSync(preludeFilePath).toString("utf8").split("\n")[ds.location.range.start.line].slice(0, 3) === "let" ? true : false;
+        if (isVar) {
+          const symbolHoverResult = await lspClient.hover({
+            textDocument: {
+              uri: `file://${preludeFilePath}`
+            },
+            position: {
+              line: ds.location.range.start.line,
+              character: ds.location.range.start.character + 5
+            }
+          })
+          if (symbolHoverResult) {
+            const formattedHoverResult = (symbolHoverResult.contents as MarkupContent).value.split("\n").reduce((acc, curr) => {
+              if (curr != "" && curr != "```ocaml" && curr != "```") {
+                return acc + curr;
+              } else {
+                return acc;
+              }
+            }, "");
+            headerTypeSpans.push(formattedHoverResult);
+          }
+        }
+      }
+
+      return headerTypeSpans;
+    }
+
+    return [];
   }
 
 
