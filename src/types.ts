@@ -82,10 +82,11 @@ interface LanguageDriver {
     outputFile: fs.WriteStream,
   ) => Promise<Map<string, string>>;
   extractRelevantHeaders: (
-    preludeContent: string,
+    lspClient: LspClient,
+    preludeFilePath: string,
     relevantTypes: Map<string, string>,
     holeType: string
-  ) => string[];
+  ) => Promise<string[]>;
 }
 
 enum Language {
