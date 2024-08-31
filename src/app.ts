@@ -82,9 +82,9 @@ export class App {
       }
     }
 
-    const preludeContent = fs.readFileSync(path.join(path.dirname(this.sketchPath), `prelude${path.extname(this.sketchPath)}`)).toString("utf8");
-    const relevantHeaders = this.languageDriver.extractRelevantHeaders(
-      preludeContent,
+    const relevantHeaders = await this.languageDriver.extractRelevantHeaders(
+      this.lspClient,
+      path.join(path.dirname(this.sketchPath), `prelude${path.extname(this.sketchPath)}`),
       relevantTypes,
       holeContext.functionTypeSpan
     );
