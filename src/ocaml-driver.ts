@@ -259,12 +259,12 @@ export class OcamlDriver implements LanguageDriver {
     const headerTypeSpans = await this.extractHeaderTypeSpans(lspClient, preludeFilePath);
     const targetTypes = this.generateTargetTypes(holeType, preludeFilePath);
 
-    // for (const hts of headerTypeSpans) {
-    //   const recursiveChildTypes: string[] = callOcamlParser(hts, null);
-    //   if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
-    //     relevantContext.add(hts);
-    //   }
-    // }
+    for (const hts of headerTypeSpans) {
+      const recursiveChildTypes: string[] = callOcamlParser(hts, null);
+      if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
+        relevantContext.add(hts);
+      }
+    }
 
     return Array.from(relevantContext);
   }
@@ -318,10 +318,11 @@ export class OcamlDriver implements LanguageDriver {
 
   generateTargetTypes(holeType: string, preludeFilePath: string) {
     // TODO: Call the custom OCaml parser to get a list of target types.
-    // const targetTypes: string[] = callOCamlParser([holeType], preludeFilePath);
-    // const targetTypesSet = new Set<string>(targetTypes);
-    // targetTypesSet.add(holeType);
-    const targetTypesSet = new Set<string>();
+
+    const targetTypes: string[] = callOCamlParser([holeType], preludeFilePath);
+    const targetTypesSet = new Set<string>(targetTypes);
+    targetTypesSet.add(holeType);
+    // const targetTypesSet = new Set<string>();
 
     return targetTypesSet;
   }
