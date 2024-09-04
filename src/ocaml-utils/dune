@@ -1,4 +1,6 @@
 (executable
  (name test_parser)
  ; (modules test_parser)
- (libraries compiler-libs.common))
+ (modes js)
+ (libraries compiler-libs.common js_of_ocaml)
+ (preprocess (pps js_of_ocaml-ppx)))
