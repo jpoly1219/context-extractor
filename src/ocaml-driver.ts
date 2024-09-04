@@ -6,6 +6,9 @@ import { LanguageDriver } from "./types";
 import { OcamlTypeChecker } from "./ocaml-type-checker";
 import { extractSnippet, formatTypeSpan } from "./utils";
 import { hasOnlyExpressionInitializer, walkUpBindingElementsAndPatterns } from "typescript";
+// import * as ocamlParser from "/home/jacob/projects/context-extractor/src/ocaml-utils/_build/default/test_parser.bc.js";
+import ocamlParser = require("/home/jacob/projects/context-extractor/src/ocaml-utils/_build/default/test_parser.bc.js");
+// const ocamlParser = require("./test_parser.bc.js");
 
 
 export class OcamlDriver implements LanguageDriver {
@@ -154,6 +157,9 @@ export class OcamlDriver implements LanguageDriver {
     // The current won't work if the sketch file has a lot of symbols,
     // because we are not guaranteed to have the sketch function with the hole
     // will always be at the top of the file.
+    // One thing we can do is to use the custom OCaml parser.
+    // A Pexp_fun will be split into a pattern and an expression.
+    // This is the LHS and the RHS of the arrow type.
 
     return {
       fullHoverResult: "", //
@@ -178,8 +184,10 @@ export class OcamlDriver implements LanguageDriver {
     currentFile: string,
     outputFile: fs.WriteStream,
   ) {
+    // console.log(typeName)
     if (!foundSoFar.has(typeName)) {
-      console.log("params:", startLine, endLine)
+      // console.log("params:", startLine, endLine)
+      // foundSoFar.set(typeName, fullHoverResult.split(" = ")[1]);
       foundSoFar.set(typeName, fullHoverResult);
       outputFile.write(`${fullHoverResult};\n`);
 
@@ -260,7 +268,8 @@ export class OcamlDriver implements LanguageDriver {
     const targetTypes = this.generateTargetTypes(holeType, preludeFilePath);
 
     for (const hts of headerTypeSpans) {
-      const recursiveChildTypes: string[] = callOcamlParser(hts, null);
+      const recursiveChildTypes: string[] = ocamlParser.parse(hts);
+      console.log(recursiveChildTypes)
       if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
         relevantContext.add(hts);
       }
@@ -319,10 +328,9 @@ export class OcamlDriver implements LanguageDriver {
   generateTargetTypes(holeType: string, preludeFilePath: string) {
     // TODO: Call the custom OCaml parser to get a list of target types.
 
-    const targetTypes: string[] = callOCamlParser([holeType], preludeFilePath);
+    const targetTypes: string[] = ocamlParser.parse(holeType);
     const targetTypesSet = new Set<string>(targetTypes);
     targetTypesSet.add(holeType);
-    // const targetTypesSet = new Set<string>();
 
     return targetTypesSet;
   }
