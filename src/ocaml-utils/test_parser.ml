@@ -1,3 +1,5 @@
+open Js_of_ocaml
+
 (* Parse some stringified OCaml code. *)
 (* let parse_from_string str = *)
 (*   let lexbuf = Lexing.from_string str in *)
@@ -200,35 +202,46 @@ let parse_from_type_span s =
 (* Walk the AST and extrac]]t target types. *)
 let extract_target_types (type_span : string) =
   let parsed = parse_from_type_span type_span in
-  print_endline "Structure parsed successfully!";
+  (* print_endline "Structure parsed successfully!"; *)
   extract_core_type parsed
 
+let js_extract_target_types (type_span : string) =
+  let extracted = extract_target_types type_span in
+  Js.array (Array.of_list extracted)
+
 (* Example usage *)
-let () =
-  (* TODO: How do we extract this type span string? *)
-  let strs =
-    [
-      "todo * todo -> bool";
-      "model * model -> bool";
-      "model";
-      "model -> todo list";
-      "int * todo list -> todo list";
-      "int * todo list -> todo list * bool";
-      "int * todo list -> (todo * action) * (string -> bool)";
-    ]
-  in
-  (* let str = *)
-  (*   read_file *)
-  (*     "/home/jacob/projects/context-extractor/targets/ocaml/todo/prelude.ml" *)
-  (* in *)
-  List.iter
-    (fun str ->
-      List.iter
-        (fun el ->
-          print_string el;
-          print_string " ; ")
-        (extract_target_types str))
-    strs
+(* let () = *)
+(*   (* TODO: How do we extract this type span string? *) *)
+(*   let strs = *)
+(*     [ *)
+(*       "todo * todo -> bool"; *)
+(*       "model * model -> bool"; *)
+(*       "model"; *)
+(*       "model -> todo list"; *)
+(*       "int * todo list -> todo list"; *)
+(*       "int * todo list -> todo list * bool"; *)
+(*       "int * todo list -> ((todo * action) * (string -> bool))"; *)
+(*     ] *)
+(*   in *)
+(*   (* let str = *) *)
+(*   (*   read_file *) *)
+(*   (*     "/home/jacob/projects/context-extractor/targets/ocaml/todo/prelude.ml" *) *)
+(*   (* in *) *)
+(*   List.iter *)
+(*     (fun str -> *)
+(*       List.iter *)
+(*         (fun el -> *)
+(*           print_string el; *)
+(*           print_endline " ; ") *)
+(*         (extract_target_types str)) *)
+(*     strs *)
+(**)
+(* let _ = *)
+(*   Js.export "ocamlParser" *)
+(*     (object%js *)
+(*        method parse header_type = extract_target_types header_type *)
+(*     end) *)
+let _ = Js.export "parse" (Js.wrap_callback js_extract_target_types)
 (* match parse_from_string str with *)
 (* | Some parsed_str -> *)
 (*     print_endline "Structure parsed successfully!"; *)
