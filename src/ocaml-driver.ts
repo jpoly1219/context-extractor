@@ -259,17 +259,18 @@ export class OcamlDriver implements LanguageDriver {
   async extractRelevantHeaders(
     lspClient: LspClient,
     preludeFilePath: string,
-    _: Map<string, string>,
+    relevantTypes: Map<string, string>,
     holeType: string
   ): Promise<string[]> {
     const relevantContext = new Set<string>();
 
     const headerTypeSpans = await this.extractHeaderTypeSpans(lspClient, preludeFilePath);
-    const targetTypes = this.generateTargetTypes(holeType, preludeFilePath);
+    const targetTypes = this.generateTargetTypes(holeType, relevantTypes, preludeFilePath);
+    console.log(targetTypes);
 
     for (const hts of headerTypeSpans) {
       const recursiveChildTypes: string[] = ocamlParser.parse(hts);
-      console.log(recursiveChildTypes)
+      // console.log(recursiveChildTypes)
       if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
         relevantContext.add(hts);
       }
@@ -325,11 +326,10 @@ export class OcamlDriver implements LanguageDriver {
   }
 
 
-  generateTargetTypes(holeType: string, preludeFilePath: string) {
-    // TODO: Call the custom OCaml parser to get a list of target types.
+  generateTargetTypes(holeType: string, relevantTypes: Map<string, string>, preludeFilePath: string) {
+    const targetTypesSet = new Set<string>();
+    this.generateTargetTypesHelper(relevantTypes, holeType, targetTypesSet);
 
-    const targetTypes: string[] = ocamlParser.parse(holeType);
-    const targetTypesSet = new Set<string>(targetTypes);
     targetTypesSet.add(holeType);
 
     return targetTypesSet;
@@ -341,31 +341,13 @@ export class OcamlDriver implements LanguageDriver {
     currType: string,
     targetTypes: Set<string>
   ) {
-    // console.log("===Helper===")
-    console.log(currType, currType === undefined)
-    if (this.typeChecker.isFunction(currType)) {
-      const functionPattern = /(\(.+\))( => )(.+)(;*)/;
-      const rettype = currType.match(functionPattern)![3];
-      targetTypes.add(rettype);
-      this.generateTargetTypesHelper(relevantTypes, rettype, targetTypes);
+    const constituentTypes: string[] = ocamlParser.parse(currType);
 
-    } else if (this.typeChecker.isTuple(currType)) {
-      const elements = this.typeChecker.parseTypeArrayString(currType)
+    for (const ct of constituentTypes) {
+      targetTypes.add(ct);
 
-      elements.forEach(element => {
-        targetTypes.add(element)
-        this.generateTargetTypesHelper(relevantTypes, element, targetTypes);
-      });
-    }
-    // else if (isArray(currType)) {
-    //   const elementType = currType.split("[]")[0];
-    //
-    //   targetTypes.add(elementType)
-    //   getTargetTypesHelper(relevantTypes, elementType, targetTypes);
-    // } 
-    else {
-      if (relevantTypes.has(currType)) {
-        const definition = relevantTypes.get(currType)!.split(" = ")[1];
+      if (relevantTypes.has(ct)) {
+        const definition = relevantTypes.get(ct)!.split("=")[1].trim();
         this.generateTargetTypesHelper(relevantTypes, definition, targetTypes);
       }
     }
