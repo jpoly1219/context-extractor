@@ -265,25 +265,41 @@ export class OcamlDriver implements LanguageDriver {
     const relevantContext = new Set<string>();
 
     const headerTypeSpans = await this.extractHeaderTypeSpans(lspClient, preludeFilePath);
+    console.log(headerTypeSpans)
     const targetTypes = this.generateTargetTypes(holeType, relevantTypes, preludeFilePath);
     console.log(targetTypes);
 
-    for (const hts of headerTypeSpans) {
-      const recursiveChildTypes: string[] = ocamlParser.parse(hts);
-      // console.log(recursiveChildTypes)
-      if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
-        relevantContext.add(hts);
-      }
-    }
+    try {
+      for (const hts of headerTypeSpans) {
+        const recursiveChildTypes: string[] = ocamlParser.parse(hts.typeSpan);
 
-    return Array.from(relevantContext);
+        if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
+          relevantContext.add(hts.identifier);
+          continue;
+        }
+
+        this.extractRelevantHeadersHelper(hts.typeSpan, targetTypes, relevantTypes, relevantContext, hts.snippet)
+
+        // for (const tt of targetTypes) {
+        //   if (this.isTypeEquivalent(hts.typeSpan, tt, relevantTypes)) {
+        //     relevantContext.add(hts.identifier);
+        //   }
+        // }
+      }
+
+      return Array.from(relevantContext);
+
+    } catch (err) {
+      console.log(err)
+      return [];
+    }
   }
 
 
   async extractHeaderTypeSpans(
     lspClient: LspClient,
     preludeFilePath: string
-  ): Promise<string[]> {
+  ): Promise<{ identifier: string, typeSpan: string, snippet: string }[]> {
     const docSymbols = await lspClient.documentSymbol({
       textDocument: {
         uri: `file://${preludeFilePath}`,
@@ -291,11 +307,13 @@ export class OcamlDriver implements LanguageDriver {
     });
 
     if (docSymbols && docSymbols.length > 0) {
-      const headerTypeSpans: string[] = [];
+      const headerTypeSpans: { identifier: string, typeSpan: string, snippet: string }[] = [];
 
       for (const docSymbol of docSymbols) {
         const ds: SymbolInformation = docSymbol as SymbolInformation;
-        const isVar = fs.readFileSync(preludeFilePath).toString("utf8").split("\n")[ds.location.range.start.line].slice(0, 3) === "let" ? true : false;
+        const content = fs.readFileSync(preludeFilePath).toString("utf8");
+        const snippet = extractSnippet(content, ds.location.range.start, ds.location.range.end);
+        const isVar = content.split("\n")[ds.location.range.start.line].slice(0, 3) === "let" ? true : false;
         if (isVar) {
           const symbolHoverResult = await lspClient.hover({
             textDocument: {
@@ -314,7 +332,7 @@ export class OcamlDriver implements LanguageDriver {
                 return acc;
               }
             }, "");
-            headerTypeSpans.push(formattedHoverResult);
+            headerTypeSpans.push({ identifier: ds.name, typeSpan: formattedHoverResult, snippet: snippet });
           }
         }
       }
@@ -356,24 +374,23 @@ export class OcamlDriver implements LanguageDriver {
 
   // resursive helper for extractRelevantContext
   // checks for nested type equivalence
-  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, string>, relevantContext: Set<string>, line: string) {
+  // TODO: use this
+  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, string>, relevantContext: Set<string>, snippet: string) {
     targetTypes.forEach(typ => {
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
-        relevantContext.add(line);
+        relevantContext.add(snippet);
       }
 
-      if (this.typeChecker.isFunction(typeSpan)) {
-        const functionPattern = /(\(.+\))( => )(.+)/;
-        const rettype = typeSpan.match(functionPattern)![3];
+      const [ptyp_desc, ...components]: string[] = ocamlParser.getComponents(typ);
 
-        this.extractRelevantHeadersHelper(rettype, targetTypes, relevantTypes, relevantContext, line);
+      if (this.typeChecker.isFunction(ptyp_desc)) {
+        const rettype = components[1];
 
-      } else if (this.typeChecker.isTuple(typeSpan)) {
-        const elements = this.typeChecker.parseTypeArrayString(typeSpan)
-        // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
+        this.extractRelevantHeadersHelper(rettype, targetTypes, relevantTypes, relevantContext, snippet);
 
-        elements.forEach(element => {
-          this.extractRelevantHeadersHelper(element, targetTypes, relevantTypes, relevantContext, line);
+      } else if (this.typeChecker.isTuple(ptyp_desc)) {
+        components.forEach(element => {
+          this.extractRelevantHeadersHelper(element, targetTypes, relevantTypes, relevantContext, snippet);
         });
 
       }
@@ -413,34 +430,36 @@ export class OcamlDriver implements LanguageDriver {
     if (this.typeChecker.isPrimitive(typeSpan)) {
       return typeSpan;
 
-    } else if (this.typeChecker.isObject(typeSpan)) {
-      const elements = typeSpan.slice(1, typeSpan.length - 2).split(";");
-      normalForm += "{";
-
-      elements.forEach(element => {
-        if (element !== "") {
-          const kv = element.split(": ");
-          normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize(kv[1], relevantTypes);
-          normalForm += "; ";
-        }
-      });
-
-      normalForm += "}";
-      return normalForm;
-
-    } else if (this.typeChecker.isTuple(typeSpan)) {
+    }
+    // else if (this.typeChecker.isObject(typeSpan)) {
+    //   const elements = typeSpan.slice(1, typeSpan.length - 2).split(";");
+    //   normalForm += "{";
+    //
+    //   elements.forEach(element => {
+    //     if (element !== "") {
+    //       const kv = element.split(": ");
+    //       normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize(kv[1], relevantTypes);
+    //       normalForm += "; ";
+    //     }
+    //   });
+    //
+    //   normalForm += "}";
+    //   return normalForm;
+    //
+    // }
+    else if (this.typeChecker.isTuple(typeSpan)) {
       // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
       const elements = this.typeChecker.parseTypeArrayString(typeSpan)
-      normalForm += "[";
+      // normalForm += "(";
 
       elements.forEach((element, i) => {
         normalForm += this.normalize(element, relevantTypes);
         if (i < elements.length - 1) {
-          normalForm += ", ";
+          normalForm += " * ";
         }
       });
 
-      normalForm += "]";
+      // normalForm += ")";
       return normalForm;
 
     } else if (this.typeChecker.isUnion(typeSpan)) {
