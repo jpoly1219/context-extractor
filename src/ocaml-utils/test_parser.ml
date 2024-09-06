@@ -181,19 +181,36 @@ let rec string_of_type (typ : Parsetree.core_type) : string =
       args_str ^ " " ^ s
   | _ -> "unknown"
 
-let rec extract_core_type (ctyp : Parsetree.core_type) =
-  match ctyp.ptyp_desc with
-  | Ptyp_arrow (_, _, rettyp) -> string_of_type ctyp :: extract_core_type rettyp
-  | Ptyp_tuple types ->
-      List.fold_left
-        (fun acc curr -> List.append (extract_core_type curr) acc)
-        [] types
-  | Ptyp_constr ({ txt = Lident id; _ }, []) -> id :: []
-  | Ptyp_constr ({ txt = Lident id; _ }, [ ctyps ]) ->
-      [ string_of_type ctyps ^ " " ^ id ]
-  | _ ->
-      Printf.printf "Other core type";
-      []
+let rec extract_core_type (ctyp : Parsetree.core_type) (components_only : bool)
+    =
+  if components_only then (
+    match ctyp.ptyp_desc with
+    | Ptyp_arrow (_, argtyp, rettyp) ->
+        [ "Ptyp_arrow"; string_of_type argtyp; string_of_type rettyp ]
+    | Ptyp_tuple types ->
+        "Ptyp_tuple"
+        :: List.fold_right (fun curr acc -> string_of_type curr :: acc) types []
+    | Ptyp_constr ({ txt = Lident id; _ }, []) -> [ "Ptyp_constr"; id ]
+    | Ptyp_constr ({ txt = Lident id; _ }, [ ctyps ]) ->
+        [ "Ptyp_constr"; string_of_type ctyps; id ]
+    | _ ->
+        Printf.printf "Other core type";
+        [ "Other core type" ])
+  else
+    match ctyp.ptyp_desc with
+    | Ptyp_arrow (_, _, rettyp) ->
+        string_of_type ctyp :: extract_core_type rettyp components_only
+    | Ptyp_tuple types ->
+        List.fold_left
+          (fun acc curr ->
+            List.append (extract_core_type curr components_only) acc)
+          [] types
+    | Ptyp_constr ({ txt = Lident id; _ }, []) -> id :: []
+    | Ptyp_constr ({ txt = Lident id; _ }, [ ctyps ]) ->
+        [ string_of_type ctyps ^ " " ^ id ]
+    | _ ->
+        Printf.printf "Other core type";
+        []
 
 let parse_from_type_span s =
   let lexbuf = Lexing.from_string s in
@@ -203,10 +220,21 @@ let parse_from_type_span s =
 let extract_target_types (type_span : string) =
   let parsed = parse_from_type_span type_span in
   (* print_endline "Structure parsed successfully!"; *)
-  extract_core_type parsed
+  extract_core_type parsed false
+
+let extract_component_types (type_span : string) =
+  let parsed = parse_from_type_span type_span in
+  (* print_endline "Structure parsed successfully!"; *)
+  extract_core_type parsed true
 
 let js_extract_target_types (type_span : string) =
   let extracted = extract_target_types type_span in
+  Js.array (Array.of_list extracted)
+
+(* What do we want? todo -> model * int would yield todo, model * int *)
+(* model * int * string would yield model, int, string *)
+let js_extract_component_types (type_span : string) =
+  let extracted = extract_component_types type_span in
   Js.array (Array.of_list extracted)
 
 (* Example usage *)
@@ -242,6 +270,7 @@ let js_extract_target_types (type_span : string) =
 (*        method parse header_type = extract_target_types header_type *)
 (*     end) *)
 let _ = Js.export "parse" (Js.wrap_callback js_extract_target_types)
+let _ = Js.export "getComponents" (Js.wrap_callback js_extract_component_types)
 (* match parse_from_string str with *)
 (* | Some parsed_str -> *)
 (*     print_endline "Structure parsed successfully!"; *)
