@@ -447,6 +447,9 @@ export class OcamlDriver implements LanguageDriver {
     //   return normalForm;
     //
     // }
+    else if (this.typeChecker.isFunction(typeSpan)) {
+
+    }
     else if (this.typeChecker.isTuple(typeSpan)) {
       // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
       const elements = this.typeChecker.parseTypeArrayString(typeSpan)
