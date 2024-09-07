@@ -142,8 +142,8 @@ export class OcamlDriver implements LanguageDriver {
       args: [],
       resultAsSexp: false
     }))
-    console.log(JSON.parse(holeCtx.result))
-    console.log(holeCtx.result)
+    // console.log(JSON.parse(holeCtx.result))
+    // console.log(holeCtx.result)
 
     const sketchSymbol = await lspClient.documentSymbol({
       textDocument: {
@@ -265,9 +265,9 @@ export class OcamlDriver implements LanguageDriver {
     const relevantContext = new Set<string>();
 
     const headerTypeSpans = await this.extractHeaderTypeSpans(lspClient, preludeFilePath);
-    console.log(headerTypeSpans)
+    // console.log(headerTypeSpans)
     const targetTypes = this.generateTargetTypes(holeType, relevantTypes, preludeFilePath);
-    console.log(targetTypes);
+    // console.log(targetTypes);
 
     try {
       for (const hts of headerTypeSpans) {
