@@ -1,14 +1,24 @@
 import * as fs from "fs";
 import * as path from "path";
+import OpenAI from "openai";
 import { execSync } from "child_process";
-import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
-import { LanguageDriver } from "./types";
+import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation, DidOpenTextDocumentParams } from "../ts-lsp-client-dist/src/main";
+import { LanguageDriver, Context, Model, LLMConfig, GPT4Config } from "./types";
 import { TypeScriptTypeChecker } from "./typescript-type-checker";
-import { extractSnippet, formatTypeSpan } from "./utils";
+import { extractSnippet, formatTypeSpan, removeLines } from "./utils";
 
 
 export class TypeScriptDriver implements LanguageDriver {
   typeChecker: TypeScriptTypeChecker = new TypeScriptTypeChecker();
+  config: GPT4Config = {
+    model: Model.GPT4,
+    apiBase: "",
+    deployment: "",
+    gptModel: "",
+    apiVersion: "",
+    apiKey: "",
+    temperature: 0.6
+  };
 
   async init(lspClient: LspClient, sketchPath: string) {
     const capabilities: ClientCapabilities = {
@@ -466,6 +476,87 @@ export class TypeScriptDriver implements LanguageDriver {
       return typeSpan;
     }
   }
+
+  readConfig(configPath: string) {
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    this.config = config as GPT4Config;
+  }
+
+  generateTypesAndHeadersPrompt(sketchFileContent: string, holeType: string, relevantTypes: string, relevantHeaders: string) {
+    const prompt = [{
+      role: "system",
+      content:
+        [
+          "CODE COMPLETION INSTRUCTIONS:",
+          "- Reply with a functional, idiomatic replacement for the program hole marked '_()' in the provided TypeScript program sketch",
+          "- Reply only with a single replacement term for the unqiue distinguished hole marked '_()'",
+          "Reply only with code",
+          "- DO NOT include the program sketch in your reply",
+          "- DO NOT include a period at the end of your response and DO NOT use markdown",
+          "- DO NOT include a type signature for the program hole, as this is redundant and is already in the provided program sketch"
+        ].join("\n"),
+    }];
+
+    let userPrompt = {
+      role: "user",
+      content: ""
+    };
+
+    if (relevantTypes) {
+      userPrompt.content +=
+        `# The expected type of the goal completion is ${holeType} #
+
+# The following type definitions are likely relevant: #
+${relevantTypes}
+
+`
+    }
+    if (relevantHeaders) {
+      userPrompt.content += `
+# Consider using these variables relevant to the expected type: #
+${relevantHeaders}
+
+`;
+    }
+
+    userPrompt.content += `# Program Sketch to be completed: #\n${removeLines(sketchFileContent).join("\n")}`;
+
+    prompt.push(userPrompt);
+    return prompt;
+  };
+
+  async completeWithLLM(targetDirectoryPath: string, context: Context): Promise<string> {
+    // Create a prompt.
+    const prompt = this.generateTypesAndHeadersPrompt(
+      fs.readFileSync(path.join(targetDirectoryPath, "sketch.ts"), "utf8"),
+      context.hole,
+      context.relevantTypes.join("\n"),
+      context.relevantHeaders.join("\n")
+    );
+
+    // Call the LLM to get completion results back.
+    const apiBase = this.config.apiBase;
+    const deployment = this.config.deployment;
+    const model = this.config.gptModel;
+    const apiVersion = this.config.apiVersion;
+    const apiKey = this.config.apiKey;
+
+    const openai = new OpenAI({
+      apiKey,
+      baseURL: `${apiBase}/openai/deployments/${deployment}`,
+      defaultQuery: { "api-version": apiVersion },
+      defaultHeaders: { "api-key": apiKey }
+    })
+
+    const llmResult = await openai.chat.completions.create({
+      model,
+      messages: prompt as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+      temperature: this.config.temperature
+    })
+
+    return llmResult.choices[0].message.content!;
+  }
+
 }
 
 
