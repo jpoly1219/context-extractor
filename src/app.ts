@@ -107,4 +107,8 @@ export class App {
   getSavedResult() {
     return this.result;
   }
+
+  async completeWithLLM() {
+    return await this.languageDriver.completeWithLLM();
+  }
 }
