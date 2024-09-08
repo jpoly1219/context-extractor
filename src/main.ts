@@ -235,6 +235,6 @@ export const extractWithCodeQL = async (sketchPath: string) => {
 export const extractWithNew = async (language: Language, sketchPath: string) => {
   const app = new App(language, sketchPath);
   await app.run();
-  app.close();
+  app.close()
   return app.getSavedResult();
 }
