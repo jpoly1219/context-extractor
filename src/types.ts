@@ -87,6 +87,13 @@ interface LanguageDriver {
     relevantTypes: Map<string, string>,
     holeType: string
   ) => Promise<string[]>;
+  completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
+}
+
+interface Context {
+  hole: string,
+  relevantTypes: string[],
+  relevantHeaders: string[]
 }
 
 enum Language {
@@ -101,4 +108,23 @@ interface TypeChecker {
   // checkType: (typeDecl: string) => object;
 }
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker }
+enum Model {
+  None,
+  GPT4 = "gpt4",
+  Starcoder2 = "starcoder2"
+}
+
+interface LLMConfig {
+  model: Model;
+}
+
+interface GPT4Config extends LLMConfig {
+  apiBase: string;
+  deployment: string;
+  gptModel: string;
+  apiVersion: string;
+  apiKey: string;
+  temperature: number;
+}
+
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, Context, Model, LLMConfig, GPT4Config }
