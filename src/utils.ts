@@ -118,6 +118,20 @@ const parseTypeArrayString = (typeStr: string): string[] => {
   return result;
 }
 
+const removeLines = (fileContent: string) => {
+  const lines = fileContent.split("\n");
+  const filtered = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (!(line.split(" ").includes("import") || line.split(" ").includes("from") || line.split(" ").includes("export"))) {
+      filtered.push(line);
+    }
+  }
+
+  return filtered;
+}
+
 const parseCodeQLRelevantTypes = (table: relevantTypeQueryResult): Map<string, relevantTypeObject> => {
   const m = new Map<string, relevantTypeObject>();
 
@@ -296,6 +310,7 @@ export {
   isTypeAlias,
   escapeQuotes,
   parseTypeArrayString,
+  removeLines,
   parseCodeQLRelevantTypes,
   parseCodeQLVars,
   parseCodeQLTypes,
