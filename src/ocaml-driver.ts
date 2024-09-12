@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
 import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
-import { LanguageDriver } from "./types";
+import { LanguageDriver, Context } from "./types";
 import { OcamlTypeChecker } from "./ocaml-type-checker";
 import { extractSnippet, formatTypeSpan } from "./utils";
 import { hasOnlyExpressionInitializer, walkUpBindingElementsAndPatterns } from "typescript";
@@ -498,6 +498,40 @@ export class OcamlDriver implements LanguageDriver {
     } else {
       return typeSpan;
     }
+  }
+
+
+  async completeWithLLM(targetDirectoryPath: string, context: Context): Promise<string> {
+    return "";
+    // Create a prompt.
+    // const prompt = this.generateTypesAndHeadersPrompt(
+    //   fs.readFileSync(path.join(targetDirectoryPath, "sketch.ts"), "utf8"),
+    //   context.hole,
+    //   context.relevantTypes.join("\n"),
+    //   context.relevantHeaders.join("\n")
+    // );
+
+    // Call the LLM to get completion results back.
+    // const apiBase = this.config.apiBase;
+    // const deployment = this.config.deployment;
+    // const model = this.config.gptModel;
+    // const apiVersion = this.config.apiVersion;
+    // const apiKey = this.config.apiKey;
+    //
+    // const openai = new OpenAI({
+    //   apiKey,
+    //   baseURL: `${apiBase}/openai/deployments/${deployment}`,
+    //   defaultQuery: { "api-version": apiVersion },
+    //   defaultHeaders: { "api-key": apiKey }
+    // })
+    //
+    // const llmResult = await openai.chat.completions.create({
+    //   model,
+    //   messages: prompt as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+    //   temperature: this.config.temperature
+    // })
+    //
+    // return llmResult.choices[0].message.content!;
   }
 }
 
