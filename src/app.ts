@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { spawn } from "child_process";
 import { LspClient, JSONRPCEndpoint } from "../ts-lsp-client-dist/src/main";
-import { Language, LanguageDriver } from "./types";
+import { Language, LanguageDriver, Context } from "./types";
 // TODO: Bundle the drivers as barrel exports.
 import { TypeScriptDriver } from "./typescript-driver";
 import { OcamlDriver } from "./ocaml-driver";
@@ -14,11 +14,12 @@ export class App {
   private languageDriver: LanguageDriver;
   private lspClient: LspClient;
   private sketchPath: string; // not prefixed with file://
-  private result: {
-    hole: string;
-    relevantTypes: string[];
-    relevantHeaders: string[];
-  } | null = null;
+  // private result: {
+  //   hole: string;
+  //   relevantTypes: string[];
+  //   relevantHeaders: string[];
+  // } | null = null;
+  private result: Context | null = null;
 
 
   constructor(language: Language, sketchPath: string) {
@@ -75,7 +76,6 @@ export class App {
     console.log(relevantTypes)
 
     // Postprocess the map.
-    relevantTypes.delete("_");
     relevantTypes.delete("_()");
     if (this.language === Language.TypeScript) {
       for (const [k, v] of relevantTypes.entries()) {
@@ -89,6 +89,17 @@ export class App {
       relevantTypes,
       holeContext.functionTypeSpan
     );
+
+    // Postprocess the map.
+    relevantTypes.delete("");
+    if (this.language === Language.TypeScript) {
+      for (const [k, v] of relevantTypes.entries()) {
+        relevantTypes.set(k, v + ";");
+      }
+      for (let i = 0; i < relevantHeaders.length; ++i) {
+        relevantHeaders[i] += ";";
+      }
+    }
 
     this.result = {
       hole: holeContext.functionTypeSpan,
@@ -108,7 +119,7 @@ export class App {
     return this.result;
   }
 
-  async completeWithLLM() {
-    return await this.languageDriver.completeWithLLM();
+  async completeWithLLM(targetDirectoryPath: string, context: Context) {
+    return await this.languageDriver.completeWithLLM(targetDirectoryPath, context);
   }
 }
