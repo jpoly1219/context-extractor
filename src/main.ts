@@ -6,7 +6,7 @@ import { extractRelevantTypes, getHoleContext, extractRelevantHeaders } from "./
 import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractRelevantContextWithCodeQL, extractHeadersWithCodeQL, getRelevantHeaders, extractHoleType, getRelevantHeaders3, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
 import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants";
 import { formatTypeSpan, extractSnippet, supportsHole, indexOfRegexGroup } from "./utils";
-import { LanguageDriver, Language, TypeChecker } from "./types";
+import { LanguageDriver, Language, Context, TypeChecker } from "./types";
 import { App } from "./app";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
@@ -237,4 +237,9 @@ export const extractWithNew = async (language: Language, sketchPath: string) => 
   await app.run();
   app.close()
   return app.getSavedResult();
+}
+
+export const completeWithLLM = async (language: Language, sketchPath: string, targetDirectoryPath: string, context: Context) => {
+  const app = new App(language, sketchPath);
+  return await app.completeWithLLM(targetDirectoryPath, context);
 }
