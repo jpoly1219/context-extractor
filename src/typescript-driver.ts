@@ -323,7 +323,7 @@ export class TypeScriptDriver implements LanguageDriver {
     targetTypes: Set<string>
   ) {
     // console.log("===Helper===")
-    console.log(currType, currType === undefined)
+    // console.log(currType, currType === undefined)
     if (this.typeChecker.isFunction(currType)) {
       const functionPattern = /(\(.+\))( => )(.+)(;*)/;
       const rettype = currType.match(functionPattern)![3];
