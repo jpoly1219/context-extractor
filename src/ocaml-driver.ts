@@ -143,14 +143,15 @@ export class OcamlDriver implements LanguageDriver {
       resultAsSexp: false
     }))
     // console.log(JSON.parse(holeCtx.result))
-    // console.log(holeCtx.result)
+    console.log(holeCtx.result)
 
     const sketchSymbol = await lspClient.documentSymbol({
       textDocument: {
         uri: `file://${sketchFilePath}`
       }
     })
-
+    // console.log(JSON.stringify(sketchSymbol))
+    // console.log(JSON.stringify(await lspClient.ocamlTypedHoles({ uri: `file://${sketchFilePath}` })))
 
     // NOTE: This can be improved to make it check for a document symbol where
     // its range covers that of the hole's.
@@ -164,9 +165,9 @@ export class OcamlDriver implements LanguageDriver {
     return {
       fullHoverResult: "", //
       functionName: "_", // _
-      functionTypeSpan: "model * action -> model", // model * action -> model
-      linePosition: 3, // hole's line
-      characterPosition: 47, // hole's character
+      functionTypeSpan: JSON.parse(holeCtx.result).value[0].type, // model * action -> model
+      linePosition: JSON.parse(holeCtx.result).value[0].start.line, // hole's line
+      characterPosition: JSON.parse(holeCtx.result).value[0].start.col, // hole's character
       holeTypeDefLinePos: 3, // 
       holeTypeDefCharPos: 0, // "
       range: (sketchSymbol![0] as SymbolInformation).location.range
@@ -184,8 +185,8 @@ export class OcamlDriver implements LanguageDriver {
     currentFile: string,
     outputFile: fs.WriteStream,
   ) {
-    // console.log(typeName)
     if (!foundSoFar.has(typeName)) {
+      // console.log(`fullHoverResult: ${fullHoverResult}, typename: ${typeName}, ${startLine}`)
       // console.log("params:", startLine, endLine)
       // foundSoFar.set(typeName, fullHoverResult.split(" = ")[1]);
       foundSoFar.set(typeName, fullHoverResult);
@@ -195,6 +196,8 @@ export class OcamlDriver implements LanguageDriver {
 
       for (let linePos = startLine; linePos <= endLine; ++linePos) {
         const numOfCharsInLine = parseInt(execSync(`wc -m <<< "${content.split("\n")[linePos]}"`, { shell: "/bin/bash" }).toString());
+        // console.log("the line:", content.split("\n")[linePos])
+        // console.log(numOfCharsInLine)
 
         for (let charPos = 0; charPos < numOfCharsInLine; ++charPos) {
           try {
@@ -207,6 +210,7 @@ export class OcamlDriver implements LanguageDriver {
                 line: linePos
               }
             });
+            // console.log("TypeDefinitionResult:", JSON.stringify(typeDefinitionResult))
 
             if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
               // Use documentSymbol instead of hover.
@@ -218,19 +222,27 @@ export class OcamlDriver implements LanguageDriver {
                   uri: (typeDefinitionResult[0] as Location).uri
                 }
               });
+              // console.log(JSON.stringify(documentSymbolResult, null, 2))
 
               // grab if the line number of typeDefinitionResult and documentSymbolResult matches
+              // FIX: This overwrites older definitions if the lines are the same. Especially for type constructors, such as playlist_state.
               const dsMap = documentSymbolResult!.reduce((m, obj) => {
+                if (m.has((obj as SymbolInformation).location.range.start.line)) {
+                  // TODO: save the bigger range
+                  return m;
+                }
                 m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
                 return m;
               }, new Map<number, Range>());
 
               const matchingSymbolRange: Range | undefined = dsMap.get((typeDefinitionResult[0] as Location).range.start.line);
+              // console.log(matchingSymbolRange)
               if (matchingSymbolRange) {
                 const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
                 // TODO: this can potentially be its own method. the driver would require some way to get type context.
                 // potentially, this type checker can be its own class.
                 const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
+                // console.log("snippetInRange:", snippetInRange, charPos, identifier)
 
                 await this.extractRelevantTypes(
                   lspClient,
@@ -265,9 +277,9 @@ export class OcamlDriver implements LanguageDriver {
     const relevantContext = new Set<string>();
 
     const headerTypeSpans = await this.extractHeaderTypeSpans(lspClient, preludeFilePath);
-    // console.log(headerTypeSpans)
+    console.log(headerTypeSpans)
     const targetTypes = this.generateTargetTypes(holeType, relevantTypes, preludeFilePath);
-    // console.log(targetTypes);
+    console.log(targetTypes);
 
     try {
       for (const hts of headerTypeSpans) {
@@ -309,11 +321,15 @@ export class OcamlDriver implements LanguageDriver {
     if (docSymbols && docSymbols.length > 0) {
       const headerTypeSpans: { identifier: string, typeSpan: string, snippet: string }[] = [];
 
+      const content = fs.readFileSync(preludeFilePath).toString("utf8");
       for (const docSymbol of docSymbols) {
         const ds: SymbolInformation = docSymbol as SymbolInformation;
-        const content = fs.readFileSync(preludeFilePath).toString("utf8");
+        // console.log(JSON.stringify(ds))
         const snippet = extractSnippet(content, ds.location.range.start, ds.location.range.end);
+        // console.log(snippet)
         const isVar = content.split("\n")[ds.location.range.start.line].slice(0, 3) === "let" ? true : false;
+        // const isVar = snippet.slice(0, 3) === "let" ? true : false;
+
         if (isVar) {
           const symbolHoverResult = await lspClient.hover({
             textDocument: {
@@ -359,7 +375,10 @@ export class OcamlDriver implements LanguageDriver {
     currType: string,
     targetTypes: Set<string>
   ) {
+    // TODO: Fix parser breaks
+    console.log("currType:", currType)
     const constituentTypes: string[] = ocamlParser.parse(currType);
+    console.log(constituentTypes)
 
     for (const ct of constituentTypes) {
       targetTypes.add(ct);
