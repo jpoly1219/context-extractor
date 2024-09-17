@@ -26,6 +26,9 @@ const extractSnippet = (documentContent: string, start: { line: number, characte
 
   for (let lineNumber = start.line; lineNumber <= end.line; lineNumber++) {
     const line = lines[lineNumber];
+    // console.log(line, lineNumber)
+    if (line == undefined) continue;
+
     if (lineNumber === start.line && lineNumber === end.line) {
       // Single-line range
       snippet.push(line.substring(start.character, end.character));
