@@ -35,6 +35,10 @@ export class App {
         case Language.OCaml: {
           this.languageDriver = new OcamlDriver();
           // TODO: Spawn a dune build -w on sketch directory.
+          const currDir = __dirname;
+          process.chdir(path.dirname(sketchPath));
+          spawn("dune", ["build", "-w"]);
+          process.chdir(currDir);
           return spawn("ocamllsp", ["--stdio"]);
         }
       }
@@ -116,6 +120,7 @@ export class App {
 
 
   getSavedResult() {
+    // console.log(this.result)
     return this.result;
   }
 
