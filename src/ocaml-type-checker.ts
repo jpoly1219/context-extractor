@@ -4,7 +4,7 @@ import { indexOfRegexGroup } from "./utils";
 
 export class OcamlTypeChecker implements TypeChecker {
   getIdentifierFromDecl(typeDecl: string) {
-    const declRe = /(.+ )(.+)( =)(.*)/;
+    const declRe = /(type )(.+)( =)(.*)/;
     const match = typeDecl.match(declRe);
     if (!match) return "";
     return match[2];
