@@ -77,7 +77,7 @@ export class App {
       supportsHole(this.language) ? `file://${this.sketchPath}` : `file://${path.dirname(this.sketchPath)}/injected_sketch${path.extname(this.sketchPath)}`,
       outputFile
     );
-    console.log(relevantTypes)
+    // console.log(relevantTypes)
 
     // Postprocess the map.
     relevantTypes.delete("_()");
