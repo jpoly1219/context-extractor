@@ -212,20 +212,59 @@ let rec extract_core_type (ctyp : Parsetree.core_type) (components_only : bool)
         Printf.printf "Other core type";
         []
 
-let parse_from_type_span s =
+(* Save this for later when we actually need to get the constructors *)
+(* let analyze_structure (structure : Parsetree.structure) = *)
+(* List.iter *)
+(*   (fun (item : Parsetree.structure_item) -> *)
+(*     match item.pstr_desc with *)
+(*     | Pstr_type (_, type_decls) -> *)
+(*         List.iter *)
+(*           (fun (td : Parsetree.type_declaration) -> *)
+(*             (* Printf.printf "Type: %s\n" td.ptype_name.txt; *) *)
+(*             match td.ptype_kind with *)
+(*             | Ptype_variant ctors -> *)
+(*                 List.iter *)
+(*                   (fun (ctor : Parsetree.constructor_declaration) -> *)
+(*                     Printf.printf "  Constructor: %s\n" ctor.pcd_name.txt) *)
+(*                   ctors *)
+(*             | _ -> Printf.printf "Other type kind\n") *)
+(*           type_decls *)
+(*     | _ -> Printf.printf "Not a type declaration\n") *)
+(*   structure; *)
+
+let parse_core_type_from_type_span s =
   let lexbuf = Lexing.from_string s in
-  try Parse.core_type lexbuf with _ -> failwith "Failed to parse type span"
+  try Some (Parse.core_type lexbuf) with _ -> None
+
+let parse_implementation_from_type_span s =
+  let lexbuf = Lexing.from_string ("type tmp = " ^ s) in
+  try Some (Parse.implementation lexbuf) with _ -> None
 
 (* Walk the AST and extrac]]t target types. *)
 let extract_target_types (type_span : string) =
-  let parsed = parse_from_type_span type_span in
-  (* print_endline "Structure parsed successfully!"; *)
-  extract_core_type parsed false
+  let parsed = parse_core_type_from_type_span type_span in
+  match parsed with
+  | Some ctyp -> extract_core_type ctyp false
+  | None -> (
+      let parsed2 = parse_implementation_from_type_span type_span in
+      match parsed2 with
+      (* | Some impl -> analyze_structure impl *)
+      | Some _ -> [ type_span ]
+      | None -> failwith "Failed to parse type span")
+
+(* print_endline "Structure parsed successfully!"; *)
+(* extract_core_type parsed false *)
 
 let extract_component_types (type_span : string) =
-  let parsed = parse_from_type_span type_span in
-  (* print_endline "Structure parsed successfully!"; *)
-  extract_core_type parsed true
+  let parsed = parse_core_type_from_type_span type_span in
+  match parsed with
+  | Some ctyp -> extract_core_type ctyp true
+  | None -> (
+      let parsed2 = parse_implementation_from_type_span type_span in
+      match parsed2 with
+      (* | Some impl -> analyze_structure impl *)
+      | Some _ -> [ type_span ]
+      | None -> failwith "Failed to parse type span")
 
 let js_extract_target_types (type_span : string) =
   let extracted = extract_target_types type_span in
@@ -238,32 +277,33 @@ let js_extract_component_types (type_span : string) =
   Js.array (Array.of_list extracted)
 
 (* Example usage *)
-(* let () = *)
-(*   (* TODO: How do we extract this type span string? *) *)
-(*   let strs = *)
-(*     [ *)
-(*       "todo * todo -> bool"; *)
-(*       "model * model -> bool"; *)
-(*       "model"; *)
-(*       "model -> todo list"; *)
-(*       "int * todo list -> todo list"; *)
-(*       "int * todo list -> todo list * bool"; *)
-(*       "int * todo list -> ((todo * action) * (string -> bool))"; *)
-(*       "id list * playlist_state"; *)
-(*     ] *)
-(*   in *)
-(*   (* let str = *) *)
-(*   (*   read_file *) *)
-(*   (*     "/home/jacob/projects/context-extractor/targets/ocaml/todo/prelude.ml" *) *)
-(*   (* in *) *)
-(*   List.iter *)
-(*     (fun str -> *)
-(*       List.iter *)
-(*         (fun el -> *)
-(*           print_string el; *)
-(*           print_endline " ; ") *)
-(*         (extract_target_types str)) *)
-(*     strs *)
+let () =
+  (* TODO: How do we extract this type span string? *)
+  let strs =
+    [
+      "todo * todo -> bool";
+      "model * model -> bool";
+      "model";
+      "model -> todo list";
+      "int * todo list -> todo list";
+      "int * todo list -> todo list * bool";
+      "int * todo list -> ((todo * action) * (string -> bool))";
+      "id list * playlist_state";
+      "Playing of id | PausedOn of id | NoSongSelected";
+    ]
+  in
+  (* let str = *)
+  (*   read_file *)
+  (*     "/home/jacob/projects/context-extractor/targets/ocaml/todo/prelude.ml" *)
+  (* in *)
+  List.iter
+    (fun str ->
+      List.iter
+        (fun el ->
+          print_string el;
+          print_endline " ; ")
+        (extract_target_types str))
+    strs
 
 let _ = Js.export "parse" (Js.wrap_callback js_extract_target_types)
 let _ = Js.export "getComponents" (Js.wrap_callback js_extract_component_types)
