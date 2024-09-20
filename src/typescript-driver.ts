@@ -20,7 +20,7 @@ export class TypeScriptDriver implements LanguageDriver {
     temperature: 0.6
   };
 
-  async init(lspClient: LspClient, sketchPath: string) {
+  async init(lspClient: LspClient, sketchPath: string, credentialsPath: string) {
     const capabilities: ClientCapabilities = {
       'textDocument': {
         'codeAction': { 'dynamicRegistration': true },
@@ -108,7 +108,7 @@ export class TypeScriptDriver implements LanguageDriver {
       }
     });
 
-    this.readConfig(path.join("/home/jacob/projects/context-extractor/credentials.json"));
+    this.readConfig(credentialsPath);
   }
 
 

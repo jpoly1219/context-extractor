@@ -24,7 +24,7 @@ export class OcamlDriver implements LanguageDriver {
     temperature: 0.6
   };
 
-  async init(lspClient: LspClient, sketchPath: string) {
+  async init(lspClient: LspClient, sketchPath: string, credentialsPath: string) {
     const capabilities: ClientCapabilities = {
       'textDocument': {
         'codeAction': { 'dynamicRegistration': true },
@@ -112,7 +112,7 @@ export class OcamlDriver implements LanguageDriver {
       }
     });
 
-    this.readConfig("/home/jacob/projects/context-extractor/credentials.json");
+    this.readConfig(credentialsPath);
   }
 
 
