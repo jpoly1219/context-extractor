@@ -232,15 +232,15 @@ export const extractWithCodeQL = async (sketchPath: string) => {
 }
 
 
-export const extractWithNew = async (language: Language, sketchPath: string) => {
-  const app = new App(language, sketchPath);
+export const extractWithNew = async (language: Language, sketchPath: string, credentialsPath: string) => {
+  const app = new App(language, sketchPath, credentialsPath);
   await app.run();
   const res = app.getSavedResult();
   if (res) {
     const completion = await app.completeWithLLM(path.dirname(sketchPath), res);
-    return { result: res, completion: completion };
+    return { context: res, completion: completion };
   }
   // app.close()
-  return {};
+  return { context: null, completion: null };
   // return app.getSavedResult();
 }
