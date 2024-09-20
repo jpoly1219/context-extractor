@@ -107,6 +107,8 @@ export class TypeScriptDriver implements LanguageDriver {
         }
       }
     });
+
+    this.readConfig(path.join("/home/jacob/projects/context-extractor/credentials.json"));
   }
 
 
@@ -480,6 +482,7 @@ export class TypeScriptDriver implements LanguageDriver {
   readConfig(configPath: string) {
     const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
     this.config = config as GPT4Config;
+    // console.log(this.config);
   }
 
   generateTypesAndHeadersPrompt(sketchFileContent: string, holeType: string, relevantTypes: string, relevantHeaders: string) {
