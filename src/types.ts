@@ -57,7 +57,7 @@ interface typesAndLocationsQueryResult {
 }
 
 interface LanguageDriver {
-  init: (lspClient: LspClient, sketchPath: string) => Promise<void>;
+  init: (lspClient: LspClient, sketchPath: string, credentialsPath: string) => Promise<void>;
   getHoleContext: (
     lspClient: LspClient,
     sketchFilePath: string,
