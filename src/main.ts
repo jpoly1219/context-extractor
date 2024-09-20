@@ -235,11 +235,12 @@ export const extractWithCodeQL = async (sketchPath: string) => {
 export const extractWithNew = async (language: Language, sketchPath: string) => {
   const app = new App(language, sketchPath);
   await app.run();
-  app.close()
-  return app.getSavedResult();
-}
-
-export const completeWithLLM = async (language: Language, sketchPath: string, targetDirectoryPath: string, context: Context) => {
-  const app = new App(language, sketchPath);
-  return await app.completeWithLLM(targetDirectoryPath, context);
+  const res = app.getSavedResult();
+  if (res) {
+    const completion = await app.completeWithLLM(path.dirname(sketchPath), res);
+    return { result: res, completion: completion };
+  }
+  // app.close()
+  return {};
+  // return app.getSavedResult();
 }
