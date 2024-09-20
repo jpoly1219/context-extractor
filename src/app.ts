@@ -80,11 +80,13 @@ export class App {
     // console.log(relevantTypes)
 
     // Postprocess the map.
-    relevantTypes.delete("_()");
     if (this.language === Language.TypeScript) {
+      relevantTypes.delete("_()");
       for (const [k, v] of relevantTypes.entries()) {
         relevantTypes.set(k, v.slice(0, -1));
       }
+    } else if (this.language === Language.OCaml) {
+      relevantTypes.delete("_");
     }
 
     const relevantHeaders = await this.languageDriver.extractRelevantHeaders(
@@ -95,8 +97,8 @@ export class App {
     );
 
     // Postprocess the map.
-    relevantTypes.delete("");
     if (this.language === Language.TypeScript) {
+      relevantTypes.delete("");
       for (const [k, v] of relevantTypes.entries()) {
         relevantTypes.set(k, v + ";");
       }
