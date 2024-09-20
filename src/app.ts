@@ -20,11 +20,13 @@ export class App {
   //   relevantHeaders: string[];
   // } | null = null;
   private result: Context | null = null;
+  private credentialsPath: string;
 
 
-  constructor(language: Language, sketchPath: string) {
+  constructor(language: Language, sketchPath: string, credentialsPath: string) {
     this.language = language;
     this.sketchPath = sketchPath;
+    this.credentialsPath = credentialsPath;
 
     const r = (() => {
       switch (language) {
@@ -53,7 +55,7 @@ export class App {
 
 
   async init() {
-    await this.languageDriver.init(this.lspClient, this.sketchPath);
+    await this.languageDriver.init(this.lspClient, this.sketchPath, this.credentialsPath);
   }
 
 
