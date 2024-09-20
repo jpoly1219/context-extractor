@@ -277,33 +277,33 @@ let js_extract_component_types (type_span : string) =
   Js.array (Array.of_list extracted)
 
 (* Example usage *)
-let () =
-  (* TODO: How do we extract this type span string? *)
-  let strs =
-    [
-      "todo * todo -> bool";
-      "model * model -> bool";
-      "model";
-      "model -> todo list";
-      "int * todo list -> todo list";
-      "int * todo list -> todo list * bool";
-      "int * todo list -> ((todo * action) * (string -> bool))";
-      "id list * playlist_state";
-      "Playing of id | PausedOn of id | NoSongSelected";
-    ]
-  in
-  (* let str = *)
-  (*   read_file *)
-  (*     "/home/jacob/projects/context-extractor/targets/ocaml/todo/prelude.ml" *)
-  (* in *)
-  List.iter
-    (fun str ->
-      List.iter
-        (fun el ->
-          print_string el;
-          print_endline " ; ")
-        (extract_target_types str))
-    strs
+(* let () = *)
+(*   (* TODO: How do we extract this type span string? *) *)
+(*   let strs = *)
+(*     [ *)
+(*       "todo * todo -> bool"; *)
+(*       "model * model -> bool"; *)
+(*       "model"; *)
+(*       "model -> todo list"; *)
+(*       "int * todo list -> todo list"; *)
+(*       "int * todo list -> todo list * bool"; *)
+(*       "int * todo list -> ((todo * action) * (string -> bool))"; *)
+(*       "id list * playlist_state"; *)
+(*       "Playing of id | PausedOn of id | NoSongSelected"; *)
+(*     ] *)
+(*   in *)
+(*   (* let str = *) *)
+(*   (*   read_file *) *)
+(*   (*     "/home/jacob/projects/context-extractor/targets/ocaml/todo/prelude.ml" *) *)
+(*   (* in *) *)
+(*   List.iter *)
+(*     (fun str -> *)
+(*       List.iter *)
+(*         (fun el -> *)
+(*           print_string el; *)
+(*           print_endline " ; ") *)
+(*         (extract_target_types str)) *)
+(*     strs *)
 
 let _ = Js.export "parse" (Js.wrap_callback js_extract_target_types)
 let _ = Js.export "getComponents" (Js.wrap_callback js_extract_component_types)
