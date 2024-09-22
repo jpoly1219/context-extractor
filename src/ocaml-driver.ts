@@ -218,10 +218,17 @@ export class OcamlDriver implements LanguageDriver {
 
               // grab if the line number of typeDefinitionResult and documentSymbolResult matches
               // FIX: This overwrites older definitions if the lines are the same. Especially for type constructors, such as playlist_state.
+              // Generally the one that comes first is the largest, but this could be dependent on the source code.
               const dsMap = documentSymbolResult!.reduce((m, obj) => {
-                if (m.has((obj as SymbolInformation).location.range.start.line)) {
-                  // TODO: save the bigger range
-                  return m;
+                const newSymbol = (obj as SymbolInformation);
+                const existing = m.get(newSymbol.location.range.start.line);
+                if (existing) {
+                  // Compare range between existing doucment symbol and the current symbol.
+                  if (existing.end.line - existing.start.line >= newSymbol.location.range.end.line - newSymbol.location.range.start.line) {
+                    return m;
+                  } else if (existing.end.character - existing.start.character >= newSymbol.location.range.end.character - newSymbol.location.range.start.character) {
+                    return m;
+                  }
                 }
                 m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
                 return m;
