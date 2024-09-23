@@ -2,10 +2,10 @@ import * as fs from "fs";
 import * as path from "path";
 import OpenAI from "openai";
 import { execSync } from "child_process";
-import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation, DidOpenTextDocumentParams } from "../ts-lsp-client-dist/src/main";
-import { LanguageDriver, Context, Model, LLMConfig, GPT4Config } from "./types";
+import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
+import { LanguageDriver, Context, Model, GPT4Config } from "./types";
 import { TypeScriptTypeChecker } from "./typescript-type-checker";
-import { extractSnippet, formatTypeSpan, removeLines } from "./utils";
+import { extractSnippet, removeLines } from "./utils";
 
 
 export class TypeScriptDriver implements LanguageDriver {

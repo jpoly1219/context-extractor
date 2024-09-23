@@ -1,12 +1,11 @@
-import { JSONRPCEndpoint, LspClient, ClientCapabilities, MarkupContent, Location, SymbolInformation, Range } from "../ts-lsp-client-dist/src/main.js"
-import { spawn, execSync } from "child_process";
+import { JSONRPCEndpoint, LspClient, ClientCapabilities } from "../ts-lsp-client-dist/src/main.js"
+import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantHeaders } from "./core";
-import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractRelevantContextWithCodeQL, extractHeadersWithCodeQL, getRelevantHeaders, extractHoleType, getRelevantHeaders3, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
+import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractHeadersWithCodeQL, extractHoleType, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
 import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants";
-import { formatTypeSpan, extractSnippet, supportsHole, indexOfRegexGroup } from "./utils";
-import { LanguageDriver, Language, Context, TypeChecker } from "./types";
+import { Language } from "./types";
 import { App } from "./app";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
@@ -240,7 +239,7 @@ export const extractWithNew = async (language: Language, sketchPath: string, cre
     const completion = await app.completeWithLLM(path.dirname(sketchPath), res);
     return { context: res, completion: completion };
   }
-  // app.close()
+  app.close()
   return { context: null, completion: null };
   // return app.getSavedResult();
 }

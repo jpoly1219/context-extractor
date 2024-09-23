@@ -6,10 +6,7 @@ import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolIn
 import { LanguageDriver, Context, GPT4Config, Model } from "./types";
 import { OcamlTypeChecker } from "./ocaml-type-checker";
 import { extractSnippet, removeLines } from "./utils";
-import { hasOnlyExpressionInitializer, walkUpBindingElementsAndPatterns } from "typescript";
-// import * as ocamlParser from "/home/jacob/projects/context-extractor/src/ocaml-utils/_build/default/test_parser.bc.js";
-import ocamlParser = require("/home/jacob/projects/context-extractor/src/ocaml-utils/_build/default/test_parser.bc.js");
-// const ocamlParser = require("./test_parser.bc.js");
+import ocamlParser = require("../src/ocaml-utils/_build/default/test_parser.bc.js");
 
 
 export class OcamlDriver implements LanguageDriver {
