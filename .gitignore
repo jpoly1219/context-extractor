@@ -13,5 +13,5 @@ codeql
 *exhaustive-retrieval/
 targets/**/*.js
 _opam
-_build
+# _build
 **/injected_sketch.ts
