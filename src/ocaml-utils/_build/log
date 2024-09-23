@@ -1,0 +1,22 @@
+# dune build
+# OCAMLPARAM: unset
+# Shared cache: disabled
+# Shared cache location: /home/jacob/.cache/dune/db
+# Workspace root: /home/jacob/projects/context-extractor/src/ocaml-utils
+# Auto-detected concurrency: 28
+# Dune context:
+#  { name = "default"
+#  ; kind = "default"
+#  ; profile = Dev
+#  ; merlin = true
+#  ; fdo_target_exe = None
+#  ; build_dir = In_build_dir "default"
+#  ; instrument_with = []
+#  }
+$ /home/jacob/projects/context-extractor/_opam/bin/ocamlc.opt -config > /tmp/dune_373e9c_output
+$ /home/jacob/projects/context-extractor/_opam/bin/js_of_ocaml --version > /tmp/dune_b2583a_output
+$ (cd _build/.sandbox/9e8f0b7dd6ddb28d97b155423158163d/default && .ppx/7b799aed44581cc79b02033532c5f775/ppx.exe -o test_parser.pp.ml --impl test_parser.ml -corrected-suffix .ppx-corrected -diff-cmd - -dump-ast)
+$ (cd _build/default && /home/jacob/projects/context-extractor/_opam/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -bin-annot-occurrences -I .test_parser.eobjs/byte -I /home/jacob/projects/context-extractor/_opam/lib/js_of_ocaml -I /home/jacob/projects/context-extractor/_opam/lib/js_of_ocaml-compiler/runtime -I /home/jacob/projects/context-extractor/_opam/lib/ocaml/compiler-libs -intf-suffix .ml -no-alias-deps -opaque -o .test_parser.eobjs/byte/dune__exe__Test_parser.cmo -c -impl test_parser.pp.ml)
+$ (cd _build/default && /home/jacob/projects/context-extractor/_opam/bin/js_of_ocaml --pretty --source-map-inline -o .test_parser.eobjs/jsoo/dune__exe__Test_parser.cmo.js .test_parser.eobjs/byte/dune__exe__Test_parser.cmo)
+$ (cd _build/default && /home/jacob/projects/context-extractor/_opam/bin/js_of_ocaml link --source-map-inline -o test_parser.bc.js .test_parser.eobjs/jsoo/test_parser.bc.runtime.js .js/default/stdlib/stdlib.cma.js .js/default/compiler-libs.common/ocamlcommon.cma.js .js/default/js_of_ocaml-compiler.runtime/jsoo_runtime.cma.js .js/default/js_of_ocaml/js_of_ocaml.cma.js .test_parser.eobjs/jsoo/dune__exe__Test_parser.cmo.js .js/default/stdlib/std_exit.cmo.js)
+$ (cd _build/default && /home/jacob/projects/context-extractor/_opam/bin/ocamlc.opt -w @1..3@5..28@31..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -o test_parser.bc-for-jsoo -no-check-prims -noautolink /home/jacob/projects/context-extractor/_opam/lib/ocaml/compiler-libs/ocamlcommon.cma /home/jacob/projects/context-extractor/_opam/lib/js_of_ocaml-compiler/runtime/jsoo_runtime.cma /home/jacob/projects/context-extractor/_opam/lib/js_of_ocaml/js_of_ocaml.cma .test_parser.eobjs/byte/dune__exe__Test_parser.cmo)
