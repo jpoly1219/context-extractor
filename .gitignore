@@ -3,7 +3,8 @@ dist/
 *.bqrs
 *.txt
 *.csv
-*.json
+# *.json
+credentials.json
 .env
 venv
 codeql

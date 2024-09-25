@@ -102,6 +102,7 @@
     "./src/**/*"
   ],
   "exclude": [
+    "./src/ocaml-utils/**/*",
     "./node_modules/**/*",
     "./build/**/*",
     "./targets/**/*",
