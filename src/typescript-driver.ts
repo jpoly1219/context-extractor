@@ -3,7 +3,7 @@ import * as path from "path";
 import OpenAI from "openai";
 import { execSync } from "child_process";
 import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
-import { LanguageDriver, Context, Model, GPT4Config } from "./types";
+import { LanguageDriver, Context, Model, GPT4Config, GPT4PromptComponent } from "./types";
 import { TypeScriptTypeChecker } from "./typescript-type-checker";
 import { extractSnippet, removeLines } from "./utils";
 
@@ -19,6 +19,7 @@ export class TypeScriptDriver implements LanguageDriver {
     apiKey: "",
     temperature: 0.6
   };
+  runningPrompt: GPT4PromptComponent[] = []
 
   async init(lspClient: LspClient, sketchPath: string, credentialsPath: string) {
     const capabilities: ClientCapabilities = {
@@ -528,6 +529,7 @@ ${relevantHeaders}
     return prompt;
   };
 
+
   async completeWithLLM(targetDirectoryPath: string, context: Context): Promise<string> {
     // Create a prompt.
     const prompt = this.generateTypesAndHeadersPrompt(
@@ -559,6 +561,11 @@ ${relevantHeaders}
 
     return llmResult.choices[0].message.content!;
   }
+
+
+  // async correctWithLLM(targetDirectoryPath: string, context: Context, message: string) {
+  //   const errorCorrectionPrompt = this.generateTypesAndHeadersPrompt(message);
+  // }
 
 }
 

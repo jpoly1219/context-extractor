@@ -87,7 +87,7 @@ interface LanguageDriver {
     holeType: string
   ) => Promise<string[]>;
   completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
-  correctWithLLM: (targetDirectoryPath: string, context: Context, message: string) => Promise<string>;
+  // correctWithLLM: (targetDirectoryPath: string, context: Context, message: string) => Promise<string>;
 }
 
 interface Context {
@@ -127,4 +127,9 @@ interface GPT4Config extends LLMConfig {
   temperature: number;
 }
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, Context, Model, LLMConfig, GPT4Config }
+interface GPT4PromptComponent {
+  role: string;
+  content: string;
+}
+
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent }

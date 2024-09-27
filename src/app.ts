@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { spawn } from "child_process";
 import { LspClient, JSONRPCEndpoint } from "../ts-lsp-client-dist/src/main";
-import { Language, LanguageDriver, Context } from "./types";
+import { Language, LanguageDriver, Context, GPT4PromptComponent } from "./types";
 // TODO: Bundle the drivers as barrel exports.
 import { TypeScriptDriver } from "./typescript-driver";
 import { OcamlDriver } from "./ocaml-driver";
@@ -132,7 +132,7 @@ export class App {
     return await this.languageDriver.completeWithLLM(targetDirectoryPath, context);
   }
 
-  async correctWithLLM(targetDirectoryPath: string, context: Context, message: string) {
-    return await this.languageDriver.correctWithLLM(targetDirectoryPath, context, message);
-  }
+  // async correctWithLLM(targetDirectoryPath: string, context: Context, message: string) {
+  //   return await this.languageDriver.correctWithLLM(targetDirectoryPath, context, message);
+  // }
 }
