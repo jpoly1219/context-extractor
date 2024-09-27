@@ -87,6 +87,7 @@ interface LanguageDriver {
     holeType: string
   ) => Promise<string[]>;
   completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
+  correctWithLLM: (targetDirectoryPath: string, context: Context, message: string) => Promise<string>;
 }
 
 interface Context {

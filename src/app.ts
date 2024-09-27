@@ -131,4 +131,8 @@ export class App {
   async completeWithLLM(targetDirectoryPath: string, context: Context) {
     return await this.languageDriver.completeWithLLM(targetDirectoryPath, context);
   }
+
+  async correctWithLLM(targetDirectoryPath: string, context: Context, message: string) {
+    return await this.languageDriver.correctWithLLM(targetDirectoryPath, context, message);
+  }
 }
