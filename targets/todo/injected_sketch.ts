@@ -1,4 +1,4 @@
-declare function _<T>(): T
+declare function _(): (m: Model, a: Action) => Model
 import { Model, Action } from "./prelude";
 
 // Handle TODO actions to update the app model
