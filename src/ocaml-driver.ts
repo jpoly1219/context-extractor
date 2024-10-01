@@ -373,7 +373,6 @@ export class OcamlDriver implements LanguageDriver {
 
   // resursive helper for extractRelevantContext
   // checks for nested type equivalence
-  // TODO: use this
   extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, string>, relevantContext: Set<string>, snippet: string) {
     targetTypes.forEach(typ => {
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
@@ -421,7 +420,6 @@ export class OcamlDriver implements LanguageDriver {
 
 
   // return the normal form given a type span and a set of relevant types
-  // TODO: replace type checking with information from the AST?
   normalize(typeSpan: string, relevantTypes: Map<string, string>) {
     let normalForm = "";
 
