@@ -235,11 +235,12 @@ export const extractWithNew = async (language: Language, sketchPath: string, cre
   const app = new App(language, sketchPath, credentialsPath);
   await app.run();
   const res = app.getSavedResult();
-  if (res) {
-    const completion = await app.completeWithLLM(path.dirname(sketchPath), res);
-    return { context: res, completion: completion };
-  }
-  app.close()
-  return { context: null, completion: null };
+  return { context: res, completion: "" };
+  // if (res) {
+  //   const completion = await app.completeWithLLM(path.dirname(sketchPath), res);
+  //   return { context: res, completion: completion };
+  // }
+  // app.close()
+  // return { context: null, completion: null };
   // return app.getSavedResult();
 }
