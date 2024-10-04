@@ -278,7 +278,7 @@ export class OcamlDriver implements LanguageDriver {
         const recursiveChildTypes: string[] = ocamlParser.parse(hts.typeSpan);
 
         if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
-          relevantContext.add(hts.identifier);
+          relevantContext.add(hts.identifier + " : " + hts.typeSpan);
           continue;
         }
 
