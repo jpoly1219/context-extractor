@@ -188,6 +188,9 @@ export class TypeScriptDriver implements LanguageDriver {
       }
     });
 
+    // We make this an array because we could support multiple holes in the future.
+    const sources: string[] = [injectedSketchFilePath];
+
     return {
       fullHoverResult: formattedHoverResult,
       functionName: functionName,
@@ -197,7 +200,8 @@ export class TypeScriptDriver implements LanguageDriver {
       holeTypeDefLinePos: 0,
       holeTypeDefCharPos: "declare function _(): ".length,
       // range: { start: { line: 0, character: 0 }, end: { line: 0, character: 52 } }
-      range: (sketchSymbol![0] as SymbolInformation).location.range
+      range: (sketchSymbol![0] as SymbolInformation).location.range,
+      sources: sources
     };
   }
 
@@ -211,6 +215,7 @@ export class TypeScriptDriver implements LanguageDriver {
     foundSoFar: Map<string, string>,
     currentFile: string,
     outputFile: fs.WriteStream,
+    sources: string[]
   ) {
     if (!foundSoFar.has(typeName)) {
       foundSoFar.set(typeName, fullHoverResult);
