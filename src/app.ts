@@ -94,7 +94,7 @@ export class App {
 
     const relevantHeaders = await this.languageDriver.extractRelevantHeaders(
       this.lspClient,
-      path.join(path.dirname(this.sketchPath), `prelude${path.extname(this.sketchPath)}`),
+      [path.join(path.dirname(this.sketchPath), `prelude${path.extname(this.sketchPath)}`)], // TODO: we need to pass all files
       relevantTypes,
       holeContext.functionTypeSpan
     );
