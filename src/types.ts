@@ -83,7 +83,8 @@ interface LanguageDriver {
   ) => Promise<Map<string, [string, string]>>;
   extractRelevantHeaders: (
     lspClient: LspClient,
-    preludeFilePath: string,
+    // preludeFilePath: string,
+    sources: string[],
     relevantTypes: Map<string, [string, string]>,
     holeType: string
   ) => Promise<string[]>;
