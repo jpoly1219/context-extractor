@@ -188,8 +188,7 @@ export class TypeScriptDriver implements LanguageDriver {
       }
     });
 
-    // We make this an array because we could support multiple holes in the future.
-    const sources: string[] = [injectedSketchFilePath];
+    const sources = injectedSketchFilePath;
 
     return {
       fullHoverResult: formattedHoverResult,
@@ -201,7 +200,7 @@ export class TypeScriptDriver implements LanguageDriver {
       holeTypeDefCharPos: "declare function _(): ".length,
       // range: { start: { line: 0, character: 0 }, end: { line: 0, character: 52 } }
       range: (sketchSymbol![0] as SymbolInformation).location.range,
-      sources: sources
+      source: sources
     };
   }
 
@@ -212,13 +211,12 @@ export class TypeScriptDriver implements LanguageDriver {
     typeName: string,
     startLine: number,
     endLine: number,
-    foundSoFar: Map<string, string>,
+    foundSoFar: Map<string, [string, string]>, // identifier -> [full hover result, source]
     currentFile: string,
     outputFile: fs.WriteStream,
-    sources: string[]
   ) {
     if (!foundSoFar.has(typeName)) {
-      foundSoFar.set(typeName, fullHoverResult);
+      foundSoFar.set(typeName, [fullHoverResult, currentFile]);
       outputFile.write(`${fullHoverResult};\n`);
 
       const content = fs.readFileSync(currentFile.slice(7), "utf8");
@@ -288,7 +286,7 @@ export class TypeScriptDriver implements LanguageDriver {
   async extractRelevantHeaders(
     _: LspClient,
     preludeFilePath: string,
-    relevantTypes: Map<string, string>,
+    relevantTypes: Map<string, [string, string]>,
     holeType: string
   ): Promise<string[]> {
     const relevantContext = new Set<string>();
@@ -316,7 +314,7 @@ export class TypeScriptDriver implements LanguageDriver {
   }
 
 
-  generateTargetTypes(relevantTypes: Map<string, string>, holeType: string) {
+  generateTargetTypes(relevantTypes: Map<string, [string, string]>, holeType: string) {
     const targetTypes = new Set<string>();
     targetTypes.add(holeType);
     this.generateTargetTypesHelper(relevantTypes, holeType, targetTypes);
@@ -326,7 +324,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
 
   generateTargetTypesHelper(
-    relevantTypes: Map<string, string>,
+    relevantTypes: Map<string, [string, string]>,
     currType: string,
     targetTypes: Set<string>
   ) {
@@ -354,7 +352,7 @@ export class TypeScriptDriver implements LanguageDriver {
     // } 
     else {
       if (relevantTypes.has(currType)) {
-        const definition = relevantTypes.get(currType)!.split(" = ")[1];
+        const definition = relevantTypes.get(currType)![0].split(" = ")[1];
         this.generateTargetTypesHelper(relevantTypes, definition, targetTypes);
       }
     }
@@ -363,7 +361,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
   // resursive helper for extractRelevantContext
   // checks for nested type equivalence
-  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, string>, relevantContext: Set<string>, line: string) {
+  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, [string, string]>, relevantContext: Set<string>, line: string) {
     targetTypes.forEach(typ => {
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
         relevantContext.add(line);
@@ -404,7 +402,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
 
   // two types are equivalent if they have the same normal forms
-  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, string>) {
+  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, [string, string]>) {
     const normT1 = this.normalize(t1, relevantTypes);
     const normT2 = this.normalize(t2, relevantTypes);
     return normT1 === normT2;
@@ -413,7 +411,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
   // return the normal form given a type span and a set of relevant types
   // TODO: replace type checking with information from the AST?
-  normalize(typeSpan: string, relevantTypes: Map<string, string>) {
+  normalize(typeSpan: string, relevantTypes: Map<string, [string, string]>) {
     let normalForm = "";
 
     // pattern matching for typeSpan
@@ -472,7 +470,7 @@ export class TypeScriptDriver implements LanguageDriver {
       return normalForm;
 
     } else if (this.typeChecker.isTypeAlias(typeSpan)) {
-      const typ = relevantTypes.get(typeSpan)?.split(" = ")[1];
+      const typ = relevantTypes.get(typeSpan)![0].split(" = ")[1];
       if (typ === undefined) {
         return typeSpan;
       }
