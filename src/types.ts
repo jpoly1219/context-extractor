@@ -77,7 +77,7 @@ interface LanguageDriver {
     typeName: string,
     startLine: number,
     endLine: number,
-    foundSoFar: Map<string, string>,
+    foundSoFar: Map<string, [string, string]>,
     currentFile: string,
     outputFile: fs.WriteStream,
   ) => Promise<Map<string, [string, string]>>;
