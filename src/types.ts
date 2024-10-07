@@ -69,6 +69,7 @@ interface LanguageDriver {
     holeTypeDefLinePos: number;
     holeTypeDefCharPos: number;
     range: Range;
+    source: string;
   }>;
   extractRelevantTypes: (
     lspClient: LspClient,
