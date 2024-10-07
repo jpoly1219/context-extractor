@@ -75,8 +75,9 @@ export class App {
       holeContext.functionName,
       holeContext.range.start.line,
       holeContext.range.end.line,
-      new Map<string, string>(),
-      supportsHole(this.language) ? `file://${this.sketchPath}` : `file://${path.dirname(this.sketchPath)}/injected_sketch${path.extname(this.sketchPath)}`,
+      new Map<string, [string, string]>(),
+      // supportsHole(this.language) ? `file://${this.sketchPath}` : `file://${path.dirname(this.sketchPath)}/injected_sketch${path.extname(this.sketchPath)}`,
+      holeContext.source,
       outputFile
     );
     // console.log(relevantTypes)
@@ -84,8 +85,8 @@ export class App {
     // Postprocess the map.
     if (this.language === Language.TypeScript) {
       relevantTypes.delete("_()");
-      for (const [k, v] of relevantTypes.entries()) {
-        relevantTypes.set(k, v.slice(0, -1));
+      for (const [k, [v, src]] of relevantTypes.entries()) {
+        relevantTypes.set(k, [v.slice(0, -1), src]);
       }
     } else if (this.language === Language.OCaml) {
       relevantTypes.delete("_");
@@ -101,8 +102,8 @@ export class App {
     // Postprocess the map.
     if (this.language === Language.TypeScript) {
       relevantTypes.delete("");
-      for (const [k, v] of relevantTypes.entries()) {
-        relevantTypes.set(k, v + ";");
+      for (const [k, [v, src]] of relevantTypes.entries()) {
+        relevantTypes.set(k, [v + ";", src]);
       }
       for (let i = 0; i < relevantHeaders.length; ++i) {
         relevantHeaders[i] += ";";
@@ -110,8 +111,8 @@ export class App {
     }
 
     this.result = {
-      hole: holeContext.functionTypeSpan,
-      relevantTypes: Array.from(relevantTypes, ([_, v]) => { return v }),
+      hole: holeContext.functionTypeSpan + " from " + holeContext.source,
+      relevantTypes: Array.from(relevantTypes, ([_, [v, src]]) => { return v + " from " + src }),
       relevantHeaders: relevantHeaders
     };
   }
