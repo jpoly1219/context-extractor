@@ -188,8 +188,6 @@ export class TypeScriptDriver implements LanguageDriver {
       }
     });
 
-    const sources = injectedSketchFilePath;
-
     return {
       fullHoverResult: formattedHoverResult,
       functionName: functionName,
@@ -200,7 +198,7 @@ export class TypeScriptDriver implements LanguageDriver {
       holeTypeDefCharPos: "declare function _(): ".length,
       // range: { start: { line: 0, character: 0 }, end: { line: 0, character: 52 } }
       range: (sketchSymbol![0] as SymbolInformation).location.range,
-      source: sources
+      source: `file://${injectedSketchFilePath}`
     };
   }
 
@@ -285,32 +283,41 @@ export class TypeScriptDriver implements LanguageDriver {
 
   async extractRelevantHeaders(
     _: LspClient,
-    preludeFilePath: string,
-    relevantTypes: Map<string, [string, string]>,
+    // preludeFilePath: string, // TODO: This needs to be a list of files.
+    sources: string[],
+    relevantTypes: Map<string, [string, string]>, // TODO: We also need to accept a list of target types source?
     holeType: string
   ): Promise<string[]> {
-    const relevantContext = new Set<string>();
+    const relevantContext = new Set<[string, string]>();
 
     const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
 
     // only consider lines that start with let or const
-    const preludeContent = fs.readFileSync(preludeFilePath).toString("utf8");
-    const filteredLines = preludeContent.split("\n").filter((line) => {
-      return line.slice(0, 3) === "let" || line.slice(0, 5) === "const";
-    });
+    // const preludeContent = fs.readFileSync(preludeFilePath).toString("utf8");
+    // const filteredLines = preludeContent.split("\n").filter((line) => {
+    //   return line.slice(0, 3) === "let" || line.slice(0, 5) === "const";
+    // });
 
-    // check for relationship between each line and relevant types
-    filteredLines.forEach(line => {
-      const splittedLine = line.split(" = ")[0];
+    for (const source of sources) {
+      const sourceContent = fs.readFileSync(source).toString("utf8");
+      const filteredLines = sourceContent.split("\n").filter((line) => {
+        return line.slice(0, 3) === "let" || line.slice(0, 5) === "const";
+      });
 
-      const typeSpanPattern = /(^[^:]*: )(.+)/;
-      const returnTypeSpan = splittedLine.match(typeSpanPattern)![2];
-      if (!this.typeChecker.isPrimitive(returnTypeSpan.split(" => ")[1])) {
-        this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine);
-      }
-    });
+      // check for relationship between each line and relevant types
+      filteredLines.forEach(line => {
+        const splittedLine = line.split(" = ")[0];
 
-    return Array.from(relevantContext);
+        const typeSpanPattern = /(^[^:]*: )(.+)/;
+        const returnTypeSpan = splittedLine.match(typeSpanPattern)![2];
+        if (!this.typeChecker.isPrimitive(returnTypeSpan.split(" => ")[1])) {
+          this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine, source);
+        }
+      });
+
+    }
+
+    return Array.from(relevantContext, ([_, [v, src]]) => v + " from " + src);
   }
 
 
@@ -361,24 +368,24 @@ export class TypeScriptDriver implements LanguageDriver {
 
   // resursive helper for extractRelevantContext
   // checks for nested type equivalence
-  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, [string, string]>, relevantContext: Set<string>, line: string) {
+  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, [string, string]>, relevantContext: Set<[string, string]>, line: string, source: string) {
     targetTypes.forEach(typ => {
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
-        relevantContext.add(line);
+        relevantContext.add([line, source]);
       }
 
       if (this.typeChecker.isFunction(typeSpan)) {
         const functionPattern = /(\(.+\))( => )(.+)/;
         const rettype = typeSpan.match(functionPattern)![3];
 
-        this.extractRelevantHeadersHelper(rettype, targetTypes, relevantTypes, relevantContext, line);
+        this.extractRelevantHeadersHelper(rettype, targetTypes, relevantTypes, relevantContext, line, source);
 
       } else if (this.typeChecker.isTuple(typeSpan)) {
         const elements = this.typeChecker.parseTypeArrayString(typeSpan)
         // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
 
         elements.forEach(element => {
-          this.extractRelevantHeadersHelper(element, targetTypes, relevantTypes, relevantContext, line);
+          this.extractRelevantHeadersHelper(element, targetTypes, relevantTypes, relevantContext, line, source);
         });
 
       }
