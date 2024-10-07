@@ -80,7 +80,7 @@ interface LanguageDriver {
     foundSoFar: Map<string, string>,
     currentFile: string,
     outputFile: fs.WriteStream,
-  ) => Promise<Map<string, string>>;
+  ) => Promise<Map<string, [string, string]>>;
   extractRelevantHeaders: (
     lspClient: LspClient,
     preludeFilePath: string,
