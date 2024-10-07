@@ -317,7 +317,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
     }
 
-    return Array.from(relevantContext, ([_, [v, src]]) => v + " from " + src);
+    return Array.from(new Set(Array.from(relevantContext, ([v, src]) => { return v + " from " + src })));
   }
 
 
