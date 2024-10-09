@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { spawn } from "child_process";
 import { LspClient, JSONRPCEndpoint } from "../ts-lsp-client-dist/src/main";
-import { Language, LanguageDriver, Context, GPT4PromptComponent } from "./types";
+import { Language, LanguageDriver, Context, GPT4PromptComponent, TypeSpanAndSourceFile } from "./types";
 // TODO: Bundle the drivers as barrel exports.
 import { TypeScriptDriver } from "./typescript-driver";
 import { OcamlDriver } from "./ocaml-driver";
@@ -75,7 +75,7 @@ export class App {
       holeContext.functionName,
       holeContext.range.start.line,
       holeContext.range.end.line,
-      new Map<string, [string, string]>(),
+      new Map<string, TypeSpanAndSourceFile>(),
       // supportsHole(this.language) ? `file://${this.sketchPath}` : `file://${path.dirname(this.sketchPath)}/injected_sketch${path.extname(this.sketchPath)}`,
       holeContext.source,
       outputFile
@@ -85,8 +85,8 @@ export class App {
     // Postprocess the map.
     if (this.language === Language.TypeScript) {
       relevantTypes.delete("_()");
-      for (const [k, [v, src]] of relevantTypes.entries()) {
-        relevantTypes.set(k, [v.slice(0, -1), src]);
+      for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
+        relevantTypes.set(k, { typeSpan: v.slice(0, -1), sourceFile: src });
       }
     } else if (this.language === Language.OCaml) {
       relevantTypes.delete("_");
@@ -102,8 +102,8 @@ export class App {
     // Postprocess the map.
     if (this.language === Language.TypeScript) {
       relevantTypes.delete("");
-      for (const [k, [v, src]] of relevantTypes.entries()) {
-        relevantTypes.set(k, [v + ";", src]);
+      for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
+        relevantTypes.set(k, { typeSpan: v + ";", sourceFile: src });
       }
       for (let i = 0; i < relevantHeaders.length; ++i) {
         relevantHeaders[i] += ";";
@@ -112,7 +112,7 @@ export class App {
 
     this.result = {
       hole: holeContext.functionTypeSpan + " from " + holeContext.source,
-      relevantTypes: Array.from(relevantTypes, ([_, [v, src]]) => { return v + " from " + src }),
+      relevantTypes: Array.from(relevantTypes, ([_, { typeSpan: v, sourceFile: src }]) => { return v + " from " + src }),
       relevantHeaders: relevantHeaders
     };
   }
