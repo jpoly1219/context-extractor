@@ -269,7 +269,7 @@ export class OcamlDriver implements LanguageDriver {
     sources: string[],
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
     holeType: string
-  ): Promise<string[]> {
+  ): Promise<Set<TypeSpanAndSourceFile>> {
     const relevantContext = new Set<TypeSpanAndSourceFile>();
 
     for (const source of sources) {
@@ -289,13 +289,13 @@ export class OcamlDriver implements LanguageDriver {
         }
 
       } catch (err) {
+        return new Set<TypeSpanAndSourceFile>();
         console.log(err)
-        return [];
       }
 
     }
 
-    return Array.from(new Set(Array.from(relevantContext, ({ typeSpan: v, sourceFile: src }) => { return v + " from " + src })));
+    return relevantContext;
   }
 
 
@@ -533,12 +533,20 @@ ${relevantHeaders}
 
 
   async completeWithLLM(targetDirectoryPath: string, context: Context): Promise<string> {
+    let joinedTypes = "";
+    let joinedHeaders = "";
+    context.relevantTypes.forEach((v, _) => {
+      joinedTypes = joinedTypes + v.join("\n") + "\n";
+    })
+    context.relevantHeaders.forEach((v, _) => {
+      joinedHeaders = joinedHeaders + v.join("\n") + "\n";
+    })
     // Create a prompt.
     const prompt = this.generateTypesAndHeadersPrompt(
       fs.readFileSync(path.join(targetDirectoryPath, "sketch.ml"), "utf8"),
       context.hole,
-      context.relevantTypes.join("\n"),
-      context.relevantHeaders.join("\n")
+      joinedTypes,
+      joinedHeaders
     );
 
     // Call the LLM to get completion results back.
