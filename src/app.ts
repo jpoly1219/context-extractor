@@ -133,6 +133,7 @@ export class App {
         relevantHeadersToReturn.set(src, [v]);
       }
     })
+
     this.result = {
       hole: holeContext.functionTypeSpan + " from " + holeContext.source,
       // relevantTypes: Array.from(relevantTypes, ([_, { typeSpan: v, sourceFile: src }]) => { return v + " from " + src }),
