@@ -3,7 +3,7 @@ import * as path from "path";
 import OpenAI from "openai";
 import { execSync } from "child_process";
 import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
-import { LanguageDriver, Context, Model, GPT4Config, GPT4PromptComponent } from "./types";
+import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent } from "./types";
 import { TypeScriptTypeChecker } from "./typescript-type-checker";
 import { extractSnippet, removeLines } from "./utils";
 
@@ -209,12 +209,12 @@ export class TypeScriptDriver implements LanguageDriver {
     typeName: string,
     startLine: number,
     endLine: number,
-    foundSoFar: Map<string, [string, string]>, // identifier -> [full hover result, source]
+    foundSoFar: Map<string, TypeSpanAndSourceFile>, // identifier -> [full hover result, source]
     currentFile: string,
     outputFile: fs.WriteStream,
   ) {
     if (!foundSoFar.has(typeName)) {
-      foundSoFar.set(typeName, [fullHoverResult, currentFile]);
+      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile });
       outputFile.write(`${fullHoverResult};\n`);
 
       const content = fs.readFileSync(currentFile.slice(7), "utf8");
@@ -285,10 +285,10 @@ export class TypeScriptDriver implements LanguageDriver {
     _: LspClient,
     // preludeFilePath: string, // TODO: This needs to be a list of files.
     sources: string[],
-    relevantTypes: Map<string, [string, string]>, // TODO: We also need to accept a list of target types source?
+    relevantTypes: Map<string, TypeSpanAndSourceFile>, // TODO: We also need to accept a list of target types source?
     holeType: string
   ): Promise<string[]> {
-    const relevantContext = new Set<[string, string]>();
+    const relevantContext = new Set<TypeSpanAndSourceFile>();
 
     const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
 
@@ -317,11 +317,11 @@ export class TypeScriptDriver implements LanguageDriver {
 
     }
 
-    return Array.from(new Set(Array.from(relevantContext, ([v, src]) => { return v + " from " + src })));
+    return Array.from(new Set(Array.from(relevantContext, ({ typeSpan: v, sourceFile: src }) => { return v + " from " + src })));
   }
 
 
-  generateTargetTypes(relevantTypes: Map<string, [string, string]>, holeType: string) {
+  generateTargetTypes(relevantTypes: Map<string, TypeSpanAndSourceFile>, holeType: string) {
     const targetTypes = new Set<string>();
     targetTypes.add(holeType);
     this.generateTargetTypesHelper(relevantTypes, holeType, targetTypes);
@@ -331,7 +331,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
 
   generateTargetTypesHelper(
-    relevantTypes: Map<string, [string, string]>,
+    relevantTypes: Map<string, TypeSpanAndSourceFile>,
     currType: string,
     targetTypes: Set<string>
   ) {
@@ -359,7 +359,7 @@ export class TypeScriptDriver implements LanguageDriver {
     // } 
     else {
       if (relevantTypes.has(currType)) {
-        const definition = relevantTypes.get(currType)![0].split(" = ")[1];
+        const definition = relevantTypes.get(currType)!.typeSpan.split(" = ")[1];
         this.generateTargetTypesHelper(relevantTypes, definition, targetTypes);
       }
     }
@@ -368,10 +368,10 @@ export class TypeScriptDriver implements LanguageDriver {
 
   // resursive helper for extractRelevantContext
   // checks for nested type equivalence
-  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, [string, string]>, relevantContext: Set<[string, string]>, line: string, source: string) {
+  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, TypeSpanAndSourceFile>, relevantContext: Set<TypeSpanAndSourceFile>, line: string, source: string) {
     targetTypes.forEach(typ => {
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
-        relevantContext.add([line, source]);
+        relevantContext.add({ typeSpan: line, sourceFile: source });
       }
 
       if (this.typeChecker.isFunction(typeSpan)) {
@@ -409,7 +409,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
 
   // two types are equivalent if they have the same normal forms
-  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, [string, string]>) {
+  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
     const normT1 = this.normalize(t1, relevantTypes);
     const normT2 = this.normalize(t2, relevantTypes);
     return normT1 === normT2;
@@ -418,7 +418,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
   // return the normal form given a type span and a set of relevant types
   // TODO: replace type checking with information from the AST?
-  normalize(typeSpan: string, relevantTypes: Map<string, [string, string]>) {
+  normalize(typeSpan: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
     let normalForm = "";
 
     // pattern matching for typeSpan
@@ -477,7 +477,7 @@ export class TypeScriptDriver implements LanguageDriver {
       return normalForm;
 
     } else if (this.typeChecker.isTypeAlias(typeSpan)) {
-      const typ = relevantTypes.get(typeSpan)![0].split(" = ")[1];
+      const typ = relevantTypes.get(typeSpan)!.typeSpan.split(" = ")[1];
       if (typ === undefined) {
         return typeSpan;
       }
