@@ -77,15 +77,15 @@ interface LanguageDriver {
     typeName: string,
     startLine: number,
     endLine: number,
-    foundSoFar: Map<string, [string, string]>,
+    foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
     outputFile: fs.WriteStream,
-  ) => Promise<Map<string, [string, string]>>;
+  ) => Promise<Map<string, TypeSpanAndSourceFile>>;
   extractRelevantHeaders: (
     lspClient: LspClient,
     // preludeFilePath: string,
     sources: string[],
-    relevantTypes: Map<string, [string, string]>,
+    relevantTypes: Map<string, TypeSpanAndSourceFile>,
     holeType: string
   ) => Promise<string[]>;
   completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
@@ -108,6 +108,11 @@ interface TypeChecker {
   getTypeContextFromDecl: (typeDecl: string) => { identifier: string, span: string } | null;
   // Lex and parse the given type declaration using language-appropriate techniques, then return its type.
   // checkType: (typeDecl: string) => object;
+}
+
+interface TypeSpanAndSourceFile {
+  typeSpan: string,
+  sourceFile: string
 }
 
 enum Model {
@@ -134,4 +139,4 @@ interface GPT4PromptComponent {
   content: string;
 }
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent }
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent }
