@@ -105,15 +105,39 @@ export class App {
       for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
         relevantTypes.set(k, { typeSpan: v + ";", sourceFile: src });
       }
-      for (let i = 0; i < relevantHeaders.length; ++i) {
-        relevantHeaders[i] += ";";
+      for (const obj of relevantHeaders) {
+        obj.typeSpan += ";";
       }
     }
 
+    const relevantTypesToReturn: Map<string, string[]> = new Map<string, string[]>();
+    relevantTypes.forEach(({ typeSpan: v, sourceFile: src }, _) => {
+      if (relevantTypesToReturn.has(src)) {
+        const updated = relevantTypesToReturn.get(src)!;
+        updated.push(v);
+        relevantTypesToReturn.set(src, updated);
+      } else {
+        relevantTypesToReturn.set(src, [v]);
+      }
+    })
+
+
+    const relevantHeadersToReturn: Map<string, string[]> = new Map<string, string[]>();
+    relevantHeaders.forEach(({ typeSpan: v, sourceFile: src }) => {
+      console.log(v, src)
+      if (relevantHeadersToReturn.has(src)) {
+        const updated = relevantHeadersToReturn.get(src)!;
+        updated.push(v);
+        relevantHeadersToReturn.set(src, updated);
+      } else {
+        relevantHeadersToReturn.set(src, [v]);
+      }
+    })
     this.result = {
       hole: holeContext.functionTypeSpan + " from " + holeContext.source,
-      relevantTypes: Array.from(relevantTypes, ([_, { typeSpan: v, sourceFile: src }]) => { return v + " from " + src }),
-      relevantHeaders: relevantHeaders
+      // relevantTypes: Array.from(relevantTypes, ([_, { typeSpan: v, sourceFile: src }]) => { return v + " from " + src }),
+      relevantTypes: relevantTypesToReturn,
+      relevantHeaders: relevantHeadersToReturn
     };
   }
 
