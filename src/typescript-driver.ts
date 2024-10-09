@@ -6,6 +6,7 @@ import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolIn
 import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent } from "./types";
 import { TypeScriptTypeChecker } from "./typescript-type-checker";
 import { extractSnippet, removeLines } from "./utils";
+import { Type } from "typescript";
 
 
 export class TypeScriptDriver implements LanguageDriver {
@@ -287,7 +288,7 @@ export class TypeScriptDriver implements LanguageDriver {
     sources: string[],
     relevantTypes: Map<string, TypeSpanAndSourceFile>, // TODO: We also need to accept a list of target types source?
     holeType: string
-  ): Promise<string[]> {
+  ): Promise<Set<TypeSpanAndSourceFile>> {
     const relevantContext = new Set<TypeSpanAndSourceFile>();
 
     const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
@@ -317,7 +318,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
     }
 
-    return Array.from(new Set(Array.from(relevantContext, ({ typeSpan: v, sourceFile: src }) => { return v + " from " + src })));
+    return relevantContext;
   }
 
 
@@ -541,12 +542,20 @@ ${relevantHeaders}
 
 
   async completeWithLLM(targetDirectoryPath: string, context: Context): Promise<string> {
+    let joinedTypes = "";
+    let joinedHeaders = "";
+    context.relevantTypes.forEach((v, _) => {
+      joinedTypes = joinedTypes + v.join("\n") + "\n";
+    })
+    context.relevantHeaders.forEach((v, _) => {
+      joinedHeaders = joinedHeaders + v.join("\n") + "\n";
+    })
     // Create a prompt.
     const prompt = this.generateTypesAndHeadersPrompt(
-      fs.readFileSync(path.join(targetDirectoryPath, "sketch.ts"), "utf8"),
+      fs.readFileSync(path.join(targetDirectoryPath, "sketch.ml"), "utf8"),
       context.hole,
-      context.relevantTypes.join("\n"),
-      context.relevantHeaders.join("\n")
+      joinedTypes,
+      joinedHeaders
     );
 
     // Call the LLM to get completion results back.
