@@ -87,15 +87,15 @@ interface LanguageDriver {
     sources: string[],
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
     holeType: string
-  ) => Promise<string[]>;
+  ) => Promise<Set<TypeSpanAndSourceFile>>;
   completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
   // correctWithLLM: (targetDirectoryPath: string, context: Context, message: string) => Promise<string>;
 }
 
 interface Context {
   hole: string,
-  relevantTypes: string[],
-  relevantHeaders: string[]
+  relevantTypes: Map<string, string[]>,
+  relevantHeaders: Map<string, string[]>
 }
 
 enum Language {
@@ -114,6 +114,7 @@ interface TypeSpanAndSourceFile {
   typeSpan: string,
   sourceFile: string
 }
+
 
 enum Model {
   None,
