@@ -3,7 +3,7 @@ import * as path from "path";
 import OpenAI from "openai";
 import { execSync } from "child_process";
 import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
-import { LanguageDriver, Context, GPT4Config, Model } from "./types";
+import { LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config, Model } from "./types";
 import { OcamlTypeChecker } from "./ocaml-type-checker";
 import { extractSnippet, removeLines } from "./utils";
 import ocamlParser = require("../src/ocaml-utils/_build/default/test_parser.bc.js");
@@ -178,12 +178,12 @@ export class OcamlDriver implements LanguageDriver {
     typeName: string,
     startLine: number,
     endLine: number,
-    foundSoFar: Map<string, [string, string]>,
+    foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
     outputFile: fs.WriteStream,
   ) {
     if (!foundSoFar.has(typeName)) {
-      foundSoFar.set(typeName, [fullHoverResult, currentFile]);
+      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile });
       outputFile.write(`${fullHoverResult};\n`);
 
       const content = fs.readFileSync(currentFile.slice(7), "utf8");
@@ -267,10 +267,10 @@ export class OcamlDriver implements LanguageDriver {
     lspClient: LspClient,
     // preludeFilePath: string,
     sources: string[],
-    relevantTypes: Map<string, [string, string]>,
+    relevantTypes: Map<string, TypeSpanAndSourceFile>,
     holeType: string
   ): Promise<string[]> {
-    const relevantContext = new Set<[string, string]>();
+    const relevantContext = new Set<TypeSpanAndSourceFile>();
 
     for (const source of sources) {
       const headerTypeSpans = await this.extractHeaderTypeSpans(lspClient, source);
@@ -281,7 +281,7 @@ export class OcamlDriver implements LanguageDriver {
           const recursiveChildTypes: string[] = ocamlParser.parse(hts.typeSpan);
 
           if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
-            relevantContext.add([(hts.identifier + " : " + hts.typeSpan), source]);
+            relevantContext.add({ typeSpan: (hts.identifier + " : " + hts.typeSpan), sourceFile: source });
             continue;
           }
 
@@ -295,7 +295,7 @@ export class OcamlDriver implements LanguageDriver {
 
     }
 
-    return Array.from(new Set(Array.from(relevantContext, ([v, src]) => { return v + " from " + src })));
+    return Array.from(new Set(Array.from(relevantContext, ({ typeSpan: v, sourceFile: src }) => { return v + " from " + src })));
   }
 
 
@@ -348,7 +348,7 @@ export class OcamlDriver implements LanguageDriver {
   }
 
 
-  generateTargetTypes(holeType: string, relevantTypes: Map<string, [string, string]>, preludeFilePath: string) {
+  generateTargetTypes(holeType: string, relevantTypes: Map<string, TypeSpanAndSourceFile>, preludeFilePath: string) {
     const targetTypesSet = new Set<string>();
     this.generateTargetTypesHelper(relevantTypes, holeType, targetTypesSet);
 
@@ -359,7 +359,7 @@ export class OcamlDriver implements LanguageDriver {
 
 
   generateTargetTypesHelper(
-    relevantTypes: Map<string, [string, string]>,
+    relevantTypes: Map<string, TypeSpanAndSourceFile>,
     currType: string,
     targetTypes: Set<string>
   ) {
@@ -369,7 +369,7 @@ export class OcamlDriver implements LanguageDriver {
       targetTypes.add(ct);
 
       if (relevantTypes.has(ct)) {
-        const definition = relevantTypes.get(ct)![0].split("=")[1].trim();
+        const definition = relevantTypes.get(ct)!.typeSpan.split("=")[1].trim();
         this.generateTargetTypesHelper(relevantTypes, definition, targetTypes);
       }
     }
@@ -378,10 +378,10 @@ export class OcamlDriver implements LanguageDriver {
 
   // resursive helper for extractRelevantContext
   // checks for nested type equivalence
-  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, [string, string]>, relevantContext: Set<[string, string]>, snippet: string, source: string) {
+  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, TypeSpanAndSourceFile>, relevantContext: Set<TypeSpanAndSourceFile>, snippet: string, source: string) {
     targetTypes.forEach(typ => {
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
-        relevantContext.add([snippet, source]);
+        relevantContext.add({ typeSpan: snippet, sourceFile: source });
       }
 
       const [ptyp_desc, ...components]: string[] = ocamlParser.getComponents(typ);
@@ -417,7 +417,7 @@ export class OcamlDriver implements LanguageDriver {
 
 
   // two types are equivalent if they have the same normal forms
-  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, [string, string]>) {
+  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
     const normT1 = this.normalize(t1, relevantTypes);
     const normT2 = this.normalize(t2, relevantTypes);
     return normT1 === normT2;
@@ -425,7 +425,7 @@ export class OcamlDriver implements LanguageDriver {
 
 
   // return the normal form given a type span and a set of relevant types
-  normalize(typeSpan: string, relevantTypes: Map<string, [string, string]>) {
+  normalize(typeSpan: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
     let normalForm = "";
 
     // pattern matching for typeSpan
@@ -469,7 +469,7 @@ export class OcamlDriver implements LanguageDriver {
       return normalForm;
 
     } else if (this.typeChecker.isTypeAlias(typeSpan)) {
-      const typ = relevantTypes.get(typeSpan)![0].split(" = ")[1];
+      const typ = relevantTypes.get(typeSpan)!.typeSpan.split(" = ")[1];
       if (typ === undefined) {
         return typeSpan;
       }
