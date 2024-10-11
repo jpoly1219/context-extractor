@@ -135,8 +135,7 @@ export class App {
     })
 
     this.result = {
-      hole: holeContext.functionTypeSpan + " from " + holeContext.source,
-      // relevantTypes: Array.from(relevantTypes, ([_, { typeSpan: v, sourceFile: src }]) => { return v + " from " + src }),
+      hole: holeContext.functionTypeSpan,
       relevantTypes: relevantTypesToReturn,
       relevantHeaders: relevantHeadersToReturn
     };
