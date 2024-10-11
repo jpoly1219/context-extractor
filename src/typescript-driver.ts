@@ -552,7 +552,7 @@ ${relevantHeaders}
     })
     // Create a prompt.
     const prompt = this.generateTypesAndHeadersPrompt(
-      fs.readFileSync(path.join(targetDirectoryPath, "sketch.ml"), "utf8"),
+      fs.readFileSync(path.join(targetDirectoryPath, "sketch.ts"), "utf8"),
       context.hole,
       joinedTypes,
       joinedHeaders
