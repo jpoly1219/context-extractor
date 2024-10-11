@@ -124,7 +124,6 @@ export class App {
 
     const relevantHeadersToReturn: Map<string, string[]> = new Map<string, string[]>();
     relevantHeaders.forEach(({ typeSpan: v, sourceFile: src }) => {
-      console.log(v, src)
       if (relevantHeadersToReturn.has(src)) {
         const updated = relevantHeadersToReturn.get(src)!;
         updated.push(v);
