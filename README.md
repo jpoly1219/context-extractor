@@ -1,6 +1,6 @@
 # context-extractor
 
-Extract relevant context from a TypeScript codebase using PL theory concepts.
+Extract relevant context from a codebase using a type-directed approach.
 
 ## Installation
 
@@ -26,6 +26,16 @@ npm install
 npm run build
 ```
 
+For OCaml support, you need the standard OCaml 5.0.0 [setup](https://ocaml.org/docs/installing-ocaml).
+
+Once that is done, you should be able to toggle the local switch in this repo.
+
+After you activate the local switch, install the following dependencies:
+
+```text
+opam install dune ocamllsp
+```
+
 ## How it works
 
 `context-extractor` takes several steps to extract relevant types and headers:
@@ -34,11 +44,36 @@ npm run build
 2. Extract relevant types.
 3. Extract relevant headers.
 
-This library exposes two APIs: `extract` and `extractWithCodeQL`.
-The difference between them lies in the two backends that they use: typescript-language-server and CodeQL.
-Use `extract` to use typescript-language-server (recommended).
-Use `extractWithCodeQL` to use CodeQL. Note that this will require additional setup.
-Contact the maintainers for a specially compiled version of CodeQL.
+This library exposes the API `extractWithNew`, which has the following definition:
+```ts
+const extractWithNew = async (language: Language, sketchPath: string, credentialsPath: string) => {}
+
+enum Language {
+  TypeScript,
+  OCaml
+}
+```
+
+`sketchPath` is the full path to your `sketch.ts` or `sketch.ml` file.
+`credentialsPath` is the full path to your `credentials.json`.
+
+### credentials.json
+
+The extractor calls OpenAI for code completion.
+For this you need a `credentials.json` file that holds your specific OpenAI parameters.
+
+The json has the following format:
+
+```json
+{
+  "apiBase": "<your-api-base-here>",
+  "deployment": "<your-deployment-here>",
+  "gptModel": "<your-gpt-model-here>",
+  "apiVersion": "<your-api-version-here>",
+  "apiKey": "<your-api-key-here>",
+  "temperature": 0.6
+}
+```
 
 ### Determining the type of the hole
 
