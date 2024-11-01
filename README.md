@@ -32,6 +32,7 @@ Once that is done, you should be able to toggle the local switch in this repo.
 
 After you activate the local switch, install the following dependencies:
 
+<!-- TODO: Update dependencies. -->
 ```text
 opam install dune ocamllsp
 ```
@@ -64,6 +65,7 @@ For this you need a `credentials.json` file that holds your specific OpenAI para
 
 The json has the following format:
 
+<!-- TODO: This is probably difficult to understand. -->
 ```json
 {
   "apiBase": "<your-api-base-here>",
@@ -77,13 +79,64 @@ The json has the following format:
 
 ### Determining the type of the hole
 
-We use CodeQL to determine the type of the hole.
-We denote `_()` to be the hole construct.
-Using CodeQL, we find the AST node whose string representation includes `_()`.
-Then we climb up the tree to find the enclosing statement, and its type annotation.
-Note the term *type annotation*. CodeQL cannot infer the type of a given hole.
-Every statement with a hole must include an explicit type annotation.
-We are looking into ways to infer the type of the hole.
+<!-- We use CodeQL to determine the type of the hole. -->
+<!-- We denote `_()` to be the hole construct. -->
+<!-- Using CodeQL, we find the AST node whose string representation includes `_()`. -->
+<!-- Then we climb up the tree to find the enclosing statement, and its type annotation. -->
+<!-- Note the term *type annotation*. CodeQL cannot infer the type of a given hole. -->
+<!-- Every statement with a hole must include an explicit type annotation. -->
+<!-- We are looking into ways to infer the type of the hole. -->
+
+This is done differently per language.
+
+#### TypeScript
+
+TypeScript does not have a notion of holes.
+Instead we simulate a hole using a generic function.
+The user can add a hole construct, `_()`, like so:
+
+```ts
+const update: (m: Model, a: Action) => Model =
+  _()
+```
+
+In the backend, the extractor will inject the following code:
+
+```ts
+declare function _<T>(): T
+```
+
+This lets the hole `_()` take the type:
+
+```ts
+function _<(m: Model, a: Action) => Model>(): (m: Model, a: Action) => Model
+```
+
+Then it will call `typescript-language-server` to hover on the hole to get the type.
+
+This approach of using generic functions is cool,
+because you can use it in different areas of the code.
+
+```ts
+const update: (m: Model, a: Action) => Model = (m, a) => {
+  return _()
+}
+
+// type of hole is Model
+```
+
+#### OCaml
+
+OCaml supports holes via Merlin.
+We do the heavy lifting so that you don't have to communicate with Merlin.
+Just type `_` for the hole and the extractor will do the rest.
+
+```ocaml
+let update : model * action -> model = _
+```
+
+In the backend, the extractor calls `ocamllsp` to
+run a Merlin command to get the type of the hole.
 
 ### Extracting relevant types
 
