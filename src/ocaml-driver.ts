@@ -494,8 +494,8 @@ export class OcamlDriver implements LanguageDriver {
       content:
         [
           "CODE COMPLETION INSTRUCTIONS:",
-          "- Reply with a functional, idiomatic replacement for the program hole marked '_()' in the provided TypeScript program sketch",
-          "- Reply only with a single replacement term for the unqiue distinguished hole marked '_()'",
+          "- Reply with a functional, idiomatic replacement for the program hole marked '_' in the provided OCaml program sketch",
+          "- Reply only with a single replacement term for the unqiue distinguished hole marked '_'",
           "Reply only with code",
           "- DO NOT include the program sketch in your reply",
           "- DO NOT include a period at the end of your response and DO NOT use markdown",
@@ -548,6 +548,7 @@ ${relevantHeaders}
       joinedTypes,
       joinedHeaders
     );
+    console.log(prompt)
 
     // Call the LLM to get completion results back.
     const apiBase = this.config.apiBase;
@@ -568,6 +569,7 @@ ${relevantHeaders}
       messages: prompt as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
       temperature: this.config.temperature
     })
+    console.log(JSON.stringify(llmResult, null, 2))
 
     return llmResult.choices[0].message.content!;
   }
