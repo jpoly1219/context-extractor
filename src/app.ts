@@ -114,8 +114,12 @@ export class App {
     relevantTypes.forEach(({ typeSpan: v, sourceFile: src }, _) => {
       if (relevantTypesToReturn.has(src)) {
         const updated = relevantTypesToReturn.get(src)!;
-        updated.push(v);
-        relevantTypesToReturn.set(src, updated);
+        if (!updated.find(item => item == v)) {
+          updated.push(v);
+          relevantTypesToReturn.set(src, updated);
+        }
+        // updated.push(v);
+        // relevantTypesToReturn.set(src, updated);
       } else {
         relevantTypesToReturn.set(src, [v]);
       }
@@ -126,8 +130,10 @@ export class App {
     relevantHeaders.forEach(({ typeSpan: v, sourceFile: src }) => {
       if (relevantHeadersToReturn.has(src)) {
         const updated = relevantHeadersToReturn.get(src)!;
-        updated.push(v);
-        relevantHeadersToReturn.set(src, updated);
+        if (!updated.find(item => item == v)) {
+          updated.push(v);
+          relevantHeadersToReturn.set(src, updated);
+        }
       } else {
         relevantHeadersToReturn.set(src, [v]);
       }
