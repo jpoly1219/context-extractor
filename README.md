@@ -44,10 +44,19 @@ eval $(opam env)
 After you activate the local switch, install the following dependencies:
 
 ```text
-opam install dune ocaml-lsp-server
+opam install dune ocaml-lsp-server ounit2
 ```
 
-Create a `credentials.json` file following the steps below.
+We provide you with five OCaml examples, located in `targets/ocaml` directory.
+`cd` into each of them and run the following:
+
+```text
+dune build
+```
+
+Ignore the wildcard build errors. The command is meant to setup the modules and imports.
+
+Almost there! Create a `credentials.json` file following the steps at the **credentials.json** section below in the README.
 
 Finally, build and run.
 
