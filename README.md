@@ -103,3 +103,9 @@ The json has the following format:
   "temperature": 0.6
 }
 ```
+
+## Trying out the VSCode extension
+
+We have a Visual Studio Code extension that provides a frontend to this project.
+
+The extension is not publicly available, so you would need to request for a .vsix package.
