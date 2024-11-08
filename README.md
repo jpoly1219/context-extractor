@@ -4,8 +4,6 @@ Extract relevant context from a codebase using a type-directed approach.
 
 ## Installation
 
-Clone this repo.
-
 Install the following dependencies:
 
 ```text
@@ -15,7 +13,7 @@ npm install -g typescript-language-server typescript tsc
 Clone the `ts-lsp-client` repo:
 
 ```text
-https://github.com/jpoly1219/ts-lsp-client
+git clone https://github.com/jpoly1219/ts-lsp-client
 ```
 
 ... and run these commands:
@@ -26,14 +24,36 @@ npm install
 npm run build
 ```
 
-For OCaml support, you need the standard OCaml 5.0.0 [setup](https://ocaml.org/docs/installing-ocaml).
+Clone this repo.
 
-Once that is done, you should be able to toggle the local switch in this repo.
+```text
+git clone https://github.com/jpoly1219/context-extractor.git
+cd context-extractor
+npm install
+```
+
+For OCaml support, you need to first go through the standard OCaml [setup](https://ocaml.org/docs/installing-ocaml).
+
+Once that is done, you should be able to create a local switch in this repo.
+
+```text
+opam switch create ./
+eval $(opam env)
+```
 
 After you activate the local switch, install the following dependencies:
 
 ```text
-opam install dune ocamllsp
+opam install dune ocaml-lsp-server
+```
+
+Create a `credentials.json` file following the steps below.
+
+Finally, build and run.
+
+```text
+npm run build
+node dist/runner.js
 ```
 
 ## How it works
