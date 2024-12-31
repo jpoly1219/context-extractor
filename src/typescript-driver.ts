@@ -212,11 +212,11 @@ export class TypeScriptDriver implements LanguageDriver {
     endLine: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>, // identifier -> [full hover result, source]
     currentFile: string,
-    outputFile: fs.WriteStream,
+    // outputFile: fs.WriteStream,
   ) {
     if (!foundSoFar.has(typeName)) {
-      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile });
-      outputFile.write(`${fullHoverResult};\n`);
+      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
+      // outputFile.write(`${fullHoverResult};\n`);
 
       const content = fs.readFileSync(currentFile.slice(7), "utf8");
 
@@ -266,7 +266,7 @@ export class TypeScriptDriver implements LanguageDriver {
                   matchingSymbolRange.end.line,
                   foundSoFar,
                   (typeDefinitionResult[0] as Location).uri,
-                  outputFile,
+                  // outputFile,
                 );
 
               }
@@ -308,11 +308,16 @@ export class TypeScriptDriver implements LanguageDriver {
       // check for relationship between each line and relevant types
       filteredLines.forEach(line => {
         const splittedLine = line.split(" = ")[0];
+        // console.log(`line: ${line}`)
+        // console.log(`splittedLine: ${splittedLine}`)
 
         const typeSpanPattern = /(^[^:]*: )(.+)/;
-        const returnTypeSpan = splittedLine.match(typeSpanPattern)![2];
-        if (!this.typeChecker.isPrimitive(returnTypeSpan.split(" => ")[1])) {
-          this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine, source);
+        const regexMatch = splittedLine.match(typeSpanPattern)
+        if (regexMatch) {
+          const returnTypeSpan = regexMatch[2];
+          if (!this.typeChecker.isPrimitive(returnTypeSpan.split(" => ")[1])) {
+            this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine, source);
+          }
         }
       });
 
@@ -370,6 +375,9 @@ export class TypeScriptDriver implements LanguageDriver {
   // resursive helper for extractRelevantContext
   // checks for nested type equivalence
   extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, TypeSpanAndSourceFile>, relevantContext: Set<TypeSpanAndSourceFile>, line: string, source: string) {
+    // NOTE: BUGFIX
+    // console.log(`typeSpan: ${typeSpan}`)
+    // console.log(`targetTypes: ${targetTypes}`)
     targetTypes.forEach(typ => {
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
         relevantContext.add({ typeSpan: line, sourceFile: source });
@@ -411,6 +419,10 @@ export class TypeScriptDriver implements LanguageDriver {
 
   // two types are equivalent if they have the same normal forms
   isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
+    // NOTE: BUGFIX
+    // console.log(`isTypeEquivalent: ${t1}, ${t2}`)
+    // console.log(t1 == undefined)
+    // console.log(t2 == undefined)
     const normT1 = this.normalize(t1, relevantTypes);
     const normT2 = this.normalize(t2, relevantTypes);
     return normT1 === normT2;
@@ -420,6 +432,13 @@ export class TypeScriptDriver implements LanguageDriver {
   // return the normal form given a type span and a set of relevant types
   // TODO: replace type checking with information from the AST?
   normalize(typeSpan: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
+    // NOTE: BUGFIX
+    // console.log(`normalize: ${typeSpan}`)
+
+    if (typeSpan.slice(typeSpan.length - 2) == " =") {
+      typeSpan = typeSpan.slice(typeSpan.length - 2);
+    }
+
     let normalForm = "";
 
     // pattern matching for typeSpan
@@ -427,6 +446,7 @@ export class TypeScriptDriver implements LanguageDriver {
       return typeSpan;
 
     } else if (this.typeChecker.isObject(typeSpan)) {
+      // console.log(`isObject: ${typeSpan}`)
       const elements = typeSpan.slice(1, typeSpan.length - 2).split(";");
       normalForm += "{";
 
@@ -442,6 +462,7 @@ export class TypeScriptDriver implements LanguageDriver {
       return normalForm;
 
     } else if (this.typeChecker.isTuple(typeSpan)) {
+      // console.log(`isTuple: ${typeSpan}`)
       // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
       const elements = this.typeChecker.parseTypeArrayString(typeSpan)
       normalForm += "[";
@@ -457,6 +478,7 @@ export class TypeScriptDriver implements LanguageDriver {
       return normalForm;
 
     } else if (this.typeChecker.isUnion(typeSpan)) {
+      // console.log(`isUnion: ${typeSpan}`)
       const elements = typeSpan.split(" | ");
 
       elements.forEach((element, i) => {
@@ -471,6 +493,7 @@ export class TypeScriptDriver implements LanguageDriver {
       return normalForm;
 
     } else if (this.typeChecker.isArray(typeSpan)) {
+      // console.log(`isArray: ${typeSpan}`)
       const element = typeSpan.split("[]")[0];
 
       normalForm += this.normalize(element, relevantTypes)
@@ -487,6 +510,7 @@ export class TypeScriptDriver implements LanguageDriver {
       return normalForm;
 
     } else {
+      // console.log(`else: ${typeSpan}`)
       return typeSpan;
     }
   }
@@ -524,14 +548,14 @@ export class TypeScriptDriver implements LanguageDriver {
 # The following type definitions are likely relevant: #
 ${relevantTypes}
 
-`
+      `
     }
     if (relevantHeaders) {
       userPrompt.content += `
 # Consider using these variables relevant to the expected type: #
 ${relevantHeaders}
 
-`;
+      `;
     }
 
     userPrompt.content += `# Program Sketch to be completed: #\n${removeLines(sketchFileContent).join("\n")}`;
@@ -542,6 +566,7 @@ ${relevantHeaders}
 
 
   async completeWithLLM(targetDirectoryPath: string, context: Context): Promise<string> {
+    console.log("completeWithLLM TS")
     let joinedTypes = "";
     let joinedHeaders = "";
     context.relevantTypes.forEach((v, _) => {
@@ -578,6 +603,7 @@ ${relevantHeaders}
       temperature: this.config.temperature
     })
 
+    console.log(llmResult.choices[0].message.content!);
     return llmResult.choices[0].message.content!;
   }
 
