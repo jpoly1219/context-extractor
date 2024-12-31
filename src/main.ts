@@ -231,16 +231,20 @@ export const extractWithCodeQL = async (sketchPath: string) => {
 }
 
 
-export const extractWithNew = async (language: Language, sketchPath: string, credentialsPath: string) => {
-  const app = new App(language, sketchPath, credentialsPath);
+export const extractContext = async (language: Language, sketchPath: string, repoPath: string, credentialsPath: string, getCompletion: boolean) => {
+  const app = new App(language, sketchPath, repoPath, credentialsPath);
   await app.run();
   const res = app.getSavedResult();
-  // return { context: res, completion: "" };
-  if (res) {
-    const completion = await app.completeWithLLM(path.dirname(sketchPath), res);
-    return { context: res, completion: completion };
+  if (!getCompletion) {
+    await app.close()
+    return { context: res, completion: "" };
+  } else {
+    if (res) {
+      const completion = await app.completeWithLLM(path.dirname(sketchPath), res);
+      await app.close()
+      return { context: res, completion: completion };
+    }
+    await app.close()
+    return { context: null, completion: null };
   }
-  app.close()
-  return { context: null, completion: null };
-  // return app.getSavedResult();
 }
