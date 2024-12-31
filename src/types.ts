@@ -79,7 +79,7 @@ interface LanguageDriver {
     endLine: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
-    outputFile: fs.WriteStream,
+    // outputFile: fs.WriteStream,
   ) => Promise<Map<string, TypeSpanAndSourceFile>>;
   extractRelevantHeaders: (
     lspClient: LspClient,
