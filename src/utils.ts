@@ -1,3 +1,5 @@
+import * as fs from "fs";
+import * as path from "path";
 import { relevantTypeObject, varsObject, typesObject, typesQueryResult, varsQueryResult, relevantTypeQueryResult, typesAndLocationsQueryResult, Language } from "./types";
 
 const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
@@ -300,6 +302,36 @@ const supportsHole = (lang: Language): boolean => {
   return supportedLangs.includes(lang);
 }
 
+const getAllTSFiles = (dirPath: string, arrayOfFiles: string[] = []) => {
+  const files = fs.readdirSync(dirPath);
+
+  files.forEach((file) => {
+    const filePath = path.join(dirPath, file);
+    if (fs.statSync(filePath).isDirectory()) {
+      getAllTSFiles(filePath, arrayOfFiles);
+    } else if (filePath.endsWith(".ts")) {
+      arrayOfFiles.push(filePath);
+    }
+  });
+
+  return arrayOfFiles;
+}
+
+const getAllOCamlFiles = (dirPath: string, arrayOfFiles: string[] = []) => {
+  const files = fs.readdirSync(dirPath);
+
+  files.forEach((file) => {
+    const filePath = path.join(dirPath, file);
+    if (fs.statSync(filePath).isDirectory()) {
+      getAllTSFiles(filePath, arrayOfFiles);
+    } else if (filePath.endsWith(".ml")) {
+      arrayOfFiles.push(filePath);
+    }
+  });
+
+  return arrayOfFiles;
+}
+
 export {
   indexOfRegexGroup,
   formatTypeSpan,
@@ -330,5 +362,7 @@ export {
   isQLKeyword,
   isQLLabel,
   isQLIdentifier,
-  supportsHole
+  supportsHole,
+  getAllTSFiles,
+  getAllOCamlFiles
 };
