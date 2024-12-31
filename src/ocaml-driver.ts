@@ -180,11 +180,11 @@ export class OcamlDriver implements LanguageDriver {
     endLine: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
-    outputFile: fs.WriteStream,
+    // outputFile: fs.WriteStream,
   ) {
     if (!foundSoFar.has(typeName)) {
-      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile });
-      outputFile.write(`${fullHoverResult};\n`);
+      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
+      // outputFile.write(`${fullHoverResult};\n`);
 
       const content = fs.readFileSync(currentFile.slice(7), "utf8");
 
@@ -247,7 +247,7 @@ export class OcamlDriver implements LanguageDriver {
                   matchingSymbolRange.end.line,
                   foundSoFar,
                   (typeDefinitionResult[0] as Location).uri,
-                  outputFile,
+                  // outputFile,
                 );
 
               }
