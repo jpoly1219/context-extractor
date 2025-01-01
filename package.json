@@ -1,6 +1,6 @@
 {
   "name": "context-extractor",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Extract relevant context from an incomplete program sketch.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

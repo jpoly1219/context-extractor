@@ -2,7 +2,13 @@
 
 Extract relevant context from a codebase using a type-directed approach.
 
-## Installation
+## npm Installation
+
+```text
+npm i context-extractor
+```
+
+## Manual Installation
 
 Install the following dependencies:
 
