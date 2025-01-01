@@ -4,11 +4,15 @@ Extract relevant context from a codebase using a type-directed approach.
 
 ## npm Installation
 
+Recommended.
+
 ```text
-npm i context-extractor
+npm i @jpoly1219/context-extractor
 ```
 
 ## Manual Installation
+
+Not recommended. If the above steps do not work, please leave a GitHub issue.
 
 Install the following dependencies:
 
