@@ -2,6 +2,10 @@
   "name": "context-extractor",
   "version": "0.1.0",
   "description": "Extract relevant context from an incomplete program sketch.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jpoly1219/context-extractor.git"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
