@@ -84,24 +84,36 @@ node dist/runner.js
 1. Determine the type of the hole.
 2. Extract relevant types.
 3. Extract relevant headers.
+4. Optionally complete the hole with an LLM.
 
-This library exposes the API `extractWithNew`, which has the following definition:
+This library exposes the API `extractContext`, which has the following definition:
 
 ```ts
-const extractWithNew = async (
+const extractContext = async (
   language: Language,
   sketchPath: string,
-  credentialsPath: string
-) => {};
+  repoPath: string,
+  credentialsPath: string,
+  getCompletion: boolean
+): Promise<{ context: Context | null, completion: string | null }
 
 enum Language {
   TypeScript,
   OCaml,
 }
+
+interface Context {
+  hole: string,
+  relevantTypes: Map<string, string[]>,
+  relevantHeaders: Map<string, string[]>
+}
 ```
 
-`sketchPath` is the full path to your `sketch.ts` or `sketch.ml` file.
-`credentialsPath` is the full path to your `credentials.json`.
+- `sketchPath` is the full path to your sketch file with the typed hole construct (`_()` for TypeScript, `_` for OCaml).
+- `repoPath` is the full path to your repository root.
+- `credentialsPath` is the full path to your `credentials.json`.
+- `getCompletion` is a flag to set if you want the LLM to complete the typed hole. This completion is saved in the `completion` field of the return result.
+- `null` values will only be set if something goes wrong internally. When `getCompletion` is set to false, the `completion` field's value will be an empty string.
 
 ### credentials.json
 
@@ -123,8 +135,19 @@ The json has the following format:
 }
 ```
 
+Internally, this is how fields above are populated when creating a new OpenAI client.
+
+```ts
+const openai = new OpenAI({
+  apiKey,
+  baseURL: `${apiBase}/openai/deployments/${deployment}`,
+  defaultQuery: { "api-version": apiVersion },
+  defaultHeaders: { "api-key": apiKey }
+})
+```
+
 ## Trying out the VSCode extension
 
 We have a Visual Studio Code extension that provides a frontend to this project.
 
-The extension is not publicly available, so you would need to request for a .vsix package.
+The extension is not publicly available -- contact me at `jpoly@umich.edu` to request for a .vsix package.
