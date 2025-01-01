@@ -2,7 +2,9 @@
 
 Extract relevant context from a codebase using a type-directed approach.
 
-## npm Installation
+## Installation
+
+### npm
 
 Recommended.
 
@@ -10,7 +12,7 @@ Recommended.
 npm i @jpoly1219/context-extractor
 ```
 
-## Manual Installation
+### Manual
 
 Not recommended. If the above steps do not work, please leave a GitHub issue.
 
@@ -86,7 +88,7 @@ node dist/runner.js
 3. Extract relevant headers.
 4. Optionally complete the hole with an LLM.
 
-This library exposes the API `extractContext`, which has the following definition:
+This library exposes the method `extractContext`, which has the following definition:
 
 ```ts
 const extractContext = async (
@@ -99,7 +101,7 @@ const extractContext = async (
 
 enum Language {
   TypeScript,
-  OCaml,
+  OCaml
 }
 
 interface Context {
