@@ -578,7 +578,7 @@ ${relevantHeaders}
     // Create a prompt.
     const prompt = this.generateTypesAndHeadersPrompt(
       fs.readFileSync(path.join(targetDirectoryPath, "sketch.ts"), "utf8"),
-      context.hole,
+      context.holeType,
       joinedTypes,
       joinedHeaders
     );

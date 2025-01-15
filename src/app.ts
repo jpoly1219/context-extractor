@@ -167,7 +167,7 @@ export class App {
       })
 
       this.result = {
-        hole: holeContext.functionTypeSpan,
+        holeType: holeContext.functionTypeSpan,
         relevantTypes: relevantTypesToReturn,
         relevantHeaders: relevantHeadersToReturn
       };
