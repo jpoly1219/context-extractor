@@ -13,8 +13,7 @@ import { Context, Language } from "./types";
       Language.TypeScript,
       "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
       "/home/jacob/projects/context-extractor/targets/todo/",
-      "/home/jacob/projects/context-extractor/credentials.json",
-      false
+      "/home/jacob/projects/context-extractor/credentials.json"
     )
     console.dir(x, { depth: null })
 
@@ -22,8 +21,7 @@ import { Context, Language } from "./types";
       Language.OCaml,
       "/home/jacob/projects/context-extractor/targets/ocaml/todo/sketch.ml",
       "/home/jacob/projects/context-extractor/targets/ocaml/todo/",
-      "/home/jacob/projects/context-extractor/credentials.json",
-      false
+      "/home/jacob/projects/context-extractor/credentials.json"
     );
     console.dir(y, { depth: null })
   } finally {
