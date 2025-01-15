@@ -88,16 +88,23 @@ node dist/runner.js
 3. Extract relevant headers.
 4. Optionally complete the hole with an LLM.
 
-This library exposes the method `extractContext`, which has the following definition:
+This library exposes two methods `extractContext` and `completeWithLLM`, which have the following definitions:
 
 ```ts
 const extractContext = async (
   language: Language,
   sketchPath: string,
   repoPath: string,
-  credentialsPath: string,
-  getCompletion: boolean
-): Promise<{ context: Context | null, completion: string | null }
+  credentialsPath: string
+): Promise<Context | null>;
+
+const extractContext = async (
+  ctx: Context,
+  language: Language,
+  sketchPath: string,
+  repoPath: string,
+  credentialsPath: string
+): Promise<string>;
 
 enum Language {
   TypeScript,
@@ -105,17 +112,21 @@ enum Language {
 }
 
 interface Context {
-  hole: string,
-  relevantTypes: Map<string, string[]>,
-  relevantHeaders: Map<string, string[]>
+  holeType: string,
+  relevantTypes: Map<Filepath, RelevantType[]>,
+  relevantHeaders: Map<Filepath, RelevantHeader[]>
 }
+
+type Filepath = string;
+type RelevantType = string;
+type RelevantHeader = string;
 ```
 
 - `sketchPath` is the full path to your sketch file with the typed hole construct (`_()` for TypeScript, `_` for OCaml).
 - `repoPath` is the full path to your repository root.
 - `credentialsPath` is the full path to your `credentials.json`.
-- `getCompletion` is a flag to set if you want the LLM to complete the typed hole. This completion is saved in the `completion` field of the return result.
-- `null` values will only be set if something goes wrong internally. When `getCompletion` is set to false, the `completion` field's value will be an empty string.
+- `null` values will only be set if something goes wrong internally.
+- `ctx` is the result from `extractContext`.
 
 ### credentials.json
 
