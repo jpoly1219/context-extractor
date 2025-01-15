@@ -92,10 +92,14 @@ interface LanguageDriver {
   // correctWithLLM: (targetDirectoryPath: string, context: Context, message: string) => Promise<string>;
 }
 
+type Filepath = string;
+type RelevantType = string;
+type RelevantHeader = string;
+
 interface Context {
-  hole: string,
-  relevantTypes: Map<string, string[]>,
-  relevantHeaders: Map<string, string[]>
+  holeType: string,
+  relevantTypes: Map<Filepath, RelevantType[]>,
+  relevantHeaders: Map<Filepath, RelevantHeader[]>
 }
 
 enum Language {
