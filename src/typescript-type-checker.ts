@@ -1,4 +1,5 @@
-import { TypeChecker } from "./types";
+import * as ts from 'typescript';
+import { TypeChecker, TypeAnalysis } from "./types";
 import { indexOfRegexGroup } from "./utils";
 
 
@@ -320,6 +321,225 @@ export class TypeScriptTypeChecker implements TypeChecker {
     }
 
     return result;
+  }
+
+  /* Version 2, using TypeScript Compiler API */
+
+  handleMembers(members: ts.NodeArray<ts.TypeElement> | ts.NodeArray<ts.ClassElement>, checker: ts.TypeChecker): TypeAnalysis[] {
+    return members.map(member => {
+      if (ts.isPropertySignature(member) || ts.isPropertyDeclaration(member)) {
+        const propertyType = member.type ? this.analyzeTypeNode(member.type, checker) : { kind: 'Any', text: 'any' };
+        return {
+          kind: 'Property',
+          text: member.getText(),
+          constituents: [propertyType]
+        };
+      } else if (ts.isMethodSignature(member) || ts.isMethodDeclaration(member)) {
+        const parameters = member.parameters.map(param => ({
+          name: param.name.getText(),
+          optional: !!param.questionToken,
+          type: param.type ? this.analyzeTypeNode(param.type, checker) : { kind: 'Any', text: 'any' }
+        }));
+        const returnType = member.type ? this.analyzeTypeNode(member.type, checker) : { kind: 'Any', text: 'any' };
+        return {
+          kind: 'Method',
+          text: member.getText(),
+          parameters,
+          returnType
+        };
+      } else {
+        return {
+          kind: "Unknown",
+          text: member.getText()
+        };
+      }
+    })
+  }
+
+  analyzeTypeNode(typeNode: ts.TypeNode, checker: ts.TypeChecker): TypeAnalysis {
+    switch (typeNode.kind) {
+      case ts.SyntaxKind.NumericLiteral: {
+        return {
+          kind: 'NumericLiteral',
+          text: typeNode.getText(),
+        };
+      }
+
+      case ts.SyntaxKind.StringLiteral: {
+        return {
+          kind: 'StringLiteral',
+          text: typeNode.getText(),
+        };
+      }
+
+      case ts.SyntaxKind.FunctionType: {
+        const tn = typeNode as ts.FunctionTypeNode;
+        return {
+          kind: "Function",
+          text: tn.getText(),
+          parameters: tn.parameters.map(parameter => {
+            return {
+              name: parameter.name.getText(),
+              optional: !!parameter.questionToken,
+              type: parameter.type ? this.analyzeTypeNode(parameter.type, checker) : { kind: "Any", text: "any" }
+            }
+          }),
+          returnType: tn.type ? this.analyzeTypeNode(tn.type, checker) : undefined
+        };
+      }
+
+      case ts.SyntaxKind.ArrayType: {
+        const tn = typeNode as ts.ArrayTypeNode;
+        return {
+          kind: 'Array',
+          text: typeNode.getText(),
+          constituents: [this.analyzeTypeNode(tn.elementType, checker)]
+        };
+      }
+
+      case ts.SyntaxKind.TupleType: {
+        const tn = typeNode as ts.TupleTypeNode;
+        const elements = tn.elements.map(element => {
+          if (ts.isRestTypeNode(element)) {
+            return {
+              kind: 'RestElement',
+              text: element.getText(),
+              type: this.analyzeTypeNode(element.type, checker)
+            };
+          } else {
+            return this.analyzeTypeNode(element, checker);
+          }
+        });
+
+        return {
+          kind: 'Tuple',
+          text: typeNode.getText(),
+          constituents: elements
+        };
+      }
+
+      case ts.SyntaxKind.UnionType: {
+        const tn = typeNode as ts.UnionTypeNode;
+        return {
+          kind: "Union",
+          text: tn.getText(),
+          constituents: tn.types.map(typ => {
+            return this.analyzeTypeNode(typ, checker);
+          })
+        };
+      }
+
+      case ts.SyntaxKind.IntersectionType: {
+        const tn = typeNode as ts.IntersectionTypeNode;
+        return {
+          kind: "Intersection",
+          text: tn.getText(),
+          constituents: tn.types.map(typ => {
+            return this.analyzeTypeNode(typ, checker);
+          })
+        };
+      }
+
+      case ts.SyntaxKind.TypeLiteral: {
+        const tn = typeNode as ts.TypeLiteralNode;
+        return {
+          kind: "Object",
+          text: tn.getText(),
+          constituents: this.handleMembers(tn.members, checker)
+        };
+      }
+
+      case ts.SyntaxKind.TypeReference: {
+        const tn = typeNode as ts.TypeReferenceNode;
+        const symbol = checker.getSymbolAtLocation(tn.typeName);
+        let typeAliasAnalysis: TypeAnalysis = { kind: 'TypeReference', text: typeNode.getText() };
+
+        if (symbol && symbol.declarations) {
+          const declaration = symbol.declarations[0];
+          if (ts.isTypeAliasDeclaration(declaration)) {
+            const typeAlias = declaration as ts.TypeAliasDeclaration;
+            if (typeAlias.type) {
+              typeAliasAnalysis = {
+                ...typeAliasAnalysis,
+                kind: `TypeReference of TypeAliasDeclaration`,
+                constituents: [this.analyzeTypeNode(typeAlias.type, checker)]
+              };
+            }
+          } else if (ts.isInterfaceDeclaration(declaration)) {
+            const interfaceDecl = declaration as ts.InterfaceDeclaration;
+            if (interfaceDecl.members) {
+              typeAliasAnalysis = {
+                ...typeAliasAnalysis,
+                kind: `TypeReference of InterfaceDeclaration`,
+                constituents: this.handleMembers(interfaceDecl.members, checker)
+              };
+            }
+          } else if (ts.isClassDeclaration(declaration)) {
+            const classDecl = declaration as ts.ClassDeclaration;
+            if (classDecl.members) {
+              typeAliasAnalysis = {
+                ...typeAliasAnalysis,
+                kind: `TypeReference of ClassDeclaration`,
+                constituents: this.handleMembers(classDecl.members, checker),
+              };
+
+              if (classDecl.heritageClauses) {
+                typeAliasAnalysis = {
+                  ...typeAliasAnalysis,
+                  heritage: classDecl.heritageClauses.map(heritageClause => {
+                    return heritageClause.types.map(typ => {
+                      return this.analyzeTypeNode(typ, checker);
+                    });
+                  })
+                };
+              }
+            }
+          }
+        }
+
+        return typeAliasAnalysis;
+      }
+    }
+
+    return {
+      kind: ts.SyntaxKind[typeNode.kind],
+      text: typeNode.getText()
+    };
+  }
+
+  analyzeTypeString(typeString: string, program: ts.Program = this.createProgramFromSource("")): TypeAnalysis {
+    const sourceFile = ts.createSourceFile('temp.ts', `type T = ${typeString};`, ts.ScriptTarget.Latest, true);
+    let typeNode: ts.TypeNode | undefined;
+
+    ts.forEachChild(sourceFile, node => {
+      if (ts.isTypeAliasDeclaration(node)) {
+        typeNode = node.type;
+      }
+    });
+
+    if (!typeNode) {
+      throw new Error('Failed to parse type string');
+    }
+
+    const checker = program.getTypeChecker();
+    return this.analyzeTypeNode(typeNode, checker);
+  }
+
+  createProgramFromSource(content: string): ts.Program {
+    const fileName = 'test.ts';
+    const sourceFile = ts.createSourceFile(fileName, content, ts.ScriptTarget.Latest, true);
+    const host = ts.createCompilerHost({});
+    host.getSourceFile = (fileName) => (fileName === 'test.ts' ? sourceFile : undefined);
+    const program = ts.createProgram([fileName], {}, host);
+    return program;
+  }
+
+  isFunction2(typeAnalysisResult: TypeAnalysis) {
+    return typeAnalysisResult.kind === "Function";
+  }
+
+  isTuple2(typeAnalysisResult: TypeAnalysis) {
+    return typeAnalysisResult.kind === "Tuple";
   }
 }
 
