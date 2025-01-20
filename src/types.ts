@@ -144,4 +144,19 @@ interface GPT4PromptComponent {
   content: string;
 }
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent }
+interface TypeAnalysis {
+  kind: string;
+  text: string;
+  constituents?: TypeAnalysis[];
+  parameters?: ParameterAnalysis[];
+  returnType?: TypeAnalysis;
+  heritage?: TypeAnalysis[][];
+}
+
+interface ParameterAnalysis {
+  name: string;
+  optional: boolean;
+  type: TypeAnalysis;
+}
+
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis }
