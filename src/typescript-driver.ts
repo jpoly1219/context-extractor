@@ -313,7 +313,6 @@ export class TypeScriptDriver implements LanguageDriver {
           }
         }
       });
-
     }
 
     return relevantContext;
@@ -416,7 +415,14 @@ export class TypeScriptDriver implements LanguageDriver {
   // }
 
 
-  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, TypeSpanAndSourceFile>, relevantContext: Set<TypeSpanAndSourceFile>, line: string, source: string) {
+  extractRelevantHeadersHelper(
+    typeSpan: string,
+    targetTypes: Set<string>,
+    relevantTypes: Map<string, TypeSpanAndSourceFile>,
+    relevantContext: Set<TypeSpanAndSourceFile>,
+    line: string,
+    source: string
+  ) {
     const typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan);
 
     targetTypes.forEach(typ => {
