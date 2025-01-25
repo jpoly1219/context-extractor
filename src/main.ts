@@ -172,10 +172,10 @@ export const extract = async (sketchPath: string) => {
   }
   // console.log("relevantTypes:", relevantTypes);
 
-  // logFile.end();
-  // logFile.close();
-  // outputFile.end();
-  // outputFile.close();
+  logFile.end();
+  logFile.close();
+  outputFile.end();
+  outputFile.close();
 
   const preludeContent = fs.readFileSync(`${rootPath}/prelude.ts`).toString("utf8");
   const relevantHeaders = extractRelevantHeaders(preludeContent, relevantTypes, holeContext.functionTypeSpan);
@@ -235,7 +235,7 @@ export const extractContext = async (language: Language, sketchPath: string, rep
   const app = new App(language, sketchPath, repoPath, credentialsPath);
   await app.run();
   const res = app.getSavedResult();
-  await app.close();
+  app.close();
   return res;
 
   // if (!getCompletion) {
@@ -255,6 +255,6 @@ export const extractContext = async (language: Language, sketchPath: string, rep
 export const completeWithLLM = async (ctx: Context, language: Language, sketchPath: string, repoPath: string, credentialsPath: string) => {
   const app = new App(language, sketchPath, repoPath, credentialsPath);
   const completion = await app.completeWithLLM(path.dirname(sketchPath), ctx);
-  await app.close();
+  app.close();
   return completion;
 }
