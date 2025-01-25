@@ -12,6 +12,7 @@ import { getAllTSFiles, getAllOCamlFiles } from "./utils";
 export class App {
   private language: Language;
   private languageDriver: LanguageDriver;
+  private languageServer;
   private lspClient: LspClient;
   private sketchPath: string; // not prefixed with file://
   private repoPath: string; // not prefixed with file://
@@ -22,6 +23,15 @@ export class App {
   // } | null = null;
   private result: Context | null = null;
   private credentialsPath: string;
+
+  // Optional timeout for forced termination
+  private timeout = setTimeout(() => {
+    if (!this.languageServer.killed) {
+      console.log('Forcibly killing the process...');
+      this.languageServer.kill('SIGKILL');
+    }
+  }, 5000);
+
 
 
   constructor(language: Language, sketchPath: string, repoPath: string, credentialsPath: string) {
@@ -34,7 +44,7 @@ export class App {
       switch (language) {
         case Language.TypeScript: {
           this.languageDriver = new TypeScriptDriver();
-          return spawn("typescript-language-server", ["--stdio"]);
+          return spawn("typescript-language-server", ["--stdio"], { stdio: ["pipe", "pipe", "pipe"] });
         }
         case Language.OCaml: {
           this.languageDriver = new OcamlDriver();
@@ -63,7 +73,20 @@ export class App {
     })();
     const e = new JSONRPCEndpoint(r.stdin, r.stdout);
     const c = new LspClient(e);
+    this.languageServer = r;
     this.lspClient = c;
+
+    this.languageServer.on('close', (code) => {
+      if (code !== 0) {
+        console.log(`ls process exited with code ${code}`);
+      }
+    });
+    // Clear timeout once the process exits
+    this.languageServer.on('exit', () => {
+      clearTimeout(this.timeout);
+      console.log('Process terminated cleanly.');
+    });
+
 
     // const logFile = fs.createWriteStream("log.txt");
     // r.stdout.on('data', (d) => logFile.write(d));
@@ -121,11 +144,6 @@ export class App {
       const relevantHeaders = await this.languageDriver.extractRelevantHeaders(
         this.lspClient,
         repo,
-        // [
-        //   path.join(path.dirname(this.sketchPath), `prelude${path.extname(this.sketchPath)}`),
-        //   path.join(path.dirname(this.sketchPath), `sketch${path.extname(this.sketchPath)}`),
-        //   path.join(path.dirname(this.sketchPath), `epilogue${path.extname(this.sketchPath)}`)
-        // ], // TODO: we need to pass all files
         relevantTypes,
         holeContext.functionTypeSpan
       );
@@ -180,9 +198,58 @@ export class App {
   }
 
 
-  async close() {
+  close() {
     // TODO:
-    await this.lspClient.shutdown();
+    try {
+      // await this.lspClient.shutdown();
+      this.lspClient.exit();
+      // function sleep(ms: number) {
+      //   return new Promise((resolve) => setTimeout(resolve, ms));
+      // }
+      //
+      // function waitForExit(childProcess: any) {
+      //   return new Promise((resolve, reject) => {
+      //     childProcess.once("exit", (code: any) => resolve(code));
+      //     childProcess.once("error", (err: any) => reject(err));
+      //   });
+      // }
+      //
+      // (async () => {
+      //
+      //   console.log("Start");
+      //   await sleep(5000); // Sleep for 5 seconds
+      //   console.log("End after 5 seconds");
+      //   //
+      //   // this.languageServer.kill("SIGTERM");
+      //   // setTimeout(() => this.languageServer.kill("SIGKILL"), 500);
+      //   //
+      //   // const exitCode = await waitForExit(this.languageServer);
+      //   // console.log("Exit code:", exitCode);
+      // })();
+      //
+      // console.log(this.languageServer.exitCode)
+      // return this.languageServer.exitCode
+      // this.languageServer.on('close', (code) => {
+      //   if (code !== 0) {
+      //     console.log(`ls process exited with code ${code}`);
+      //   }
+      // });
+      //
+      // if (this.languageServer) {
+      //   if (this.languageServer.stdin) this.languageServer.stdin.end();
+      //   if (this.languageServer.stdin) this.languageServer.stdin.destroy();
+      //   if (this.languageServer.stdout) this.languageServer.stdout.destroy();
+      //   if (this.languageServer.stderr) this.languageServer.stderr.destroy();
+      //
+      //   const x = this.languageServer.kill("SIGTERM")
+      //   const y = this.languageServer.kill("SIGKILL")
+      //   console.log(x, y)
+      //   return this.languageServer.exitCode;
+      // }
+    } catch (err) {
+      console.log(err)
+      // return -100;
+    }
   }
 
 
