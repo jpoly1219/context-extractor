@@ -1,12 +1,14 @@
 import * as path from "path";
+import * as fs from "fs";
 import { spawn } from "child_process";
 import { execSync } from "child_process";
+import OpenAI from "openai";
 import { LspClient, JSONRPCEndpoint } from "../ts-lsp-client-dist/src/main";
-import { Language, LanguageDriver, Context, TypeSpanAndSourceFile } from "./types";
+import { Language, LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config } from "./types";
 // TODO: Bundle the drivers as barrel exports.
 import { TypeScriptDriver } from "./typescript-driver";
 import { OcamlDriver } from "./ocaml-driver";
-import { getAllTSFiles, getAllOCamlFiles } from "./utils";
+import { getAllTSFiles, getAllOCamlFiles, removeLines } from "./utils";
 
 
 export class App {
@@ -209,16 +211,122 @@ export class App {
     return this.result;
   }
 
-  async completeWithLLM(targetDirectoryPath: string, context: Context) {
-    try {
-      return await this.languageDriver.completeWithLLM(targetDirectoryPath, context);
-    } catch (err) {
-      console.error("Error during execution:", err);
-      throw err;
-    }
-  }
+  // async completeWithLLM(targetDirectoryPath: string, context: Context) {
+  //   try {
+  //     return await this.languageDriver.completeWithLLM(targetDirectoryPath, context);
+  //   } catch (err) {
+  //     console.error("Error during execution:", err);
+  //     throw err;
+  //   }
+  // }
 
   // async correctWithLLM(targetDirectoryPath: string, context: Context, message: string) {
   //   return await this.languageDriver.correctWithLLM(targetDirectoryPath, context, message);
   // }
+}
+
+export class CompletionEngine {
+  private language: Language;
+  private config: GPT4Config;
+  private sketchPath: string;
+
+  constructor(language: Language, sketchPath: string, credentialsPath: string) {
+    this.language = language;
+    this.config = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
+    this.sketchPath = sketchPath;
+  }
+
+  async completeWithLLM(context: Context): Promise<string> {
+    let joinedTypes = "";
+    let joinedHeaders = "";
+    context.relevantTypes.forEach((v, _) => {
+      joinedTypes = joinedTypes + v.join("\n") + "\n";
+    })
+    context.relevantHeaders.forEach((v, _) => {
+      joinedHeaders = joinedHeaders + v.join("\n") + "\n";
+    })
+    // Create a prompt.
+    const prompt = this.generateTypesAndHeadersPrompt(
+      // fs.readFileSync(path.join(targetDirectoryPath, "sketch.ts"), "utf8"),
+      fs.readFileSync(this.sketchPath, "utf8"),
+      context.holeType,
+      joinedTypes,
+      joinedHeaders
+    );
+
+    // Call the LLM to get completion results back.
+    const apiBase = this.config.apiBase;
+    const deployment = this.config.deployment;
+    const model = this.config.gptModel;
+    const apiVersion = this.config.apiVersion;
+    const apiKey = this.config.apiKey;
+
+    const openai = new OpenAI({
+      apiKey,
+      baseURL: `${apiBase}/openai/deployments/${deployment}`,
+      defaultQuery: { "api-version": apiVersion },
+      defaultHeaders: { "api-key": apiKey }
+    })
+
+    const llmResult = await openai.chat.completions.create({
+      model,
+      messages: prompt as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+      temperature: this.config.temperature
+    })
+
+    return llmResult.choices[0].message.content!;
+  }
+
+  generateTypesAndHeadersPrompt(sketchFileContent: string, holeType: string, relevantTypes: string, relevantHeaders: string) {
+    let holeConstruct = "";
+    switch (this.language) {
+      case Language.TypeScript: {
+        holeConstruct = "_()";
+      }
+      case Language.OCaml: {
+        holeConstruct = "_"
+      }
+    }
+
+    const prompt = [{
+      role: "system",
+      content:
+        [
+          "CODE COMPLETION INSTRUCTIONS:",
+          `- Reply with a functional, idiomatic replacement for the program hole marked '${holeConstruct}' in the provided TypeScript program sketch`,
+          `- Reply only with a single replacement term for the unqiue distinguished hole marked '${holeConstruct}'`,
+          "Reply only with code",
+          "- DO NOT include the program sketch in your reply",
+          "- DO NOT include a period at the end of your response and DO NOT use markdown",
+          "- DO NOT include a type signature for the program hole, as this is redundant and is already in the provided program sketch"
+        ].join("\n"),
+    }];
+
+    let userPrompt = {
+      role: "user",
+      content: ""
+    };
+
+    if (relevantTypes) {
+      userPrompt.content +=
+        `# The expected type of the goal completion is ${holeType} #
+
+# The following type definitions are likely relevant: #
+${relevantTypes}
+
+      `
+    }
+    if (relevantHeaders) {
+      userPrompt.content += `
+# Consider using these variables relevant to the expected type: #
+${relevantHeaders}
+
+      `;
+    }
+
+    userPrompt.content += `# Program Sketch to be completed: #\n${removeLines(sketchFileContent).join("\n")}`;
+
+    prompt.push(userPrompt);
+    return prompt;
+  };
 }
