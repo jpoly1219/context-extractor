@@ -88,7 +88,7 @@ interface LanguageDriver {
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
     holeType: string
   ) => Promise<Set<TypeSpanAndSourceFile>>;
-  completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
+  // completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
   // correctWithLLM: (targetDirectoryPath: string, context: Context, message: string) => Promise<string>;
 }
 
