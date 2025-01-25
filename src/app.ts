@@ -116,11 +116,8 @@ export class App {
         holeContext.range.start.line,
         holeContext.range.end.line,
         new Map<string, TypeSpanAndSourceFile>(),
-        // supportsHole(this.language) ? `file://${this.sketchPath}` : `file://${path.dirname(this.sketchPath)}/injected_sketch${path.extname(this.sketchPath)}`,
         holeContext.source,
-        // outputFile
       );
-      // console.log(relevantTypes)
 
       // Postprocess the map.
       if (this.language === Language.TypeScript) {
@@ -201,60 +198,14 @@ export class App {
   close() {
     // TODO:
     try {
-      // await this.lspClient.shutdown();
       this.lspClient.exit();
-      // function sleep(ms: number) {
-      //   return new Promise((resolve) => setTimeout(resolve, ms));
-      // }
-      //
-      // function waitForExit(childProcess: any) {
-      //   return new Promise((resolve, reject) => {
-      //     childProcess.once("exit", (code: any) => resolve(code));
-      //     childProcess.once("error", (err: any) => reject(err));
-      //   });
-      // }
-      //
-      // (async () => {
-      //
-      //   console.log("Start");
-      //   await sleep(5000); // Sleep for 5 seconds
-      //   console.log("End after 5 seconds");
-      //   //
-      //   // this.languageServer.kill("SIGTERM");
-      //   // setTimeout(() => this.languageServer.kill("SIGKILL"), 500);
-      //   //
-      //   // const exitCode = await waitForExit(this.languageServer);
-      //   // console.log("Exit code:", exitCode);
-      // })();
-      //
-      // console.log(this.languageServer.exitCode)
-      // return this.languageServer.exitCode
-      // this.languageServer.on('close', (code) => {
-      //   if (code !== 0) {
-      //     console.log(`ls process exited with code ${code}`);
-      //   }
-      // });
-      //
-      // if (this.languageServer) {
-      //   if (this.languageServer.stdin) this.languageServer.stdin.end();
-      //   if (this.languageServer.stdin) this.languageServer.stdin.destroy();
-      //   if (this.languageServer.stdout) this.languageServer.stdout.destroy();
-      //   if (this.languageServer.stderr) this.languageServer.stderr.destroy();
-      //
-      //   const x = this.languageServer.kill("SIGTERM")
-      //   const y = this.languageServer.kill("SIGKILL")
-      //   console.log(x, y)
-      //   return this.languageServer.exitCode;
-      // }
     } catch (err) {
       console.log(err)
-      // return -100;
     }
   }
 
 
   getSavedResult() {
-    // console.log(this.result)
     return this.result;
   }
 
