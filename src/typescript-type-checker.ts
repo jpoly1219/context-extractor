@@ -534,12 +534,33 @@ export class TypeScriptTypeChecker implements TypeChecker {
     return program;
   }
 
+  isPrimitive2(typeAnalysisResult: TypeAnalysis) {
+    const re = /(.*)Keyword/;
+    return typeAnalysisResult.kind.match(re)
+  }
+
   isFunction2(typeAnalysisResult: TypeAnalysis) {
     return typeAnalysisResult.kind === "Function";
   }
 
   isTuple2(typeAnalysisResult: TypeAnalysis) {
     return typeAnalysisResult.kind === "Tuple";
+  }
+
+  isObject2(typeAnalysisResult: TypeAnalysis) {
+    return typeAnalysisResult.kind === "Object";
+  }
+
+  isUnion2(typeAnalysisResult: TypeAnalysis) {
+    return typeAnalysisResult.kind === "Union";
+  }
+
+  isArray2(typeAnalysisResult: TypeAnalysis) {
+    return typeAnalysisResult.kind === "Array";
+  }
+
+  isTypeAlias2(typeAnalysisResult: TypeAnalysis) {
+    return typeAnalysisResult.kind === "TypeReference";
   }
 }
 
