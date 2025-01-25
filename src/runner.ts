@@ -1,4 +1,4 @@
-import { extractContext } from "./main";
+import { completeWithLLM, extractContext } from "./main";
 import { Context, Language } from "./types";
 
 // extract("/home/jacob/projects/context-extractor/targets/todo/sketch.ts").then(r => console.log("todo\n", r));
@@ -9,7 +9,6 @@ import { Context, Language } from "./types";
 
 (async () => {
   try {
-    const stackTrace = new Error().stack;
     const x = await extractContext(
       Language.TypeScript,
       "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
@@ -17,6 +16,15 @@ import { Context, Language } from "./types";
       "/home/jacob/projects/context-extractor/credentials.json"
     )
     console.dir(x, { depth: null })
+
+    const y = await completeWithLLM(
+      x!,
+      Language.TypeScript,
+      "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
+      "/home/jacob/projects/context-extractor/credentials.json"
+    )
+
+    console.dir(y)
 
     // const y = await extractContext(
     //   Language.OCaml,
