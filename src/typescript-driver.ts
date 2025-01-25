@@ -536,6 +536,98 @@ export class TypeScriptDriver implements LanguageDriver {
     }
   }
 
+  normalize2(typeSpan: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
+    // NOTE: BUGFIX
+    // console.log(`normalize: ${typeSpan}`)
+
+    if (typeSpan.slice(typeSpan.length - 2) == " =") {
+      typeSpan = typeSpan.slice(typeSpan.length - 2);
+    }
+
+    let normalForm = "";
+
+    const analysisResult = this.typeChecker.analyzeTypeString(typeSpan)
+
+    // pattern matching for typeSpan
+    // if (this.typeChecker.isPrimitive(typeSpan)) {
+    if (this.typeChecker.isPrimitive2(analysisResult)) {
+      return typeSpan;
+
+      // } else if (this.typeChecker.isObject(typeSpan)) {
+    } else if (this.typeChecker.isObject2(analysisResult)) {
+      // console.log(`isObject: ${typeSpan}`)
+      const elements = typeSpan.slice(1, typeSpan.length - 2).split(";");
+      normalForm += "{";
+
+      elements.forEach(element => {
+        if (element !== "") {
+          const kv = element.split(": ");
+          normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize(kv[1], relevantTypes);
+          normalForm += "; ";
+        }
+      });
+
+      normalForm += "}";
+      return normalForm;
+
+      // } else if (this.typeChecker.isTuple(typeSpan)) {
+    } else if (this.typeChecker.isTuple2(analysisResult)) {
+      // console.log(`isTuple: ${typeSpan}`)
+      // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
+      const elements = this.typeChecker.parseTypeArrayString(typeSpan)
+      normalForm += "[";
+
+      elements.forEach((element, i) => {
+        normalForm += this.normalize(element, relevantTypes);
+        if (i < elements.length - 1) {
+          normalForm += ", ";
+        }
+      });
+
+      normalForm += "]";
+      return normalForm;
+
+      // } else if (this.typeChecker.isUnion(typeSpan)) {
+    } else if (this.typeChecker.isUnion2(analysisResult)) {
+      // console.log(`isUnion: ${typeSpan}`)
+      const elements = typeSpan.split(" | ");
+
+      elements.forEach((element, i) => {
+        normalForm += "("
+        normalForm += this.normalize(element, relevantTypes)
+        normalForm += ")";
+        if (i < elements.length - 1) {
+          normalForm += " | ";
+        }
+      });
+
+      return normalForm;
+
+      // } else if (this.typeChecker.isArray(typeSpan)) {
+    } else if (this.typeChecker.isArray2(analysisResult)) {
+      // console.log(`isArray: ${typeSpan}`)
+      const element = typeSpan.split("[]")[0];
+
+      normalForm += this.normalize(element, relevantTypes)
+      normalForm += "[]";
+      return normalForm;
+
+      // } else if (this.typeChecker.isTypeAlias(typeSpan)) {
+    } else if (this.typeChecker.isTypeAlias2(analysisResult)) {
+      const typ = relevantTypes.get(typeSpan)!.typeSpan.split(" = ")[1];
+      if (typ === undefined) {
+        return typeSpan;
+      }
+
+      normalForm += this.normalize(typ, relevantTypes);
+      return normalForm;
+
+    } else {
+      // console.log(`else: ${typeSpan}`)
+      return typeSpan;
+    }
+  }
+
   readConfig(configPath: string) {
     const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
     this.config = config as GPT4Config;
