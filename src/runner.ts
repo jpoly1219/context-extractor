@@ -17,14 +17,14 @@ import { Context, Language } from "./types";
     )
     console.dir(x, { depth: null })
 
-    const y = await completeWithLLM(
-      x!,
-      Language.TypeScript,
-      "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
-      "/home/jacob/projects/context-extractor/credentials.json"
-    )
-
-    console.dir(y)
+    // const y = await completeWithLLM(
+    //   x!,
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
+    //   "/home/jacob/projects/context-extractor/credentials.json"
+    // )
+    //
+    // console.dir(y)
 
     // const y = await extractContext(
     //   Language.OCaml,
