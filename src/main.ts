@@ -6,7 +6,7 @@ import { extractRelevantTypes, getHoleContext, extractRelevantHeaders } from "./
 import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractHeadersWithCodeQL, extractHoleType, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
 import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants";
 import { Context, Language } from "./types";
-import { App } from "./app";
+import { App, CompletionEngine } from "./app";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
 export const extract = async (sketchPath: string) => {
@@ -231,7 +231,12 @@ export const extractWithCodeQL = async (sketchPath: string) => {
 }
 
 
-export const extractContext = async (language: Language, sketchPath: string, repoPath: string, credentialsPath: string) => {
+export const extractContext = async (
+  language: Language,
+  sketchPath: string,
+  repoPath: string,
+  credentialsPath: string
+) => {
   const app = new App(language, sketchPath, repoPath, credentialsPath);
   await app.run();
   const res = app.getSavedResult();
@@ -252,9 +257,13 @@ export const extractContext = async (language: Language, sketchPath: string, rep
   // }
 }
 
-export const completeWithLLM = async (ctx: Context, language: Language, sketchPath: string, repoPath: string, credentialsPath: string) => {
-  const app = new App(language, sketchPath, repoPath, credentialsPath);
-  const completion = await app.completeWithLLM(path.dirname(sketchPath), ctx);
-  app.close();
+export const completeWithLLM = async (
+  ctx: Context,
+  language: Language,
+  sketchPath: string,
+  credentialsPath: string
+) => {
+  const engine = new CompletionEngine(language, sketchPath, credentialsPath);
+  const completion = await engine.completeWithLLM(ctx);
   return completion;
 }
