@@ -18,14 +18,6 @@ import { Context, Language } from "./types";
     )
     console.dir(x, { depth: null })
 
-    // function sleep(ms: number) {
-    //   return new Promise((resolve) => setTimeout(resolve, ms));
-    // }
-    // console.log("Start");
-    // await sleep(4000);
-    // console.log("End after 5 seconds");
-    // console.log(stackTrace)
-
     // const y = await extractContext(
     //   Language.OCaml,
     //   "/home/jacob/projects/context-extractor/targets/ocaml/todo/sketch.ml",
