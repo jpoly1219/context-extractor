@@ -24,7 +24,6 @@ export class App {
   //   relevantHeaders: string[];
   // } | null = null;
   private result: Context | null = null;
-  private credentialsPath: string;
 
   // Optional timeout for forced termination
   private timeout = setTimeout(() => {
@@ -36,11 +35,10 @@ export class App {
 
 
 
-  constructor(language: Language, sketchPath: string, repoPath: string, credentialsPath: string) {
+  constructor(language: Language, sketchPath: string, repoPath: string) {
     this.language = language;
     this.sketchPath = sketchPath;
     this.repoPath = repoPath;
-    this.credentialsPath = credentialsPath;
 
     const r = (() => {
       switch (language) {
@@ -96,7 +94,7 @@ export class App {
 
 
   async init() {
-    await this.languageDriver.init(this.lspClient, this.sketchPath, this.credentialsPath);
+    await this.languageDriver.init(this.lspClient, this.sketchPath);
   }
 
 
@@ -230,9 +228,9 @@ export class CompletionEngine {
   private config: GPT4Config;
   private sketchPath: string;
 
-  constructor(language: Language, sketchPath: string, credentialsPath: string) {
+  constructor(language: Language, sketchPath: string, configPath: string) {
     this.language = language;
-    this.config = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
+    this.config = JSON.parse(fs.readFileSync(configPath, "utf8"));
     this.sketchPath = sketchPath;
   }
 
