@@ -13,7 +13,7 @@ import { Context, Language } from "./types";
       Language.TypeScript,
       "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
       "/home/jacob/projects/context-extractor/targets/todo/",
-      "/home/jacob/projects/context-extractor/credentials.json"
+      "/home/jacob/projects/context-extractor/config.json"
     )
     console.dir(x, { depth: null })
 
