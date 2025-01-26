@@ -11,18 +11,8 @@ import { Type } from "typescript";
 
 export class TypeScriptDriver implements LanguageDriver {
   typeChecker: TypeScriptTypeChecker = new TypeScriptTypeChecker();
-  config: GPT4Config = {
-    model: Model.GPT4,
-    apiBase: "",
-    deployment: "",
-    gptModel: "",
-    apiVersion: "",
-    apiKey: "",
-    temperature: 0.6
-  };
-  runningPrompt: GPT4PromptComponent[] = []
 
-  async init(lspClient: LspClient, sketchPath: string, credentialsPath: string) {
+  async init(lspClient: LspClient, sketchPath: string) {
     const capabilities: ClientCapabilities = {
       'textDocument': {
         'codeAction': { 'dynamicRegistration': true },
@@ -109,8 +99,6 @@ export class TypeScriptDriver implements LanguageDriver {
         }
       }
     });
-
-    this.readConfig(credentialsPath);
   }
 
 
@@ -284,9 +272,8 @@ export class TypeScriptDriver implements LanguageDriver {
 
   async extractRelevantHeaders(
     _: LspClient,
-    // preludeFilePath: string, // TODO: This needs to be a list of files.
     sources: string[],
-    relevantTypes: Map<string, TypeSpanAndSourceFile>, // TODO: We also need to accept a list of target types source?
+    relevantTypes: Map<string, TypeSpanAndSourceFile>,
     holeType: string
   ): Promise<Set<TypeSpanAndSourceFile>> {
     const relevantContext = new Set<TypeSpanAndSourceFile>();
@@ -294,11 +281,6 @@ export class TypeScriptDriver implements LanguageDriver {
     const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
 
     // only consider lines that start with let or const
-    // const preludeContent = fs.readFileSync(preludeFilePath).toString("utf8");
-    // const filteredLines = preludeContent.split("\n").filter((line) => {
-    //   return line.slice(0, 3) === "let" || line.slice(0, 5) === "const";
-    // });
-
     for (const source of sources) {
       const sourceContent = fs.readFileSync(source).toString("utf8");
       const filteredLines = sourceContent.split("\n").filter((line) => {
@@ -307,9 +289,8 @@ export class TypeScriptDriver implements LanguageDriver {
 
       // check for relationship between each line and relevant types
       filteredLines.forEach(line => {
+        // TODO: Use the compiler API to split this.
         const splittedLine = line.split(" = ")[0];
-        // console.log(`line: ${line}`)
-        // console.log(`splittedLine: ${splittedLine}`)
 
         const typeSpanPattern = /(^[^:]*: )(.+)/;
         const regexMatch = splittedLine.match(typeSpanPattern)
@@ -320,7 +301,6 @@ export class TypeScriptDriver implements LanguageDriver {
           }
         }
       });
-
     }
 
     return relevantContext;
@@ -336,34 +316,55 @@ export class TypeScriptDriver implements LanguageDriver {
   }
 
 
+  // generateTargetTypesHelper(
+  //   relevantTypes: Map<string, TypeSpanAndSourceFile>,
+  //   currType: string,
+  //   targetTypes: Set<string>
+  // ) {
+  //   // console.log("===Helper===")
+  //   if (this.typeChecker.isFunction(currType)) {
+  //     const functionPattern = /(\(.+\))( => )(.+)(;*)/;
+  //     const rettype = currType.match(functionPattern)![3];
+  //     targetTypes.add(rettype);
+  //     this.generateTargetTypesHelper(relevantTypes, rettype, targetTypes);
+  //
+  //   } else if (this.typeChecker.isTuple(currType)) {
+  //     const elements = this.typeChecker.parseTypeArrayString(currType)
+  //
+  //     elements.forEach(element => {
+  //       targetTypes.add(element)
+  //       this.generateTargetTypesHelper(relevantTypes, element, targetTypes);
+  //     });
+  //   } else {
+  //     if (relevantTypes.has(currType)) {
+  //       const definition = relevantTypes.get(currType)!.typeSpan.split(" = ")[1];
+  //       this.generateTargetTypesHelper(relevantTypes, definition, targetTypes);
+  //     }
+  //   }
+  // }
+
+
   generateTargetTypesHelper(
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
     currType: string,
     targetTypes: Set<string>
   ) {
-    // console.log("===Helper===")
-    // console.log(currType, currType === undefined)
-    if (this.typeChecker.isFunction(currType)) {
-      const functionPattern = /(\(.+\))( => )(.+)(;*)/;
-      const rettype = currType.match(functionPattern)![3];
-      targetTypes.add(rettype);
-      this.generateTargetTypesHelper(relevantTypes, rettype, targetTypes);
+    // Run analysis on currType.
+    const typeAnalysisResult = this.typeChecker.analyzeTypeString(currType);
 
-    } else if (this.typeChecker.isTuple(currType)) {
-      const elements = this.typeChecker.parseTypeArrayString(currType)
+    // Match on its kind.
+    if (this.typeChecker.isFunction2(typeAnalysisResult)) {
+      const rettype = typeAnalysisResult.returnType!;
+      targetTypes.add(rettype.text)
+      this.generateTargetTypesHelper(relevantTypes, rettype.text, targetTypes)
 
-      elements.forEach(element => {
-        targetTypes.add(element)
-        this.generateTargetTypesHelper(relevantTypes, element, targetTypes);
+    } else if (this.typeChecker.isTuple2(typeAnalysisResult)) {
+      typeAnalysisResult.constituents!.forEach(constituent => {
+        targetTypes.add(constituent.text);
+        this.generateTargetTypesHelper(relevantTypes, constituent.text, targetTypes);
       });
-    }
-    // else if (isArray(currType)) {
-    //   const elementType = currType.split("[]")[0];
-    //
-    //   targetTypes.add(elementType)
-    //   getTargetTypesHelper(relevantTypes, elementType, targetTypes);
-    // } 
-    else {
+
+    } else {
       if (relevantTypes.has(currType)) {
         const definition = relevantTypes.get(currType)!.typeSpan.split(" = ")[1];
         this.generateTargetTypesHelper(relevantTypes, definition, targetTypes);
@@ -374,48 +375,62 @@ export class TypeScriptDriver implements LanguageDriver {
 
   // resursive helper for extractRelevantContext
   // checks for nested type equivalence
-  extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, TypeSpanAndSourceFile>, relevantContext: Set<TypeSpanAndSourceFile>, line: string, source: string) {
-    // NOTE: BUGFIX
-    // console.log(`typeSpan: ${typeSpan}`)
-    // console.log(`targetTypes: ${targetTypes}`)
+  // extractRelevantHeadersHelper(typeSpan: string, targetTypes: Set<string>, relevantTypes: Map<string, TypeSpanAndSourceFile>, relevantContext: Set<TypeSpanAndSourceFile>, line: string, source: string) {
+  //   // NOTE: BUGFIX
+  //   // console.log(`typeSpan: ${typeSpan}`)
+  //   // console.log(`targetTypes: ${targetTypes}`)
+  //   targetTypes.forEach(typ => {
+  //     if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
+  //       relevantContext.add({ typeSpan: line, sourceFile: source });
+  //     }
+  //
+  //     if (this.typeChecker.isFunction(typeSpan)) {
+  //       const functionPattern = /(\(.+\))( => )(.+)/;
+  //       const rettype = typeSpan.match(functionPattern)![3];
+  //
+  //       this.extractRelevantHeadersHelper(rettype, targetTypes, relevantTypes, relevantContext, line, source);
+  //
+  //     } else if (this.typeChecker.isTuple(typeSpan)) {
+  //       const elements = this.typeChecker.parseTypeArrayString(typeSpan)
+  //       // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
+  //
+  //       elements.forEach(element => {
+  //         this.extractRelevantHeadersHelper(element, targetTypes, relevantTypes, relevantContext, line, source);
+  //       });
+  //
+  //     }
+  //   });
+  // }
+
+
+  extractRelevantHeadersHelper(
+    typeSpan: string,
+    targetTypes: Set<string>,
+    relevantTypes: Map<string, TypeSpanAndSourceFile>,
+    relevantContext: Set<TypeSpanAndSourceFile>,
+    line: string,
+    source: string
+  ) {
+    const typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan);
+
     targetTypes.forEach(typ => {
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
         relevantContext.add({ typeSpan: line, sourceFile: source });
       }
 
-      if (this.typeChecker.isFunction(typeSpan)) {
-        const functionPattern = /(\(.+\))( => )(.+)/;
-        const rettype = typeSpan.match(functionPattern)![3];
+      if (this.typeChecker.isFunction2(typeAnalysisResult)) {
+        const rettype = typeAnalysisResult.returnType!;
 
-        this.extractRelevantHeadersHelper(rettype, targetTypes, relevantTypes, relevantContext, line, source);
+        this.extractRelevantHeadersHelper(rettype.text, targetTypes, relevantTypes, relevantContext, line, source);
 
-      } else if (this.typeChecker.isTuple(typeSpan)) {
-        const elements = this.typeChecker.parseTypeArrayString(typeSpan)
-        // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
-
-        elements.forEach(element => {
-          this.extractRelevantHeadersHelper(element, targetTypes, relevantTypes, relevantContext, line, source);
+      } else if (this.typeChecker.isTuple2(typeAnalysisResult)) {
+        typeAnalysisResult.constituents!.forEach(constituent => {
+          this.extractRelevantHeadersHelper(constituent.text, targetTypes, relevantTypes, relevantContext, line, source);
         });
 
       }
-
-      // else if (isUnion(typeSpan)) {
-      //   const elements = typeSpan.split(" | ");
-      //
-      //   elements.forEach(element => {
-      //     extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
-      //   });
-      //
-      // else if (isArray(typeSpan)) {
-      //   const elementType = typeSpan.split("[]")[0];
-      //
-      //   if (isTypeEquivalent(elementType, typ, relevantTypes)) {
-      //     extractRelevantContextHelper(elementType, targetTypes, relevantTypes, relevantContext, line);
-      //   }
-      // }
     });
   }
-
 
   // two types are equivalent if they have the same normal forms
   isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
@@ -515,103 +530,97 @@ export class TypeScriptDriver implements LanguageDriver {
     }
   }
 
-  readConfig(configPath: string) {
-    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    this.config = config as GPT4Config;
-    // console.log(this.config);
-  }
+  normalize2(typeSpan: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
+    // NOTE: BUGFIX
+    // console.log(`normalize: ${typeSpan}`)
 
-  generateTypesAndHeadersPrompt(sketchFileContent: string, holeType: string, relevantTypes: string, relevantHeaders: string) {
-    const prompt = [{
-      role: "system",
-      content:
-        [
-          "CODE COMPLETION INSTRUCTIONS:",
-          "- Reply with a functional, idiomatic replacement for the program hole marked '_()' in the provided TypeScript program sketch",
-          "- Reply only with a single replacement term for the unqiue distinguished hole marked '_()'",
-          "Reply only with code",
-          "- DO NOT include the program sketch in your reply",
-          "- DO NOT include a period at the end of your response and DO NOT use markdown",
-          "- DO NOT include a type signature for the program hole, as this is redundant and is already in the provided program sketch"
-        ].join("\n"),
-    }];
-
-    let userPrompt = {
-      role: "user",
-      content: ""
-    };
-
-    if (relevantTypes) {
-      userPrompt.content +=
-        `# The expected type of the goal completion is ${holeType} #
-
-# The following type definitions are likely relevant: #
-${relevantTypes}
-
-      `
-    }
-    if (relevantHeaders) {
-      userPrompt.content += `
-# Consider using these variables relevant to the expected type: #
-${relevantHeaders}
-
-      `;
+    if (typeSpan.slice(typeSpan.length - 2) == " =") {
+      typeSpan = typeSpan.slice(typeSpan.length - 2);
     }
 
-    userPrompt.content += `# Program Sketch to be completed: #\n${removeLines(sketchFileContent).join("\n")}`;
+    let normalForm = "";
 
-    prompt.push(userPrompt);
-    return prompt;
-  };
+    const analysisResult = this.typeChecker.analyzeTypeString(typeSpan)
 
+    // pattern matching for typeSpan
+    // if (this.typeChecker.isPrimitive(typeSpan)) {
+    if (this.typeChecker.isPrimitive2(analysisResult)) {
+      return typeSpan;
 
-  async completeWithLLM(targetDirectoryPath: string, context: Context): Promise<string> {
-    console.log("completeWithLLM TS")
-    let joinedTypes = "";
-    let joinedHeaders = "";
-    context.relevantTypes.forEach((v, _) => {
-      joinedTypes = joinedTypes + v.join("\n") + "\n";
-    })
-    context.relevantHeaders.forEach((v, _) => {
-      joinedHeaders = joinedHeaders + v.join("\n") + "\n";
-    })
-    // Create a prompt.
-    const prompt = this.generateTypesAndHeadersPrompt(
-      fs.readFileSync(path.join(targetDirectoryPath, "sketch.ts"), "utf8"),
-      context.hole,
-      joinedTypes,
-      joinedHeaders
-    );
+      // } else if (this.typeChecker.isObject(typeSpan)) {
+    } else if (this.typeChecker.isObject2(analysisResult)) {
+      // console.log(`isObject: ${typeSpan}`)
+      const elements = typeSpan.slice(1, typeSpan.length - 2).split(";");
+      normalForm += "{";
 
-    // Call the LLM to get completion results back.
-    const apiBase = this.config.apiBase;
-    const deployment = this.config.deployment;
-    const model = this.config.gptModel;
-    const apiVersion = this.config.apiVersion;
-    const apiKey = this.config.apiKey;
+      elements.forEach(element => {
+        if (element !== "") {
+          const kv = element.split(": ");
+          normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize(kv[1], relevantTypes);
+          normalForm += "; ";
+        }
+      });
 
-    const openai = new OpenAI({
-      apiKey,
-      baseURL: `${apiBase}/openai/deployments/${deployment}`,
-      defaultQuery: { "api-version": apiVersion },
-      defaultHeaders: { "api-key": apiKey }
-    })
+      normalForm += "}";
+      return normalForm;
 
-    const llmResult = await openai.chat.completions.create({
-      model,
-      messages: prompt as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-      temperature: this.config.temperature
-    })
+      // } else if (this.typeChecker.isTuple(typeSpan)) {
+    } else if (this.typeChecker.isTuple2(analysisResult)) {
+      // console.log(`isTuple: ${typeSpan}`)
+      // const elements = typeSpan.slice(1, typeSpan.length - 1).split(", ");
+      const elements = this.typeChecker.parseTypeArrayString(typeSpan)
+      normalForm += "[";
 
-    console.log(llmResult.choices[0].message.content!);
-    return llmResult.choices[0].message.content!;
+      elements.forEach((element, i) => {
+        normalForm += this.normalize(element, relevantTypes);
+        if (i < elements.length - 1) {
+          normalForm += ", ";
+        }
+      });
+
+      normalForm += "]";
+      return normalForm;
+
+      // } else if (this.typeChecker.isUnion(typeSpan)) {
+    } else if (this.typeChecker.isUnion2(analysisResult)) {
+      // console.log(`isUnion: ${typeSpan}`)
+      const elements = typeSpan.split(" | ");
+
+      elements.forEach((element, i) => {
+        normalForm += "("
+        normalForm += this.normalize(element, relevantTypes)
+        normalForm += ")";
+        if (i < elements.length - 1) {
+          normalForm += " | ";
+        }
+      });
+
+      return normalForm;
+
+      // } else if (this.typeChecker.isArray(typeSpan)) {
+    } else if (this.typeChecker.isArray2(analysisResult)) {
+      // console.log(`isArray: ${typeSpan}`)
+      const element = typeSpan.split("[]")[0];
+
+      normalForm += this.normalize(element, relevantTypes)
+      normalForm += "[]";
+      return normalForm;
+
+      // } else if (this.typeChecker.isTypeAlias(typeSpan)) {
+    } else if (this.typeChecker.isTypeAlias2(analysisResult)) {
+      const typ = relevantTypes.get(typeSpan)!.typeSpan.split(" = ")[1];
+      if (typ === undefined) {
+        return typeSpan;
+      }
+
+      normalForm += this.normalize(typ, relevantTypes);
+      return normalForm;
+
+    } else {
+      // console.log(`else: ${typeSpan}`)
+      return typeSpan;
+    }
   }
-
-
-  // async correctWithLLM(targetDirectoryPath: string, context: Context, message: string) {
-  //   const errorCorrectionPrompt = this.generateTypesAndHeadersPrompt(message);
-  // }
-
 }
 
 

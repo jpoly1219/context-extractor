@@ -5,8 +5,8 @@ import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantHeaders } from "./core";
 import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractHeadersWithCodeQL, extractHoleType, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
 import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants";
-import { Language } from "./types";
-import { App } from "./app";
+import { Context, Language } from "./types";
+import { App, CompletionEngine } from "./app";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
 export const extract = async (sketchPath: string) => {
@@ -172,10 +172,10 @@ export const extract = async (sketchPath: string) => {
   }
   // console.log("relevantTypes:", relevantTypes);
 
-  // logFile.end();
-  // logFile.close();
-  // outputFile.end();
-  // outputFile.close();
+  logFile.end();
+  logFile.close();
+  outputFile.end();
+  outputFile.close();
 
   const preludeContent = fs.readFileSync(`${rootPath}/prelude.ts`).toString("utf8");
   const relevantHeaders = extractRelevantHeaders(preludeContent, relevantTypes, holeContext.functionTypeSpan);
@@ -231,20 +231,38 @@ export const extractWithCodeQL = async (sketchPath: string) => {
 }
 
 
-export const extractContext = async (language: Language, sketchPath: string, repoPath: string, credentialsPath: string, getCompletion: boolean) => {
-  const app = new App(language, sketchPath, repoPath, credentialsPath);
+export const extractContext = async (
+  language: Language,
+  sketchPath: string,
+  repoPath: string,
+) => {
+  const app = new App(language, sketchPath, repoPath);
   await app.run();
   const res = app.getSavedResult();
-  if (!getCompletion) {
-    await app.close()
-    return { context: res, completion: "" };
-  } else {
-    if (res) {
-      const completion = await app.completeWithLLM(path.dirname(sketchPath), res);
-      await app.close()
-      return { context: res, completion: completion };
-    }
-    await app.close()
-    return { context: null, completion: null };
-  }
+  app.close();
+  return res;
+
+  // if (!getCompletion) {
+  //   await app.close()
+  //   return { context: res, completion: "" };
+  // } else {
+  //   if (res) {
+  //     const completion = await app.completeWithLLM(path.dirname(sketchPath), res);
+  //     await app.close()
+  //     return { context: res, completion: completion };
+  //   }
+  //   await app.close()
+  //   return { context: null, completion: null };
+  // }
+}
+
+export const completeWithLLM = async (
+  ctx: Context,
+  language: Language,
+  sketchPath: string,
+  configPath: string
+) => {
+  const engine = new CompletionEngine(language, sketchPath, configPath);
+  const completion = await engine.completeWithLLM(ctx);
+  return completion;
 }

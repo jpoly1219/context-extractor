@@ -70,7 +70,7 @@ dune build
 
 Ignore the wildcard build errors. The command is meant to setup the modules and imports.
 
-Almost there! Create a `credentials.json` file following the steps at the **credentials.json** section below in the README.
+Almost there! Create a `config.json` file following the steps at the **config.json** section below in the README.
 
 Finally, build and run.
 
@@ -88,16 +88,21 @@ node dist/runner.js
 3. Extract relevant headers.
 4. Optionally complete the hole with an LLM.
 
-This library exposes the method `extractContext`, which has the following definition:
+This library exposes two methods `extractContext` and `completeWithLLM`, which have the following definitions:
 
 ```ts
 const extractContext = async (
   language: Language,
   sketchPath: string,
   repoPath: string,
-  credentialsPath: string,
-  getCompletion: boolean
-): Promise<{ context: Context | null, completion: string | null }
+): Promise<Context | null>;
+
+const completeWithLLM = async (
+  ctx: Context,
+  language: Language,
+  sketchPath: string,
+  configPath: string
+): Promise<string>;
 
 enum Language {
   TypeScript,
@@ -105,22 +110,26 @@ enum Language {
 }
 
 interface Context {
-  hole: string,
-  relevantTypes: Map<string, string[]>,
-  relevantHeaders: Map<string, string[]>
+  holeType: string,
+  relevantTypes: Map<Filepath, RelevantType[]>,
+  relevantHeaders: Map<Filepath, RelevantHeader[]>
 }
+
+type Filepath = string;
+type RelevantType = string;
+type RelevantHeader = string;
 ```
 
-- `sketchPath` is the full path to your sketch file with the typed hole construct (`_()` for TypeScript, `_` for OCaml).
+- `sketchPath` is the full path to your sketch file with the typed hole construct (`_()` for TypeScript, `_` for OCaml). This is NOT prefixed with `file://`.
 - `repoPath` is the full path to your repository root.
-- `credentialsPath` is the full path to your `credentials.json`.
-- `getCompletion` is a flag to set if you want the LLM to complete the typed hole. This completion is saved in the `completion` field of the return result.
-- `null` values will only be set if something goes wrong internally. When `getCompletion` is set to false, the `completion` field's value will be an empty string.
+- `configPath` is the full path to your `config.json`.
+- `null` values will only be set if something goes wrong internally.
+- `ctx` is the result from `extractContext`.
 
-### credentials.json
+### config.json
 
 The extractor calls OpenAI for code completion.
-For this you need a `credentials.json` file that holds your specific OpenAI parameters.
+For this you need a `config.json` file that holds your specific OpenAI parameters.
 
 The json has the following format:
 
@@ -137,7 +146,7 @@ The json has the following format:
 }
 ```
 
-Internally, this is how fields above are populated when creating a new OpenAI client.
+Internally, this is how the credentials are populated when creating a new OpenAI client.
 
 ```ts
 const openai = new OpenAI({

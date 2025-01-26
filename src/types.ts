@@ -56,7 +56,7 @@ interface typesAndLocationsQueryResult {
 }
 
 interface LanguageDriver {
-  init: (lspClient: LspClient, sketchPath: string, credentialsPath: string) => Promise<void>;
+  init: (lspClient: LspClient, sketchPath: string) => Promise<void>;
   getHoleContext: (
     lspClient: LspClient,
     sketchFilePath: string,
@@ -88,14 +88,18 @@ interface LanguageDriver {
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
     holeType: string
   ) => Promise<Set<TypeSpanAndSourceFile>>;
-  completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
+  // completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
   // correctWithLLM: (targetDirectoryPath: string, context: Context, message: string) => Promise<string>;
 }
 
+type Filepath = string;
+type RelevantType = string;
+type RelevantHeader = string;
+
 interface Context {
-  hole: string,
-  relevantTypes: Map<string, string[]>,
-  relevantHeaders: Map<string, string[]>
+  holeType: string,
+  relevantTypes: Map<Filepath, RelevantType[]>,
+  relevantHeaders: Map<Filepath, RelevantHeader[]>
 }
 
 enum Language {
@@ -140,4 +144,19 @@ interface GPT4PromptComponent {
   content: string;
 }
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent }
+interface TypeAnalysis {
+  kind: string;
+  text: string;
+  constituents?: TypeAnalysis[];
+  parameters?: ParameterAnalysis[];
+  returnType?: TypeAnalysis;
+  heritage?: TypeAnalysis[][];
+}
+
+interface ParameterAnalysis {
+  name: string;
+  optional: boolean;
+  type: TypeAnalysis;
+}
+
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis }

@@ -1,4 +1,4 @@
-import { extract, extractContext } from "./main";
+import { completeWithLLM, extractContext } from "./main";
 import { Context, Language } from "./types";
 
 // extract("/home/jacob/projects/context-extractor/targets/todo/sketch.ts").then(r => console.log("todo\n", r));
@@ -13,26 +13,35 @@ import { Context, Language } from "./types";
       Language.TypeScript,
       "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
       "/home/jacob/projects/context-extractor/targets/todo/",
-      "/home/jacob/projects/context-extractor/credentials.json",
-      false
     )
     console.dir(x, { depth: null })
 
-    const y = await extractContext(
-      Language.OCaml,
-      "/home/jacob/projects/context-extractor/targets/ocaml/todo/sketch.ml",
-      "/home/jacob/projects/context-extractor/targets/ocaml/todo/",
-      "/home/jacob/projects/context-extractor/credentials.json",
-      false
-    );
-    console.dir(y, { depth: null })
+    // const y = await completeWithLLM(
+    //   x!,
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
+    //   "/home/jacob/projects/context-extractor/credentials.json"
+    // )
+    //
+    // console.dir(y)
+
+    // const y = await extractContext(
+    //   Language.OCaml,
+    //   "/home/jacob/projects/context-extractor/targets/ocaml/todo/sketch.ml",
+    //   "/home/jacob/projects/context-extractor/targets/ocaml/todo/",
+    //   "/home/jacob/projects/context-extractor/config.json"
+    // );
+    // console.dir(y, { depth: null })
+  } catch (err) {
+    console.log("top level err: ", err)
   } finally {
     // Debug active handles if the app doesn't terminate
     // if ((process as any)._getActiveHandles().length > 0) {
-    //   console.log("Active handles detected:");
-    //   console.log((process as any)._getActiveHandles());
+    //   // console.log(`${(process as any)._getActiveHandles().length} active handles detected:`);
+    //   // console.log((process as any)._getActiveHandles());
+    //   console.log(`${(process as any)._getActiveHandles().length} active handles detected.`);
     // }
-    process.exit(0);
+    // process.exit(0);
   }
 })();
 

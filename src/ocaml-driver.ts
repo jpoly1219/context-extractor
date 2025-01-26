@@ -11,17 +11,8 @@ import ocamlParser = require("../src/ocaml-utils/_build/default/test_parser.bc.j
 
 export class OcamlDriver implements LanguageDriver {
   typeChecker: OcamlTypeChecker = new OcamlTypeChecker();
-  config: GPT4Config = {
-    model: Model.GPT4,
-    apiBase: "",
-    deployment: "",
-    gptModel: "",
-    apiVersion: "",
-    apiKey: "",
-    temperature: 0.6
-  };
 
-  async init(lspClient: LspClient, sketchPath: string, credentialsPath: string) {
+  async init(lspClient: LspClient, sketchPath: string) {
     const capabilities: ClientCapabilities = {
       'textDocument': {
         'codeAction': { 'dynamicRegistration': true },
@@ -109,7 +100,6 @@ export class OcamlDriver implements LanguageDriver {
       }
     });
 
-    this.readConfig(credentialsPath);
   }
 
 
@@ -397,21 +387,6 @@ export class OcamlDriver implements LanguageDriver {
         });
 
       }
-
-      // else if (isUnion(typeSpan)) {
-      //   const elements = typeSpan.split(" | ");
-      //
-      //   elements.forEach(element => {
-      //     extractRelevantContextHelper(element, relevantTypes, relevantContext, line);
-      //   });
-      //
-      // else if (isArray(typeSpan)) {
-      //   const elementType = typeSpan.split("[]")[0];
-      //
-      //   if (isTypeEquivalent(elementType, typ, relevantTypes)) {
-      //     extractRelevantContextHelper(elementType, targetTypes, relevantTypes, relevantContext, line);
-      //   }
-      // }
     });
   }
 
@@ -480,98 +455,6 @@ export class OcamlDriver implements LanguageDriver {
     } else {
       return typeSpan;
     }
-  }
-
-
-  readConfig(configPath: string) {
-    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    this.config = config as GPT4Config;
-  }
-
-  generateTypesAndHeadersPrompt(sketchFileContent: string, holeType: string, relevantTypes: string, relevantHeaders: string) {
-    const prompt = [{
-      role: "system",
-      content:
-        [
-          "CODE COMPLETION INSTRUCTIONS:",
-          "- Reply with a functional, idiomatic replacement for the program hole marked '_' in the provided OCaml program sketch",
-          "- Reply only with a single replacement term for the unqiue distinguished hole marked '_'",
-          "Reply only with code",
-          "- DO NOT include the program sketch in your reply",
-          "- DO NOT include a period at the end of your response and DO NOT use markdown",
-          "- DO NOT include a type signature for the program hole, as this is redundant and is already in the provided program sketch"
-        ].join("\n"),
-    }];
-
-    let userPrompt = {
-      role: "user",
-      content: ""
-    };
-
-    if (relevantTypes) {
-      userPrompt.content +=
-        `# The expected type of the goal completion is ${holeType} #
-
-# The following type definitions are likely relevant: #
-${relevantTypes}
-
-`
-    }
-    if (relevantHeaders) {
-      userPrompt.content += `
-# Consider using these variables relevant to the expected type: #
-${relevantHeaders}
-
-`;
-    }
-
-    userPrompt.content += `# Program Sketch to be completed: #\n${removeLines(sketchFileContent).join("\n")}`;
-
-    prompt.push(userPrompt);
-    return prompt;
-  };
-
-
-  async completeWithLLM(targetDirectoryPath: string, context: Context): Promise<string> {
-    let joinedTypes = "";
-    let joinedHeaders = "";
-    context.relevantTypes.forEach((v, _) => {
-      joinedTypes = joinedTypes + v.join("\n") + "\n";
-    })
-    context.relevantHeaders.forEach((v, _) => {
-      joinedHeaders = joinedHeaders + v.join("\n") + "\n";
-    })
-    // Create a prompt.
-    const prompt = this.generateTypesAndHeadersPrompt(
-      fs.readFileSync(path.join(targetDirectoryPath, "sketch.ml"), "utf8"),
-      context.hole,
-      joinedTypes,
-      joinedHeaders
-    );
-    console.log(prompt)
-
-    // Call the LLM to get completion results back.
-    const apiBase = this.config.apiBase;
-    const deployment = this.config.deployment;
-    const model = this.config.gptModel;
-    const apiVersion = this.config.apiVersion;
-    const apiKey = this.config.apiKey;
-
-    const openai = new OpenAI({
-      apiKey,
-      baseURL: `${apiBase}/openai/deployments/${deployment}`,
-      defaultQuery: { "api-version": apiVersion },
-      defaultHeaders: { "api-key": apiKey }
-    })
-
-    const llmResult = await openai.chat.completions.create({
-      model,
-      messages: prompt as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-      temperature: this.config.temperature
-    })
-    console.log(JSON.stringify(llmResult, null, 2))
-
-    return llmResult.choices[0].message.content!;
   }
 }
 
