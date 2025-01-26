@@ -5,6 +5,7 @@ dist/
 *.csv
 # *.json
 credentials.json
+config.json
 .env
 venv
 codeql
