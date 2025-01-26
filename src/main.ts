@@ -235,9 +235,8 @@ export const extractContext = async (
   language: Language,
   sketchPath: string,
   repoPath: string,
-  credentialsPath: string
 ) => {
-  const app = new App(language, sketchPath, repoPath, credentialsPath);
+  const app = new App(language, sketchPath, repoPath);
   await app.run();
   const res = app.getSavedResult();
   app.close();
@@ -261,9 +260,9 @@ export const completeWithLLM = async (
   ctx: Context,
   language: Language,
   sketchPath: string,
-  credentialsPath: string
+  configPath: string
 ) => {
-  const engine = new CompletionEngine(language, sketchPath, credentialsPath);
+  const engine = new CompletionEngine(language, sketchPath, configPath);
   const completion = await engine.completeWithLLM(ctx);
   return completion;
 }
