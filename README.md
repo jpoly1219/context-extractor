@@ -70,7 +70,7 @@ dune build
 
 Ignore the wildcard build errors. The command is meant to setup the modules and imports.
 
-Almost there! Create a `credentials.json` file following the steps at the **credentials.json** section below in the README.
+Almost there! Create a `config.json` file following the steps at the **config.json** section below in the README.
 
 Finally, build and run.
 
@@ -95,15 +95,13 @@ const extractContext = async (
   language: Language,
   sketchPath: string,
   repoPath: string,
-  credentialsPath: string
 ): Promise<Context | null>;
 
-const extractContext = async (
+const completeWithLLM = async (
   ctx: Context,
   language: Language,
   sketchPath: string,
-  repoPath: string,
-  credentialsPath: string
+  configPath: string
 ): Promise<string>;
 
 enum Language {
@@ -122,16 +120,16 @@ type RelevantType = string;
 type RelevantHeader = string;
 ```
 
-- `sketchPath` is the full path to your sketch file with the typed hole construct (`_()` for TypeScript, `_` for OCaml).
+- `sketchPath` is the full path to your sketch file with the typed hole construct (`_()` for TypeScript, `_` for OCaml). This is NOT prefixed with `file://`.
 - `repoPath` is the full path to your repository root.
-- `credentialsPath` is the full path to your `credentials.json`.
+- `configPath` is the full path to your `config.json`.
 - `null` values will only be set if something goes wrong internally.
 - `ctx` is the result from `extractContext`.
 
-### credentials.json
+### config.json
 
 The extractor calls OpenAI for code completion.
-For this you need a `credentials.json` file that holds your specific OpenAI parameters.
+For this you need a `config.json` file that holds your specific OpenAI parameters.
 
 The json has the following format:
 
@@ -148,7 +146,7 @@ The json has the following format:
 }
 ```
 
-Internally, this is how fields above are populated when creating a new OpenAI client.
+Internally, this is how the credentials are populated when creating a new OpenAI client.
 
 ```ts
 const openai = new OpenAI({
