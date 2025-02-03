@@ -1,6 +1,7 @@
 // import { LspClient } from "../ts-lsp-client-dist/src/lspClient";
 // import { Range } from "../ts-lsp-client-dist/src/models";
-import { LspClient, Range } from "ts-lsp-client";
+// import { LspClient, Range } from "ts-lsp-client";
+import { LspClient, Range } from "dist/ts-lsp-client-dist/src/main";
 import * as fs from "fs"
 
 interface relevantTypeObject {
