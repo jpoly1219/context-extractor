@@ -103,14 +103,15 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
   "include": [
-    "./src/**/*"
+    "./src/**/*",
+    "./ts-lsp-client-dist/**/*"
   ],
   "exclude": [
     "./src/ocaml-utils/**/*",
     "./node_modules/**/*",
     "./build/**/*",
     "./targets/**/*",
-    "./ts-lsp-client-dist/**/*",
+    // "./ts-lsp-client-dist/**/*",
     "./ts-lsp-client-dist-bak/**/*"
   ]
 }
