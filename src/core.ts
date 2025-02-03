@@ -1,6 +1,6 @@
-// import { LspClient, MarkupContent, Location, SymbolInformation, Range } from "../ts-lsp-client-dist/src/main.js"
+import { LspClient, MarkupContent, Location, SymbolInformation, Range } from "../ts-lsp-client-dist/src/main.js"
 // import { LspClient, MarkupContent, Location, SymbolInformation, Range } from "ts-lsp-client"
-import { LspClient, MarkupContent, Location, SymbolInformation, Range } from "dist/ts-lsp-client-dist/src/main"
+// import { LspClient, MarkupContent, Location, SymbolInformation, Range } from "dist/ts-lsp-client-dist/src/main"
 import { indexOfRegexGroup, formatTypeSpan, extractSnippet, isTuple, isUnion, isArray, isObject, isFunction, isPrimitive, isTypeAlias, parseTypeArrayString } from "./utils.js";
 import * as fs from "fs";
 import { execSync } from "child_process";

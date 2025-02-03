@@ -1,6 +1,6 @@
-// import { JSONRPCEndpoint, LspClient, ClientCapabilities } from "../ts-lsp-client-dist/src/main.js"
+import { JSONRPCEndpoint, LspClient, ClientCapabilities } from "../ts-lsp-client-dist/src/main.js"
 // import { JSONRPCEndpoint, LspClient, ClientCapabilities } from "ts-lsp-client"
-import { JSONRPCEndpoint, LspClient, ClientCapabilities } from "dist/ts-lsp-client-dist/src/main"
+// import { JSONRPCEndpoint, LspClient, ClientCapabilities } from "dist/ts-lsp-client-dist/src/main"
 import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";

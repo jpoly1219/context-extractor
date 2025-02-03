@@ -3,9 +3,8 @@ import * as fs from "fs";
 import { spawn } from "child_process";
 import { execSync } from "child_process";
 import OpenAI from "openai";
-// import { LspClient, JSONRPCEndpoint } from "../ts-lsp-client-dist/src/main";
+import { LspClient, JSONRPCEndpoint } from "../ts-lsp-client-dist/src/main";
 // import { LspClient, JSONRPCEndpoint } from "ts-lsp-client";
-import { LspClient, JSONRPCEndpoint } from "dist/ts-lsp-client-dist/src/main";
 import { Language, LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config } from "./types";
 // TODO: Bundle the drivers as barrel exports.
 import { TypeScriptDriver } from "./typescript-driver";
