@@ -1,6 +1,7 @@
-import { LspClient } from "../ts-lsp-client-dist/src/lspClient";
+// import { LspClient } from "../ts-lsp-client-dist/src/lspClient";
+// import { Range } from "../ts-lsp-client-dist/src/models";
+import { LspClient, Range } from "ts-lsp-client";
 import * as fs from "fs"
-import { Range } from "../ts-lsp-client-dist/src/models";
 
 interface relevantTypeObject {
   typeAliasDeclaration: string;
