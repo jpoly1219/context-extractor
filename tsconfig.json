@@ -27,8 +27,8 @@
     // "moduleResolution": "node10",                     /* Specify how TypeScript looks up a file from a given module specifier. */
     "baseUrl": "./", /* Specify the base directory to resolve non-relative module names. */
     "paths": {
-      "ts-lsp-client": [
-        "./ts-lsp-client-dist/src/main"
+      "ts-lsp-client-dist/*": [
+        "./ts-lsp-client-dist/*"
       ]
     }, /* Specify a set of entries that re-map imports to additional lookup locations. */
     // "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
@@ -103,8 +103,8 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
   "include": [
-    "./src/**/*",
-    "./ts-lsp-client-dist/**/*"
+    "src/**/*",
+    "ts-lsp-client-dist/**/*"
   ],
   "exclude": [
     "./src/ocaml-utils/**/*",
