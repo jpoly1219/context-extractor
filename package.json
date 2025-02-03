@@ -1,19 +1,18 @@
 {
   "name": "@jpoly1219/context-extractor",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Extract relevant context from an incomplete program sketch.",
   "repository": {
     "type": "git",
     "url": "https://github.com/jpoly1219/context-extractor.git"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "files": [
-    "dist",
-    "dist/ts-lsp-client-dist"
+    "dist/"
   ],
   "scripts": {
-    "build": "mkdir dist/ && cp -r ts-lsp-client-dist dist/ && npx tsc",
+    "build": "npx tsc && cp -r ts-lsp-client-dist dist/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

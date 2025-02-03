@@ -23,11 +23,11 @@
     // "moduleDetection": "auto",                        /* Control what method is used to detect module-format JS files. */
     /* Modules */
     "module": "commonjs", /* Specify what module code is generated. */
-    // "rootDir": "./src", /* Specify the root folder within your source files. */
+    "rootDir": "./", /* Specify the root folder within your source files. */
     // "moduleResolution": "node10",                     /* Specify how TypeScript looks up a file from a given module specifier. */
     "baseUrl": "./", /* Specify the base directory to resolve non-relative module names. */
     "paths": {
-      "ts-lsp-client-dist/*": [
+      "../ts-lsp-client-dist/*": [
         "./ts-lsp-client-dist/*"
       ]
     }, /* Specify a set of entries that re-map imports to additional lookup locations. */
@@ -103,14 +103,15 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
   "include": [
-    "src/**/*",
-    "ts-lsp-client-dist/**/*"
+    "src/**/*"
+    // "ts-lsp-client-dist/**/*"
   ],
   "exclude": [
     "./src/ocaml-utils/**/*",
     "./node_modules/**/*",
     "./build/**/*",
     "./targets/**/*",
+    "./dist/**/*",
     // "./ts-lsp-client-dist/**/*",
     "./ts-lsp-client-dist-bak/**/*"
   ]
