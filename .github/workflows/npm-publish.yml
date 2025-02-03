@@ -18,6 +18,8 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
           scope: "@jpoly1219"
+      - run: mkdir dist
+      - run: cp -r ts-lsp-client-dist dist/
       - run: npm ci
       - run: npm run build
       - run: npm publish --access public
