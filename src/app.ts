@@ -120,6 +120,7 @@ export class App {
         holeContext.source,
       );
 
+
       // Postprocess the map.
       if (this.language === Language.TypeScript) {
         relevantTypes.delete("_()");
@@ -130,7 +131,7 @@ export class App {
         relevantTypes.delete("_");
       }
 
-      console.log(path.join(path.dirname(this.sketchPath), `sketch${path.extname(this.sketchPath)}`))
+      // console.log(relevantTypes)
 
       let repo: string[] = [];
       if (this.language === Language.TypeScript) {
@@ -145,6 +146,8 @@ export class App {
         relevantTypes,
         holeContext.functionTypeSpan
       );
+
+      // console.log(relevantHeaders)
 
       // Postprocess the map.
       if (this.language === Language.TypeScript) {
