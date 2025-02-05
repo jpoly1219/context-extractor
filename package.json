@@ -1,6 +1,6 @@
 {
   "name": "@jpoly1219/context-extractor",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Extract relevant context from an incomplete program sketch.",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
     "dist/"
   ],
   "scripts": {
-    "build": "npx tsc && npm run copy-deps",
+    "build": "rm -rf dist/ && npx tsc && npm run copy-deps",
     "copy-deps": "npm run copy-lsp-client && npm run copy-ocaml",
     "copy-lsp-client": "shx cp -r ts-lsp-client-dist dist/",
     "copy-ocaml": "shx mkdir -p dist/src/ocaml-utils/ && shx cp -r src/ocaml-utils/_build dist/src/ocaml-utils/_build/",
