@@ -451,10 +451,18 @@ export class TypeScriptDriver implements LanguageDriver {
   normalize(typeSpan: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
     // NOTE: BUGFIX
     // console.log(`normalize: ${typeSpan}`)
+    // console.log(`normalize: ${typeSpan}`)
+    // console.log(`normalize: ${typeSpan == undefined}`)
 
     if (typeSpan.slice(typeSpan.length - 2) == " =") {
-      typeSpan = typeSpan.slice(typeSpan.length - 2);
+      typeSpan = typeSpan.slice(0, typeSpan.length - 2);
     }
+
+    if (typeSpan.slice(typeSpan.length - 1) == ";") {
+      typeSpan = typeSpan.slice(0, typeSpan.length - 1);
+    }
+
+    // console.log(typeSpan)
 
     let normalForm = "";
 
@@ -535,10 +543,16 @@ export class TypeScriptDriver implements LanguageDriver {
   normalize2(typeSpan: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
     // NOTE: BUGFIX
     // console.log(`normalize: ${typeSpan}`)
+    // console.log(`normalize: ${typeSpan == undefined}`)
 
     if (typeSpan.slice(typeSpan.length - 2) == " =") {
-      typeSpan = typeSpan.slice(typeSpan.length - 2);
+      typeSpan = typeSpan.slice(0, typeSpan.length - 2);
     }
+
+    if (typeSpan.slice(typeSpan.length - 1) == ";") {
+      typeSpan = typeSpan.slice(0, typeSpan.length - 1);
+    }
+    // console.log(typeSpan)
 
     let normalForm = "";
 
