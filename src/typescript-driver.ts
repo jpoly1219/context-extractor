@@ -278,7 +278,15 @@ export class TypeScriptDriver implements LanguageDriver {
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
     holeType: string
   ): Promise<Set<TypeSpanAndSourceFile>> {
+    console.time("extractRelevantHeaders");
+
     const relevantContext = new Set<TypeSpanAndSourceFile>();
+    // NOTE: This is necessary because TypeScript sucks.
+    // There is no way to compare objects by value,
+    // so sets of objects starts to accumulate tons of duplicates.
+    const relevantContextMap = new Map<string, TypeSpanAndSourceFile>();
+    const trace: string[] = [];
+    const foundNormalForms = new Map<string, string>();
 
     const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
 
@@ -291,6 +299,11 @@ export class TypeScriptDriver implements LanguageDriver {
 
       // check for relationship between each line and relevant types
       filteredLines.forEach(line => {
+        console.time(`helper, line: ${line}`);
+        let tag = false;
+        if (line === `const initFormState: [[Weekday, TimeOfDay], string] = [["M", "AM"], ""];`) {
+          tag = true;
+        }
         // TODO: Use the compiler API to split this.
         const splittedLine = line.split(" = ")[0];
 
@@ -298,22 +311,37 @@ export class TypeScriptDriver implements LanguageDriver {
         const regexMatch = splittedLine.match(typeSpanPattern)
         if (regexMatch) {
           const returnTypeSpan = regexMatch[2];
+          // console.log(`returnTypeSpan: ${returnTypeSpan}`)
+
+          // const typeAnalysisResult = this.typeChecker.analyzeTypeString(returnTypeSpan);
+          // console.log(`typeAnalysisResult: ${JSON.stringify(typeAnalysisResult, null, 2)}`)
+
           if (!this.typeChecker.isPrimitive(returnTypeSpan.split(" => ")[1])) {
-            this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine, source);
+            this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine, source, relevantContextMap, tag, trace, foundNormalForms);
           }
         }
+        console.timeEnd(`helper, line: ${line}`);
       });
     }
+    console.log(JSON.stringify(relevantContextMap, null, 2))
+    console.log(relevantContextMap.keys())
 
+    for (const v of relevantContextMap.values()) {
+      relevantContext.add(v);
+    }
+
+    console.timeEnd("extractRelevantHeaders");
     return relevantContext;
   }
 
 
   generateTargetTypes(relevantTypes: Map<string, TypeSpanAndSourceFile>, holeType: string) {
+    console.time("generateTargetTypes");
     const targetTypes = new Set<string>();
     targetTypes.add(holeType);
     this.generateTargetTypesHelper(relevantTypes, holeType, targetTypes);
 
+    console.timeEnd("generateTargetTypes");
     return targetTypes;
   }
 
@@ -411,37 +439,70 @@ export class TypeScriptDriver implements LanguageDriver {
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
     relevantContext: Set<TypeSpanAndSourceFile>,
     line: string,
-    source: string
+    source: string,
+    relevantContextMap: Map<string, TypeSpanAndSourceFile>,
+    tag: boolean,
+    trace: string[],
+    foundNormalForms: Map<string, string>
   ) {
+    if (tag) {
+      console.time(`extractRelevantHeadersHelper, typeSpan: ${typeSpan}`)
+      trace.push(typeSpan)
+      // console.log(trace)
+    }
+    // TODO: this can probably done at the top level.
+    // analyzeTypeString is recursive by itself.
     const typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan);
 
     targetTypes.forEach(typ => {
-      if (this.isTypeEquivalent(typeSpan, typ, relevantTypes)) {
-        relevantContext.add({ typeSpan: line, sourceFile: source });
+      if (this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms)) {
+        // NOTE: This checks for dupes. ctx is an object so you need to check for each field.
+        // relevantContext.add({ typeSpan: line, sourceFile: source });
+        const ctx = { typeSpan: line, sourceFile: source };
+        relevantContextMap.set(JSON.stringify(ctx), ctx);
       }
 
       if (this.typeChecker.isFunction2(typeAnalysisResult)) {
         const rettype = typeAnalysisResult.returnType!;
 
-        this.extractRelevantHeadersHelper(rettype.text, targetTypes, relevantTypes, relevantContext, line, source);
+        this.extractRelevantHeadersHelper(rettype.text, targetTypes, relevantTypes, relevantContext, line, source, relevantContextMap, tag, trace, foundNormalForms);
 
       } else if (this.typeChecker.isTuple2(typeAnalysisResult)) {
         typeAnalysisResult.constituents!.forEach(constituent => {
-          this.extractRelevantHeadersHelper(constituent.text, targetTypes, relevantTypes, relevantContext, line, source);
+          this.extractRelevantHeadersHelper(constituent.text, targetTypes, relevantTypes, relevantContext, line, source, relevantContextMap, tag, trace, foundNormalForms);
         });
 
       }
     });
+    if (tag) {
+      // console.log("\n\n\n")
+      console.timeEnd(`extractRelevantHeadersHelper, typeSpan: ${typeSpan}`)
+    }
   }
 
   // two types are equivalent if they have the same normal forms
-  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
+  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, TypeSpanAndSourceFile>, foundNormalForms: Map<string, string>) {
     // NOTE: BUGFIX
     // console.log(`isTypeEquivalent: ${t1}, ${t2}`)
     // console.log(t1 == undefined)
     // console.log(t2 == undefined)
-    const normT1 = this.normalize(t1, relevantTypes);
-    const normT2 = this.normalize(t2, relevantTypes);
+
+    let normT1 = "";
+    let normT2 = "";
+    if (foundNormalForms.has(t1)) {
+      normT1 = foundNormalForms.get(t1)!;
+    } else {
+      normT1 = this.normalize2(t1, relevantTypes);
+      foundNormalForms.set(t1, normT1);
+    }
+    if (foundNormalForms.has(t2)) {
+      normT2 = foundNormalForms.get(t2)!;
+    } else {
+      normT2 = this.normalize2(t2, relevantTypes);
+      foundNormalForms.set(t2, normT2);
+    }
+    // const normT1 = foundNormalForms.has(t1) ? foundNormalForms.get(t1) : this.normalize2(t1, relevantTypes);
+    // const normT2 = foundNormalForms.has(t2) ? foundNormalForms.get(t2) : this.normalize2(t2, relevantTypes);
     return normT1 === normT2;
   }
 
