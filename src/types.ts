@@ -2,7 +2,7 @@
 // import { Range } from "../ts-lsp-client-dist/src/models";
 // import { LspClient, Range } from "ts-lsp-client";
 // import { LspClient, Range } from "dist/ts-lsp-client-dist/src/main";
-import { LspClient, Range } from "../ts-lsp-client-dist/src/main";
+import { Location, LspClient, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
 import * as fs from "fs"
 
 interface relevantTypeObject {
@@ -82,6 +82,9 @@ interface LanguageDriver {
     endLine: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
+    foundTypeDefinitions: Map<string, Location[]>,
+    foundSymbols: Map<string, SymbolInformation[]>,
+    // foundSymbols: Map<string, Map<number, Range>>,
     // outputFile: fs.WriteStream,
   ) => Promise<Map<string, TypeSpanAndSourceFile>>;
   extractRelevantHeaders: (
