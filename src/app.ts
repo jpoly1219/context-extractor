@@ -27,12 +27,12 @@ export class App {
   private result: Context | null = null;
 
   // Optional timeout for forced termination
-  private timeout = setTimeout(() => {
-    if (!this.languageServer.killed) {
-      console.log('Forcibly killing the process...');
-      this.languageServer.kill('SIGKILL');
-    }
-  }, 5000);
+  // private timeout = setTimeout(() => {
+  //   if (!this.languageServer.killed) {
+  //     console.log('Forcibly killing the process...');
+  //     this.languageServer.kill('SIGKILL');
+  //   }
+  // }, 5000);
 
 
 
@@ -86,7 +86,7 @@ export class App {
     });
     // Clear timeout once the process exits
     this.languageServer.on('exit', () => {
-      clearTimeout(this.timeout);
+      // clearTimeout(this.timeout);
       console.log('Process terminated cleanly.');
     });
 
@@ -107,11 +107,14 @@ export class App {
 
       await this.init();
 
+      console.time("getHoleContext");
       const holeContext = await this.languageDriver.getHoleContext(
         this.lspClient,
         this.sketchPath,
       );
+      console.timeEnd("getHoleContext");
 
+      console.time("extractRelevantTypes");
       const relevantTypes = await this.languageDriver.extractRelevantTypes(
         this.lspClient,
         holeContext.fullHoverResult,
@@ -121,8 +124,10 @@ export class App {
         new Map<string, TypeSpanAndSourceFile>(),
         holeContext.source,
       );
+      console.timeEnd("extractRelevantTypes");
 
       // Postprocess the map.
+      console.time("extractRelevantTypes postprocess");
       if (this.language === Language.TypeScript) {
         relevantTypes.delete("_()");
         for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
@@ -131,25 +136,32 @@ export class App {
       } else if (this.language === Language.OCaml) {
         relevantTypes.delete("_");
       }
+      console.timeEnd("extractRelevantTypes postprocess");
 
+
+      console.time("extractRelevantHeaders repo");
       let repo: string[] = [];
       if (this.language === Language.TypeScript) {
         repo = getAllTSFiles(this.repoPath);
       } else if (this.language === Language.OCaml) {
         repo = getAllOCamlFiles(this.repoPath);
       }
+      console.timeEnd("extractRelevantHeaders repo");
 
+      console.time("extractRelevantHeaders");
       const relevantHeaders = await this.languageDriver.extractRelevantHeaders(
         this.lspClient,
         repo,
         relevantTypes,
         holeContext.functionTypeSpan
       );
+      console.timeEnd("extractRelevantHeaders");
 
       // console.log(relevantHeaders)
       // console.log(relevantHeaders.size)
 
       // Postprocess the map.
+      console.time("extractRelevantHeaders postprocess");
       if (this.language === Language.TypeScript) {
         relevantTypes.delete("");
         for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
@@ -159,7 +171,9 @@ export class App {
           obj.typeSpan += ";";
         }
       }
+      console.timeEnd("extractRelevantHeaders postprocess");
 
+      console.time("toReturn");
       const relevantTypesToReturn: Map<string, string[]> = new Map<string, string[]>();
       relevantTypes.forEach(({ typeSpan: v, sourceFile: src }, _) => {
         if (relevantTypesToReturn.has(src)) {
@@ -184,6 +198,7 @@ export class App {
           relevantHeadersToReturn.set(src, [v]);
         }
       })
+      console.timeEnd("toReturn");
 
       this.result = {
         holeType: holeContext.functionTypeSpan,
