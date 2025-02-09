@@ -11,26 +11,26 @@ import { Context, Language } from "./types";
   try {
     let x;
 
-    x = await extractContext(
-      Language.TypeScript,
-      "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
-      "/home/jacob/projects/context-extractor/targets/todo/",
-    )
-    console.dir(x, { depth: null })
-
-    x = await extractContext(
-      Language.TypeScript,
-      "/home/jacob/projects/context-extractor/targets/playlist/sketch.ts",
-      "/home/jacob/projects/context-extractor/targets/playlist/",
-    )
-    console.dir(x, { depth: null })
-
-    x = await extractContext(
-      Language.TypeScript,
-      "/home/jacob/projects/context-extractor/targets/passwords/sketch.ts",
-      "/home/jacob/projects/context-extractor/targets/passwords/",
-    )
-    console.dir(x, { depth: null })
+    // x = await extractContext(
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
+    //   "/home/jacob/projects/context-extractor/targets/todo/",
+    // )
+    // console.dir(x, { depth: null })
+    //
+    // x = await extractContext(
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/playlist/sketch.ts",
+    //   "/home/jacob/projects/context-extractor/targets/playlist/",
+    // )
+    // console.dir(x, { depth: null })
+    //
+    // x = await extractContext(
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/passwords/sketch.ts",
+    //   "/home/jacob/projects/context-extractor/targets/passwords/",
+    // )
+    // console.dir(x, { depth: null })
 
     x = await extractContext(
       Language.TypeScript,
@@ -39,12 +39,12 @@ import { Context, Language } from "./types";
     )
     console.dir(x, { depth: null })
 
-    x = await extractContext(
-      Language.TypeScript,
-      "/home/jacob/projects/context-extractor/targets/emojipaint/sketch.ts",
-      "/home/jacob/projects/context-extractor/targets/emojipaint/",
-    )
-    console.dir(x, { depth: null })
+    // x = await extractContext(
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/emojipaint/sketch.ts",
+    //   "/home/jacob/projects/context-extractor/targets/emojipaint/",
+    // )
+    // console.dir(x, { depth: null })
 
     // const y = await completeWithLLM(
     //   x!,
