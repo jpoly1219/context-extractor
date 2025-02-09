@@ -77,6 +77,8 @@ export class App {
     this.languageServer = r;
     this.lspClient = c;
 
+    // console.log(r.pid)
+
     this.languageServer.on('close', (code) => {
       if (code !== 0) {
         console.log(`ls process exited with code ${code}`);
@@ -120,7 +122,6 @@ export class App {
         holeContext.source,
       );
 
-
       // Postprocess the map.
       if (this.language === Language.TypeScript) {
         relevantTypes.delete("_()");
@@ -130,8 +131,6 @@ export class App {
       } else if (this.language === Language.OCaml) {
         relevantTypes.delete("_");
       }
-
-      // console.log(relevantTypes)
 
       let repo: string[] = [];
       if (this.language === Language.TypeScript) {
@@ -148,6 +147,7 @@ export class App {
       );
 
       // console.log(relevantHeaders)
+      // console.log(relevantHeaders.size)
 
       // Postprocess the map.
       if (this.language === Language.TypeScript) {
