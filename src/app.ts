@@ -3,7 +3,7 @@ import * as fs from "fs";
 import { spawn } from "child_process";
 import { execSync } from "child_process";
 import OpenAI from "openai";
-import { LspClient, JSONRPCEndpoint } from "../ts-lsp-client-dist/src/main";
+import { LspClient, JSONRPCEndpoint, SymbolInformation, Location, Range } from "../ts-lsp-client-dist/src/main";
 // import { LspClient, JSONRPCEndpoint } from "ts-lsp-client";
 import { Language, LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config } from "./types";
 // TODO: Bundle the drivers as barrel exports.
@@ -123,8 +123,13 @@ export class App {
         holeContext.range.end.line,
         new Map<string, TypeSpanAndSourceFile>(),
         holeContext.source,
+        new Map<string, Location[]>(),
+        new Map<string, SymbolInformation[]>()
+        // new Map<string, Map<number, Range>>(),
       );
       console.timeEnd("extractRelevantTypes");
+
+      // console.dir(relevantTypes, { depth: null })
 
       // Postprocess the map.
       console.time("extractRelevantTypes postprocess");
