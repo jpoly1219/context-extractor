@@ -406,6 +406,8 @@ export class TypeScriptTypeChecker implements TypeChecker {
               text: element.getText(),
               type: this.analyzeTypeNode(element.type, checker)
             };
+          } else if (ts.isNamedTupleMember(element)) {
+            return this.analyzeTypeNode(element.type, checker);
           } else {
             return this.analyzeTypeNode(element, checker);
           }
@@ -561,6 +563,41 @@ export class TypeScriptTypeChecker implements TypeChecker {
 
   isTypeAlias2(typeAnalysisResult: TypeAnalysis) {
     return typeAnalysisResult.kind === "TypeReference";
+  }
+
+  extractIdentifiers(code: string) {
+    const sourceFile = ts.createSourceFile(
+      "sample.ts",
+      code,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS
+    );
+
+    const identifiers: { name: string; start: number; end: number; line: number; column: number }[] = [];
+    this.extractIdentifiersWithPosHelper(sourceFile, sourceFile, identifiers);
+    return identifiers;
+  }
+
+  extractIdentifiersHelper(node: ts.Node, identifiers: Set<string>) {
+    if (ts.isIdentifier(node)) {
+      identifiers.add(node.getText());
+    }
+    node.forEachChild(child => this.extractIdentifiersHelper(child, identifiers));
+  }
+
+  extractIdentifiersWithPosHelper(sourceFile: ts.SourceFile, node: ts.Node, identifiers: { name: string; start: number; end: number; line: number; column: number }[]) {
+    if (ts.isIdentifier(node)) {
+      const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+      identifiers.push({
+        name: node.getText(),
+        start: node.getStart(),
+        end: node.getEnd(),
+        line: line + 1, // Convert 0-based to 1-based
+        column: character + 1 // Convert 0-based to 1-based
+      });
+    }
+    node.forEachChild(child => this.extractIdentifiersWithPosHelper(sourceFile, child, identifiers));
   }
 }
 
