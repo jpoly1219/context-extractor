@@ -193,7 +193,7 @@ export class TypeScriptDriver implements LanguageDriver {
   }
 
 
-  async extractRelevantTypes(
+  async extractRelevantTypes1(
     lspClient: LspClient,
     fullHoverResult: string,
     typeName: string,
@@ -286,7 +286,7 @@ export class TypeScriptDriver implements LanguageDriver {
                   // potentially, this type checker can be its own class.
                   const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
 
-                  await this.extractRelevantTypes(
+                  await this.extractRelevantTypes1(
                     lspClient,
                     snippetInRange,
                     identifier,
@@ -312,6 +312,221 @@ export class TypeScriptDriver implements LanguageDriver {
         }
         // console.timeEnd(`===loop ${content.split("\n")[linePos]}===`);
       }
+    }
+
+    return foundSoFar;
+  }
+
+
+
+  async extractRelevantTypes(
+    lspClient: LspClient,
+    fullHoverResult: string,
+    typeName: string,
+    startLine: number,
+    endLine: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFile>, // identifier -> [full hover result, source]
+    currentFile: string,
+    foundTypeDefinitions: Map<string, Location[]>,
+    foundSymbols: Map<string, SymbolInformation[]>
+    // outputFile: fs.WriteStream,
+  ) {
+    // TODO:
+    // Split the type span into identifiers, where each include the text, line number, and character range.
+    // For each identifier, invoke go to type definition.
+    if (!foundSoFar.has(typeName)) {
+      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
+      // outputFile.write(`${fullHoverResult};\n`);
+
+      const content = fs.readFileSync(currentFile.slice(7), "utf8");
+
+
+      const identifiers = this.typeChecker.extractIdentifiers(fullHoverResult);
+
+      for (const identifier of identifiers) {
+        try {
+          const typeDefinitionResult = await lspClient.typeDefinition({
+            textDocument: {
+              uri: currentFile
+            },
+            position: {
+              character: identifier.start,
+              line: startLine + identifier.line - 1 // startLine is already 1-indexed
+            }
+          });
+
+          if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
+            const tdResultStr = JSON.stringify(typeDefinitionResult as Location[]);
+            if (!foundTypeDefinitions.has(tdResultStr)) {
+              foundTypeDefinitions.set(tdResultStr, typeDefinitionResult as Location[]);
+
+              // Use documentSymbol instead of hover.
+              // This prevents type alias "squashing" done by tsserver.
+              // This also allows for grabbing the entire definition range and not just the symbol range.
+              // PERF: feels like this could be memoized to improve performance.
+
+              // console.time("docSymbol")
+              const tdUri = (typeDefinitionResult[0] as Location).uri;
+              let documentSymbolResult;
+              if (foundSymbols.has(tdUri)) {
+                documentSymbolResult = foundSymbols.get(tdUri)!;
+              } else {
+                documentSymbolResult = await lspClient.documentSymbol({
+                  textDocument: {
+                    uri: (typeDefinitionResult[0] as Location).uri
+                  }
+                }) as SymbolInformation[];
+                foundSymbols.set(tdUri, documentSymbolResult);
+              }
+              // console.timeEnd("docSymbol")
+
+              // console.time("dsMap")
+              const dsMap = documentSymbolResult.reduce((m, obj) => {
+                m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
+                return m;
+              }, new Map<number, Range>());
+              // console.timeEnd("dsMap")
+
+
+              // console.log("\n")
+              // console.dir(typeDefinitionResult, { depth: null })
+              // console.dir(documentSymbolResult, { depth: null })
+              // console.log("\n")
+              // grab if the line number of typeDefinitionResult and documentSymbolResult matches
+              // const dsMap = documentSymbolResult!.reduce((m, obj) => {
+              //   m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
+              //   return m;
+              // }, new Map<number, Range>());
+
+              const matchingSymbolRange: Range | undefined = dsMap.get((typeDefinitionResult[0] as Location).range.start.line);
+              if (matchingSymbolRange) {
+                const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
+                // TODO: this can potentially be its own method. the driver would require some way to get type context.
+                // potentially, this type checker can be its own class.
+                const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
+
+                await this.extractRelevantTypes(
+                  lspClient,
+                  snippetInRange,
+                  identifier,
+                  matchingSymbolRange.start.line,
+                  matchingSymbolRange.end.line,
+                  foundSoFar,
+                  (typeDefinitionResult[0] as Location).uri,
+                  foundTypeDefinitions,
+                  foundSymbols
+                  // outputFile,
+                );
+
+              }
+            }
+          }
+        } catch (err) {
+          console.log(err)
+        }
+      }
+
+
+      // for (let linePos = startLine; linePos <= endLine; ++linePos) {
+      //   // TODO: use a platform-agnostic command here
+      //   const numOfCharsInLine = parseInt(execSync(`wc -m <<< "${content.split("\n")[linePos]}"`, { shell: "/bin/bash" }).toString());
+      //   const numOfCharsInLine2 = content.split("\n")[linePos].length;
+      //   const numOfCharsInLine3 = [...content.split("\n")[linePos]].map(c => c.codePointAt(0)).length;
+      //   // console.log(numOfCharsInLine === numOfCharsInLine2, content.split("\n")[linePos], numOfCharsInLine, numOfCharsInLine2, numOfCharsInLine3)
+      //
+      //   // console.time(`===loop ${content.split("\n")[linePos]}===`);
+      //   for (let charPos = 0; charPos < numOfCharsInLine2; ++charPos) {
+      //     try {
+      //       const typeDefinitionResult = await lspClient.typeDefinition({
+      //         textDocument: {
+      //           uri: currentFile
+      //         },
+      //         position: {
+      //           character: charPos,
+      //           line: linePos
+      //         }
+      //       });
+      //       // if (content.split("\n")[linePos] === `type Action = AddBooking | CancelBooking | ClearBookings;`) {
+      //       //   console.dir(typeDefinitionResult, { depth: null })
+      //       //   console.log(charPos)
+      //       // }
+      //
+      //       if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
+      //         const tdResultStr = JSON.stringify(typeDefinitionResult as Location[]);
+      //         if (!foundTypeDefinitions.has(tdResultStr)) {
+      //           foundTypeDefinitions.set(tdResultStr, typeDefinitionResult as Location[]);
+      //
+      //           // Use documentSymbol instead of hover.
+      //           // This prevents type alias "squashing" done by tsserver.
+      //           // This also allows for grabbing the entire definition range and not just the symbol range.
+      //           // PERF: feels like this could be memoized to improve performance.
+      //
+      //           // console.time("docSymbol")
+      //           const tdUri = (typeDefinitionResult[0] as Location).uri;
+      //           let documentSymbolResult;
+      //           if (foundSymbols.has(tdUri)) {
+      //             documentSymbolResult = foundSymbols.get(tdUri)!;
+      //           } else {
+      //             documentSymbolResult = await lspClient.documentSymbol({
+      //               textDocument: {
+      //                 uri: (typeDefinitionResult[0] as Location).uri
+      //               }
+      //             }) as SymbolInformation[];
+      //             foundSymbols.set(tdUri, documentSymbolResult);
+      //           }
+      //           // console.timeEnd("docSymbol")
+      //
+      //           // console.time("dsMap")
+      //           const dsMap = documentSymbolResult.reduce((m, obj) => {
+      //             m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
+      //             return m;
+      //           }, new Map<number, Range>());
+      //           // console.timeEnd("dsMap")
+      //
+      //
+      //           // console.log("\n")
+      //           // console.dir(typeDefinitionResult, { depth: null })
+      //           // console.dir(documentSymbolResult, { depth: null })
+      //           // console.log("\n")
+      //           // grab if the line number of typeDefinitionResult and documentSymbolResult matches
+      //           // const dsMap = documentSymbolResult!.reduce((m, obj) => {
+      //           //   m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
+      //           //   return m;
+      //           // }, new Map<number, Range>());
+      //
+      //           const matchingSymbolRange: Range | undefined = dsMap.get((typeDefinitionResult[0] as Location).range.start.line);
+      //           if (matchingSymbolRange) {
+      //             const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
+      //             // TODO: this can potentially be its own method. the driver would require some way to get type context.
+      //             // potentially, this type checker can be its own class.
+      //             const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
+      //
+      //             await this.extractRelevantTypes(
+      //               lspClient,
+      //               snippetInRange,
+      //               identifier,
+      //               matchingSymbolRange.start.line,
+      //               matchingSymbolRange.end.line,
+      //               foundSoFar,
+      //               (typeDefinitionResult[0] as Location).uri,
+      //               foundTypeDefinitions,
+      //               foundSymbols
+      //               // outputFile,
+      //             );
+      //
+      //           }
+      //         }
+      //       }
+      //       // else {
+      //       //   console.log(`already found ${tdResultStr}!`)
+      //       // }
+      //
+      //     } catch (err) {
+      //       console.log(`${err}`)
+      //     }
+      //   }
+      //   // console.timeEnd(`===loop ${content.split("\n")[linePos]}===`);
+      // }
     }
 
     return foundSoFar;
@@ -552,6 +767,7 @@ export class TypeScriptDriver implements LanguageDriver {
     }
     // const normT1 = foundNormalForms.has(t1) ? foundNormalForms.get(t1) : this.normalize2(t1, relevantTypes);
     // const normT2 = foundNormalForms.has(t2) ? foundNormalForms.get(t2) : this.normalize2(t2, relevantTypes);
+    // console.log(normT1, normT2)
     return normT1 === normT2;
   }
 
@@ -568,9 +784,10 @@ export class TypeScriptDriver implements LanguageDriver {
       typeSpan = typeSpan.slice(0, typeSpan.length - 2);
     }
 
-    if (typeSpan.slice(typeSpan.length - 1) == ";") {
-      typeSpan = typeSpan.slice(0, typeSpan.length - 1);
-    }
+    // DEBUG
+    // if (typeSpan.slice(typeSpan.length - 1) == ";") {
+    //   typeSpan = typeSpan.slice(0, typeSpan.length - 1);
+    // }
 
     // console.log(typeSpan)
 
@@ -667,6 +884,7 @@ export class TypeScriptDriver implements LanguageDriver {
     let normalForm = "";
 
     const analysisResult = this.typeChecker.analyzeTypeString(typeSpan)
+    // console.dir(analysisResult, { depth: null })
 
     // pattern matching for typeSpan
     // if (this.typeChecker.isPrimitive(typeSpan)) {
@@ -682,7 +900,7 @@ export class TypeScriptDriver implements LanguageDriver {
       elements.forEach(element => {
         if (element !== "") {
           const kv = element.split(": ");
-          normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize(kv[1], relevantTypes);
+          normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize2(kv[1], relevantTypes);
           normalForm += "; ";
         }
       });
@@ -698,7 +916,7 @@ export class TypeScriptDriver implements LanguageDriver {
       normalForm += "[";
 
       elements.forEach((element, i) => {
-        normalForm += this.normalize(element, relevantTypes);
+        normalForm += this.normalize2(element, relevantTypes);
         if (i < elements.length - 1) {
           normalForm += ", ";
         }
@@ -714,7 +932,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
       elements.forEach((element, i) => {
         normalForm += "("
-        normalForm += this.normalize(element, relevantTypes)
+        normalForm += this.normalize2(element, relevantTypes)
         normalForm += ")";
         if (i < elements.length - 1) {
           normalForm += " | ";
@@ -728,18 +946,24 @@ export class TypeScriptDriver implements LanguageDriver {
       // console.log(`isArray: ${typeSpan}`)
       const element = typeSpan.split("[]")[0];
 
-      normalForm += this.normalize(element, relevantTypes)
+      normalForm += this.normalize2(element, relevantTypes)
       normalForm += "[]";
       return normalForm;
 
       // } else if (this.typeChecker.isTypeAlias(typeSpan)) {
     } else if (this.typeChecker.isTypeAlias2(analysisResult)) {
-      const typ = relevantTypes.get(typeSpan)!.typeSpan.split(" = ")[1];
+      // console.log("ALERT!!!!!!")
+      // console.dir(relevantTypes, { depth: null })
+      // console.dir(analysisResult, { depth: null })
+      // console.log("typeSpan:", typeSpan)
+      // console.log("analysis:", analysisResult.text)
+      // console.log(relevantTypes.get(analysisResult.text))
+      const typ = relevantTypes.get(analysisResult.text)!.typeSpan.split(" = ")[1];
       if (typ === undefined) {
         return typeSpan;
       }
 
-      normalForm += this.normalize(typ, relevantTypes);
+      normalForm += this.normalize2(typ, relevantTypes);
       return normalForm;
 
     } else {
