@@ -238,12 +238,12 @@ export const extractContext = async (
   sketchPath: string,
   repoPath: string,
 ) => {
-  console.time("extractContext")
+  // console.time("extractContext")
   const app = new App(language, sketchPath, repoPath);
   await app.run();
   const res = app.getSavedResult();
   app.close();
-  console.timeEnd("extractContext")
+  // console.timeEnd("extractContext")
   return res;
 
   // if (!getCompletion) {
