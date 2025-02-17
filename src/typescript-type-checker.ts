@@ -581,23 +581,87 @@ export class TypeScriptTypeChecker implements TypeChecker {
 
   extractIdentifiersHelper(node: ts.Node, identifiers: Set<string>) {
     if (ts.isIdentifier(node)) {
-      identifiers.add(node.getText());
+      // console.log(node.kind, node.text)
+      if (
+        ts.isTypeReferenceNode(node.parent) ||
+        ts.isTypeAliasDeclaration(node.parent) ||
+        ts.isInterfaceDeclaration(node.parent) ||
+        ts.isClassDeclaration(node.parent) ||
+        ts.isFunctionTypeNode(node.parent)
+      ) {
+        identifiers.add(node.getText());
+      }
     }
     node.forEachChild(child => this.extractIdentifiersHelper(child, identifiers));
   }
 
   extractIdentifiersWithPosHelper(sourceFile: ts.SourceFile, node: ts.Node, identifiers: { name: string; start: number; end: number; line: number; column: number }[]) {
     if (ts.isIdentifier(node)) {
-      const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
-      identifiers.push({
-        name: node.getText(),
-        start: node.getStart(),
-        end: node.getEnd(),
-        line: line + 1, // Convert 0-based to 1-based
-        column: character + 1 // Convert 0-based to 1-based
-      });
+      // console.log(node.kind, node.text)
+      if (
+        ts.isTypeReferenceNode(node.parent) ||
+        ts.isTypeAliasDeclaration(node.parent) ||
+        ts.isInterfaceDeclaration(node.parent) ||
+        ts.isClassDeclaration(node.parent) ||
+        ts.isFunctionTypeNode(node.parent)
+      ) {
+        const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+        identifiers.push({
+          name: node.getText(),
+          start: node.getStart(),
+          end: node.getEnd(),
+          line: line + 1, // Convert 0-based to 1-based
+          column: character + 1 // Convert 0-based to 1-based
+        });
+      }
     }
     node.forEachChild(child => this.extractIdentifiersWithPosHelper(sourceFile, child, identifiers));
+  }
+
+  findDeclarationForIdentifier(
+    sourceCode: string,
+    targetLine: number,
+    targetCharStart: number,
+    targetCharEnd: number
+  ): string | null {
+    const sourceFile = ts.createSourceFile(
+      "sample.ts",
+      sourceCode,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS
+    );
+
+    function findDeclarationForIdentifierHelper(node: ts.Node): string | null {
+      if (ts.isTypeAliasDeclaration(node)) {
+        const identifier = node.name;
+
+        // Get start and end positions for identifier
+        const startPos = sourceFile.getLineAndCharacterOfPosition(identifier.getStart());
+        const endPos = sourceFile.getLineAndCharacterOfPosition(identifier.getEnd());
+
+        // Match the identifier position
+        if (
+          startPos.line === targetLine &&
+          startPos.character === targetCharStart &&
+          endPos.character === targetCharEnd
+        ) {
+          // Extract full declaration text from source code
+          return sourceCode.slice(node.getStart(), node.getEnd());
+        }
+      }
+
+      return ts.forEachChild(node, findDeclarationForIdentifierHelper) || null;
+    }
+
+    const declarationText = findDeclarationForIdentifierHelper(sourceFile);
+    // console.log(`declarationText: ${declarationText}`)
+
+    if (declarationText) {
+      return declarationText;
+    } else {
+      return null;
+    }
   }
 }
 
