@@ -107,32 +107,30 @@ export class App {
 
       await this.init();
 
-      console.time("getHoleContext");
+      // console.time("getHoleContext");
       const holeContext = await this.languageDriver.getHoleContext(
         this.lspClient,
         this.sketchPath,
       );
-      console.timeEnd("getHoleContext");
+      // console.timeEnd("getHoleContext");
 
-      console.time("extractRelevantTypes");
+      // console.time("extractRelevantTypes");
       const relevantTypes = await this.languageDriver.extractRelevantTypes(
         this.lspClient,
-        holeContext.fullHoverResult,
+        // NOTE: sometimes fullHoverResult isn't representative of the actual file contents, especially with generic functions.
+        holeContext.trueHoleFunction ? holeContext.trueHoleFunction : holeContext.fullHoverResult,
         holeContext.functionName,
         holeContext.range.start.line,
-        holeContext.range.end.line,
         new Map<string, TypeSpanAndSourceFile>(),
         holeContext.source,
-        new Map<string, Location[]>(),
-        new Map<string, SymbolInformation[]>()
-        // new Map<string, Map<number, Range>>(),
+        new Map<string, string>()
       );
-      console.timeEnd("extractRelevantTypes");
+      // console.timeEnd("extractRelevantTypes");
 
       // console.dir(relevantTypes, { depth: null })
 
       // Postprocess the map.
-      console.time("extractRelevantTypes postprocess");
+      // console.time("extractRelevantTypes postprocess");
       if (this.language === Language.TypeScript) {
         relevantTypes.delete("_()");
         for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
@@ -141,32 +139,33 @@ export class App {
       } else if (this.language === Language.OCaml) {
         relevantTypes.delete("_");
       }
-      console.timeEnd("extractRelevantTypes postprocess");
+      // console.timeEnd("extractRelevantTypes postprocess");
 
 
-      console.time("extractRelevantHeaders repo");
+      // console.time("extractRelevantHeaders repo");
       let repo: string[] = [];
       if (this.language === Language.TypeScript) {
         repo = getAllTSFiles(this.repoPath);
       } else if (this.language === Language.OCaml) {
         repo = getAllOCamlFiles(this.repoPath);
       }
-      console.timeEnd("extractRelevantHeaders repo");
+      // console.timeEnd("extractRelevantHeaders repo");
 
-      console.time("extractRelevantHeaders");
+      // console.time("extractRelevantHeaders");
       const relevantHeaders = await this.languageDriver.extractRelevantHeaders(
         this.lspClient,
         repo,
         relevantTypes,
         holeContext.functionTypeSpan
       );
-      console.timeEnd("extractRelevantHeaders");
+      // const relevantHeaders: { typeSpan: string, sourceFile: string }[] = []
+      // console.timeEnd("extractRelevantHeaders");
 
       // console.log(relevantHeaders)
       // console.log(relevantHeaders.size)
 
       // Postprocess the map.
-      console.time("extractRelevantHeaders postprocess");
+      // console.time("extractRelevantHaders postprocess");
       if (this.language === Language.TypeScript) {
         relevantTypes.delete("");
         for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
@@ -176,9 +175,9 @@ export class App {
           obj.typeSpan += ";";
         }
       }
-      console.timeEnd("extractRelevantHeaders postprocess");
+      // console.timeEnd("extractRelevantHeaders postprocess");
 
-      console.time("toReturn");
+      // console.time("toReturn");
       const relevantTypesToReturn: Map<string, string[]> = new Map<string, string[]>();
       relevantTypes.forEach(({ typeSpan: v, sourceFile: src }, _) => {
         if (relevantTypesToReturn.has(src)) {
@@ -203,7 +202,7 @@ export class App {
           relevantHeadersToReturn.set(src, [v]);
         }
       })
-      console.timeEnd("toReturn");
+      // console.timeEnd("toReturn");
 
       this.result = {
         holeType: holeContext.functionTypeSpan,

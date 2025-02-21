@@ -73,19 +73,16 @@ interface LanguageDriver {
     holeTypeDefCharPos: number;
     range: Range;
     source: string;
+    trueHoleFunction?: string;
   }>;
   extractRelevantTypes: (
     lspClient: LspClient,
     fullHoverResult: string,
     typeName: string,
     startLine: number,
-    endLine: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
-    foundTypeDefinitions: Map<string, Location[]>,
-    foundSymbols: Map<string, SymbolInformation[]>,
-    // foundSymbols: Map<string, Map<number, Range>>,
-    // outputFile: fs.WriteStream,
+    foundContents: Map<string, string>,
   ) => Promise<Map<string, TypeSpanAndSourceFile>>;
   extractRelevantHeaders: (
     lspClient: LspClient,

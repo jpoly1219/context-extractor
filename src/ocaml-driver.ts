@@ -169,10 +169,8 @@ export class OcamlDriver implements LanguageDriver {
     fullHoverResult: string,
     typeName: string,
     startLine: number,
-    endLine: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
-    // outputFile: fs.WriteStream,
   ) {
     if (!foundSoFar.has(typeName)) {
       foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
@@ -180,7 +178,7 @@ export class OcamlDriver implements LanguageDriver {
 
       const content = fs.readFileSync(currentFile.slice(7), "utf8");
 
-      for (let linePos = startLine; linePos <= endLine; ++linePos) {
+      for (let linePos = startLine; linePos <= fullHoverResult.length; ++linePos) {
         const numOfCharsInLine = parseInt(execSync(`wc -m <<< "${content.split("\n")[linePos]}"`, { shell: "/bin/bash" }).toString());
 
         for (let charPos = 0; charPos < numOfCharsInLine; ++charPos) {
@@ -236,10 +234,8 @@ export class OcamlDriver implements LanguageDriver {
                   snippetInRange,
                   identifier,
                   matchingSymbolRange.start.line,
-                  matchingSymbolRange.end.line,
                   foundSoFar,
                   (typeDefinitionResult[0] as Location).uri,
-                  // outputFile,
                 );
 
               }

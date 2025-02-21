@@ -188,12 +188,13 @@ export class TypeScriptDriver implements LanguageDriver {
       holeTypeDefCharPos: "declare function _(): ".length,
       // range: { start: { line: 0, character: 0 }, end: { line: 0, character: 52 } }
       range: (sketchSymbol![0] as SymbolInformation).location.range,
-      source: `file://${injectedSketchFilePath}`
+      source: `file://${injectedSketchFilePath}`,
+      trueHoleFunction: trueHoleFunction
     };
   }
 
 
-  async extractRelevantTypes(
+  async extractRelevantTypes1(
     lspClient: LspClient,
     fullHoverResult: string,
     typeName: string,
@@ -286,7 +287,7 @@ export class TypeScriptDriver implements LanguageDriver {
                   // potentially, this type checker can be its own class.
                   const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
 
-                  await this.extractRelevantTypes(
+                  await this.extractRelevantTypes1(
                     lspClient,
                     snippetInRange,
                     identifier,
@@ -315,6 +316,112 @@ export class TypeScriptDriver implements LanguageDriver {
     }
 
     return foundSoFar;
+  }
+
+
+
+  async extractRelevantTypes(
+    lspClient: LspClient,
+    fullHoverResult: string,
+    typeName: string,
+    startLine: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFile>, // identifier -> [full hover result, source]
+    currentFile: string,
+    foundContents: Map<string, string> // uri -> contents
+  ) {
+
+    const content = fs.readFileSync(currentFile.slice(7), "utf8");
+    // console.log(content)
+    await this.extractRelevantTypesHelper(lspClient, fullHoverResult, typeName, startLine, foundSoFar, currentFile, foundContents, 0);
+    return foundSoFar;
+  }
+
+
+  async extractRelevantTypesHelper(
+    lspClient: LspClient,
+    fullHoverResult: string,
+    typeName: string,
+    startLine: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFile>, // identifier -> [full hover result, source]
+    currentFile: string,
+    foundContents: Map<string, string>, // uri -> contents
+    layer: number
+  ) {
+    // console.log("===", fullHoverResult, layer, startLine, "===")
+    // Split the type span into identifiers, where each include the text, line number, and character range.
+    // For each identifier, invoke go to type definition.
+    if (!foundSoFar.has(typeName)) {
+      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
+
+      const identifiers = this.typeChecker.extractIdentifiers(fullHoverResult);
+      // console.dir(identifiers, { depth: null })
+
+      for (const identifier of identifiers) {
+        // console.log(`== loop ==`)
+        // console.dir(identifier, { depth: null })
+        // console.time(`loop ${identifier.name} layer ${layer}`)
+        // if (identifier.name === "_") {
+        //   console.timeEnd(`loop ${identifier.name} layer ${layer}`)
+        //   continue;
+        // };
+        // console.log(identifier)
+        // console.log(foundSoFar.has(identifier.name))
+        if (!foundSoFar.has(identifier.name)) {
+          try {
+            const typeDefinitionResult = await lspClient.typeDefinition({
+              textDocument: {
+                uri: currentFile
+              },
+              position: {
+                character: identifier.start,
+                line: startLine + identifier.line - 1 // startLine is already 1-indexed
+              }
+            });
+            // if (identifier.name == "Model") {
+            //   console.dir(typeDefinitionResult, { depth: null })
+            // }
+
+            if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
+              const tdLocation = typeDefinitionResult[0] as Location;
+              let content = "";
+              if (foundContents.has(tdLocation.uri.slice(7))) {
+                content = foundContents.get(tdLocation.uri.slice(7))!;
+              } else {
+                content = fs.readFileSync(tdLocation.uri.slice(7), "utf8");
+                foundContents.set(tdLocation.uri.slice(7), content);
+              }
+              const decl = this.typeChecker.findDeclarationForIdentifier(content, tdLocation.range.start.line, tdLocation.range.start.character, tdLocation.range.end.character);
+              if (decl) {
+                const ident = this.typeChecker.getIdentifierFromDecl(decl);
+                // console.log(ident == identifier.name, ident, identifier.name, decl)
+                // console.log(`Decl: ${decl} || Identifier: ${ident}`)
+                // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
+                await this.extractRelevantTypesHelper(
+                  lspClient,
+                  decl,
+                  ident,
+                  tdLocation.range.start.line,
+                  foundSoFar,
+                  tdLocation.uri,
+                  foundContents,
+                  layer + 1,
+                );
+              } else {
+                console.log("decl not found")
+                // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
+              }
+            } else {
+              console.log("td not found")
+              // console.dir(typeDefinitionResult, { depth: null })
+            }
+          } catch (err) {
+            console.log(err)
+          }
+        } else {
+          // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
+        }
+      }
+    }
   }
 
 
@@ -552,6 +659,7 @@ export class TypeScriptDriver implements LanguageDriver {
     }
     // const normT1 = foundNormalForms.has(t1) ? foundNormalForms.get(t1) : this.normalize2(t1, relevantTypes);
     // const normT2 = foundNormalForms.has(t2) ? foundNormalForms.get(t2) : this.normalize2(t2, relevantTypes);
+    // console.log(normT1, normT2)
     return normT1 === normT2;
   }
 
@@ -568,9 +676,10 @@ export class TypeScriptDriver implements LanguageDriver {
       typeSpan = typeSpan.slice(0, typeSpan.length - 2);
     }
 
-    if (typeSpan.slice(typeSpan.length - 1) == ";") {
-      typeSpan = typeSpan.slice(0, typeSpan.length - 1);
-    }
+    // DEBUG
+    // if (typeSpan.slice(typeSpan.length - 1) == ";") {
+    //   typeSpan = typeSpan.slice(0, typeSpan.length - 1);
+    // }
 
     // console.log(typeSpan)
 
@@ -667,6 +776,7 @@ export class TypeScriptDriver implements LanguageDriver {
     let normalForm = "";
 
     const analysisResult = this.typeChecker.analyzeTypeString(typeSpan)
+    // console.dir(analysisResult, { depth: null })
 
     // pattern matching for typeSpan
     // if (this.typeChecker.isPrimitive(typeSpan)) {
@@ -682,7 +792,7 @@ export class TypeScriptDriver implements LanguageDriver {
       elements.forEach(element => {
         if (element !== "") {
           const kv = element.split(": ");
-          normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize(kv[1], relevantTypes);
+          normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize2(kv[1], relevantTypes);
           normalForm += "; ";
         }
       });
@@ -698,7 +808,7 @@ export class TypeScriptDriver implements LanguageDriver {
       normalForm += "[";
 
       elements.forEach((element, i) => {
-        normalForm += this.normalize(element, relevantTypes);
+        normalForm += this.normalize2(element, relevantTypes);
         if (i < elements.length - 1) {
           normalForm += ", ";
         }
@@ -714,7 +824,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
       elements.forEach((element, i) => {
         normalForm += "("
-        normalForm += this.normalize(element, relevantTypes)
+        normalForm += this.normalize2(element, relevantTypes)
         normalForm += ")";
         if (i < elements.length - 1) {
           normalForm += " | ";
@@ -728,18 +838,24 @@ export class TypeScriptDriver implements LanguageDriver {
       // console.log(`isArray: ${typeSpan}`)
       const element = typeSpan.split("[]")[0];
 
-      normalForm += this.normalize(element, relevantTypes)
+      normalForm += this.normalize2(element, relevantTypes)
       normalForm += "[]";
       return normalForm;
 
       // } else if (this.typeChecker.isTypeAlias(typeSpan)) {
     } else if (this.typeChecker.isTypeAlias2(analysisResult)) {
-      const typ = relevantTypes.get(typeSpan)!.typeSpan.split(" = ")[1];
+      // console.log("ALERT!!!!!!")
+      // console.dir(relevantTypes, { depth: null })
+      // console.dir(analysisResult, { depth: null })
+      // console.log("typeSpan:", typeSpan)
+      // console.log("analysis:", analysisResult.text)
+      // console.log(relevantTypes.get(analysisResult.text))
+      const typ = relevantTypes.get(analysisResult.text)!.typeSpan.split(" = ")[1];
       if (typ === undefined) {
         return typeSpan;
       }
 
-      normalForm += this.normalize(typ, relevantTypes);
+      normalForm += this.normalize2(typ, relevantTypes);
       return normalForm;
 
     } else {
