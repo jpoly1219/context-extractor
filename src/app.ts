@@ -131,14 +131,14 @@ export class App {
 
       // Postprocess the map.
       // console.time("extractRelevantTypes postprocess");
-      if (this.language === Language.TypeScript) {
-        relevantTypes.delete("_()");
-        for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
-          relevantTypes.set(k, { typeSpan: v.slice(0, -1), sourceFile: src });
-        }
-      } else if (this.language === Language.OCaml) {
-        relevantTypes.delete("_");
-      }
+      // if (this.language === Language.TypeScript) {
+      //   relevantTypes.delete("_()");
+      //   for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
+      //     relevantTypes.set(k, { typeSpan: v.slice(0, -1), sourceFile: src });
+      //   }
+      // } else if (this.language === Language.OCaml) {
+      //   relevantTypes.delete("_");
+      // }
       // console.timeEnd("extractRelevantTypes postprocess");
 
 
@@ -163,18 +163,19 @@ export class App {
 
       // console.log(relevantHeaders)
       // console.log(relevantHeaders.size)
+      // console.dir(relevantHeaders, { depth: null })
 
       // Postprocess the map.
       // console.time("extractRelevantHaders postprocess");
-      if (this.language === Language.TypeScript) {
-        relevantTypes.delete("");
-        for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
-          relevantTypes.set(k, { typeSpan: v + ";", sourceFile: src });
-        }
-        for (const obj of relevantHeaders) {
-          obj.typeSpan += ";";
-        }
-      }
+      // if (this.language === Language.TypeScript) {
+      //   relevantTypes.delete("");
+      //   for (const [k, { typeSpan: v, sourceFile: src }] of relevantTypes.entries()) {
+      //     relevantTypes.set(k, { typeSpan: v + ";", sourceFile: src });
+      //   }
+      //   for (const obj of relevantHeaders) {
+      //     obj.typeSpan += ";";
+      //   }
+      // }
       // console.timeEnd("extractRelevantHeaders postprocess");
 
       // console.time("toReturn");
