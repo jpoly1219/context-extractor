@@ -1,5 +1,7 @@
 import { completeWithLLM, extractContext } from "./main";
 import { Context, Language } from "./types";
+import * as pprof from "pprof"
+import * as fs from "fs"
 
 // extract("/home/jacob/projects/context-extractor/targets/todo/sketch.ts").then(r => console.log("todo\n", r));
 // extract("/home/jacob/projects/context-extractor/targets/playlist/sketch.ts").then(r => console.log("playlist\n", r));
@@ -8,23 +10,24 @@ import { Context, Language } from "./types";
 // extract("/home/jacob/projects/context-extractor/targets/emojipaint/sketch.ts").then(r => console.log("emojipaint\n", r));
 
 (async () => {
+  const profile = await pprof.time.start(10000); // Collect for 10s
   try {
     let x;
 
-    // x = await extractContext(
-    //   Language.TypeScript,
-    //   "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
-    //   "/home/jacob/projects/context-extractor/targets/todo/",
-    // )
-    // console.dir(x, { depth: null })
-    //
+    x = await extractContext(
+      Language.TypeScript,
+      "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
+      "/home/jacob/projects/context-extractor/targets/todo/",
+    )
+    console.dir(x, { depth: null })
+
     // x = await extractContext(
     //   Language.TypeScript,
     //   "/home/jacob/projects/context-extractor/targets/playlist/sketch.ts",
     //   "/home/jacob/projects/context-extractor/targets/playlist/",
     // )
     // console.dir(x, { depth: null })
-    //
+
     // x = await extractContext(
     //   Language.TypeScript,
     //   "/home/jacob/projects/context-extractor/targets/passwords/sketch.ts",
@@ -32,12 +35,12 @@ import { Context, Language } from "./types";
     // )
     // console.dir(x, { depth: null })
 
-    x = await extractContext(
-      Language.TypeScript,
-      "/home/jacob/projects/context-extractor/targets/booking/sketch.ts",
-      "/home/jacob/projects/context-extractor/targets/booking/",
-    )
-    console.dir(x, { depth: null })
+    // x = await extractContext(
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/booking/sketch.ts",
+    //   "/home/jacob/projects/context-extractor/targets/booking/",
+    // )
+    // console.dir(x, { depth: null })
 
     // x = await extractContext(
     //   Language.TypeScript,
@@ -73,6 +76,10 @@ import { Context, Language } from "./types";
     // }
     // process.exit(0);
   }
+  const buf = await pprof.encode(profile());
+  fs.writeFile('wall.pb.gz', buf, (err) => {
+    if (err) throw err;
+  });
 })();
 
 
