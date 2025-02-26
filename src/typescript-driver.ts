@@ -5,9 +5,10 @@ import { execSync } from "child_process";
 import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
 // import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "ts-lsp-client";
 // import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "dist/ts-lsp-client-dist/src/main";
-import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent } from "./types";
+import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent, TypeAnalysis } from "./types";
 import { TypeScriptTypeChecker } from "./typescript-type-checker";
 import { extractSnippet, removeLines } from "./utils";
+import { Type } from "typescript";
 
 
 export class TypeScriptDriver implements LanguageDriver {
@@ -392,14 +393,14 @@ export class TypeScriptDriver implements LanguageDriver {
               }
               const decl = this.typeChecker.findDeclarationForIdentifier(content, tdLocation.range.start.line, tdLocation.range.start.character, tdLocation.range.end.character);
               if (decl) {
-                const ident = this.typeChecker.getIdentifierFromDecl(decl);
+                // const ident = this.typeChecker.getIdentifierFromDecl(decl);
                 // console.log(ident == identifier.name, ident, identifier.name, decl)
                 // console.log(`Decl: ${decl} || Identifier: ${ident}`)
                 // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
                 await this.extractRelevantTypesHelper(
                   lspClient,
                   decl,
-                  ident,
+                  identifier.name,
                   tdLocation.range.start.line,
                   foundSoFar,
                   tdLocation.uri,
@@ -440,6 +441,7 @@ export class TypeScriptDriver implements LanguageDriver {
     const relevantContextMap = new Map<string, TypeSpanAndSourceFile>();
     const trace: string[] = [];
     const foundNormalForms = new Map<string, string>();
+    const foundTypeAnalysisResults = new Map<string, TypeAnalysis>();
 
     const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
 
@@ -472,7 +474,7 @@ export class TypeScriptDriver implements LanguageDriver {
           // console.log(`typeAnalysisResult: ${JSON.stringify(typeAnalysisResult, null, 2)}`)
 
           if (!this.typeChecker.isPrimitive(returnTypeSpan.split(" => ")[1])) {
-            this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine, source, relevantContextMap, tag, trace, foundNormalForms);
+            this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine, source, relevantContextMap, tag, trace, foundNormalForms, foundTypeAnalysisResults);
           }
         }
 
@@ -599,16 +601,22 @@ export class TypeScriptDriver implements LanguageDriver {
     relevantContextMap: Map<string, TypeSpanAndSourceFile>,
     tag: boolean,
     trace: string[],
-    foundNormalForms: Map<string, string>
+    foundNormalForms: Map<string, string>,
+    foundTypeAnalysisResults: Map<string, TypeAnalysis> // filename+typeSpan -> typeAnalysisResult
   ) {
     if (tag) {
       // console.time(`extractRelevantHeadersHelper, typeSpan: ${typeSpan}`)
       // trace.push(typeSpan)
       // console.log(trace)
     }
-    // TODO: this can probably done at the top level.
-    // analyzeTypeString is recursive by itself.
-    const typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan);
+
+    let typeAnalysisResult: TypeAnalysis;
+    if (!foundTypeAnalysisResults.has(source + ":" + typeSpan)) {
+      typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan);
+      foundTypeAnalysisResults.set(source + ":" + typeSpan, typeAnalysisResult);
+    } else {
+      typeAnalysisResult = foundTypeAnalysisResults.get(source + ":" + typeSpan)!;
+    }
 
     targetTypes.forEach(typ => {
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms)) {
@@ -621,11 +629,11 @@ export class TypeScriptDriver implements LanguageDriver {
       if (this.typeChecker.isFunction2(typeAnalysisResult)) {
         const rettype = typeAnalysisResult.returnType!;
 
-        this.extractRelevantHeadersHelper(rettype.text, targetTypes, relevantTypes, relevantContext, line, source, relevantContextMap, tag, trace, foundNormalForms);
+        this.extractRelevantHeadersHelper(rettype.text, targetTypes, relevantTypes, relevantContext, line, source, relevantContextMap, tag, trace, foundNormalForms, foundTypeAnalysisResults);
 
       } else if (this.typeChecker.isTuple2(typeAnalysisResult)) {
         typeAnalysisResult.constituents!.forEach(constituent => {
-          this.extractRelevantHeadersHelper(constituent.text, targetTypes, relevantTypes, relevantContext, line, source, relevantContextMap, tag, trace, foundNormalForms);
+          this.extractRelevantHeadersHelper(constituent.text, targetTypes, relevantTypes, relevantContext, line, source, relevantContextMap, tag, trace, foundNormalForms, foundTypeAnalysisResults);
         });
 
       }
