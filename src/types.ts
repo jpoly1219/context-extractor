@@ -162,4 +162,14 @@ interface ParameterAnalysis {
   type: TypeAnalysis;
 }
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis }
+interface VarFuncDecls {
+  kind: "variable" | "function" | "arrowFunction" | "classMethod";
+  name: string;
+  type: string;
+  returnType?: string;
+  position: { line: number; character: number };
+  declarationText: string;
+  sourceFile: string;
+}
+
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis, VarFuncDecls }
