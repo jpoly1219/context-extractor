@@ -1,5 +1,5 @@
-import * as path from "path";
 import * as fs from "fs";
+import * as path from "path";
 import { spawn } from "child_process";
 import { execSync } from "child_process";
 import OpenAI from "openai";
@@ -10,6 +10,8 @@ import { Language, LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config } 
 import { TypeScriptDriver } from "./typescript-driver";
 import { OcamlDriver } from "./ocaml-driver";
 import { getAllTSFiles, getAllOCamlFiles, removeLines } from "./utils";
+import { performance } from "perf_hooks";
+import { time } from "console";
 
 
 export class App {
@@ -45,7 +47,9 @@ export class App {
       switch (language) {
         case Language.TypeScript: {
           this.languageDriver = new TypeScriptDriver();
-          return spawn("typescript-language-server", ["--stdio"], { stdio: ["pipe", "pipe", "pipe"] });
+          // PERF: 6ms
+          // return spawn("typescript-language-server", ["--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
+          return spawn("node", ["/home/jacob/projects/typescript-language-server/lib/cli.mjs", "--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
         }
         case Language.OCaml: {
           this.languageDriver = new OcamlDriver();
@@ -77,6 +81,23 @@ export class App {
     this.languageServer = r;
     this.lspClient = c;
 
+    // Logging tsserver output
+    const logStream = fs.createWriteStream("tsserver-custom.log", { flags: "w" });
+    r.stdout.pipe(logStream);
+    r.stderr.pipe(logStream);
+
+    // Helper function to prepend timestamps
+    const logWithTimestamp = (data: Buffer) => {
+      const timestamp = new Date().toISOString();
+      // console.log(timestamp)
+      // console.log(timestamp, data.toString())
+      // logStream.write(`\n\n======[${timestamp}] ${data.toString()}\n\n`);
+    };
+
+    // Capture and log stdout and stderr with timestamps
+    r.stdout.on("data", logWithTimestamp);
+    r.stderr.on("data", logWithTimestamp);
+
     // console.log(r.pid)
 
     this.languageServer.on('close', (code) => {
@@ -105,9 +126,11 @@ export class App {
     // const outputFile = fs.createWriteStream("output.txt");
     try {
 
+      // PERF: 94ms
       await this.init();
 
       // console.time("getHoleContext");
+      // PERF: 801ms
       const holeContext = await this.languageDriver.getHoleContext(
         this.lspClient,
         this.sketchPath,
@@ -115,6 +138,31 @@ export class App {
       // console.timeEnd("getHoleContext");
 
       // console.time("extractRelevantTypes");
+      await this.lspClient.documentSymbol({
+        textDocument: {
+          uri: `file://${this.repoPath}prelude.ts`,
+        }
+      });
+      await this.lspClient.documentSymbol({
+        textDocument: {
+          uri: `file://${this.repoPath}injected_sketch.ts`,
+        }
+      });
+
+      // let start = performance.now()
+      // await this.lspClient.typeDefinition({
+      //   textDocument: {
+      //     uri: `file://${this.repoPath}injected_sketch.ts`,
+      //   },
+      //   position: {
+      //     character: 9,
+      //     line: 1
+      //   }
+      // });
+      // let end = performance.now()
+      // console.log("elapsed:", end - start)
+
+      const start = performance.now()
       const relevantTypes = await this.languageDriver.extractRelevantTypes(
         this.lspClient,
         // NOTE: sometimes fullHoverResult isn't representative of the actual file contents, especially with generic functions.
@@ -125,6 +173,8 @@ export class App {
         holeContext.source,
         new Map<string, string>()
       );
+      const end = performance.now()
+      console.log("elapsed:", end - start)
       // console.timeEnd("extractRelevantTypes");
 
       // console.dir(relevantTypes, { depth: null })
