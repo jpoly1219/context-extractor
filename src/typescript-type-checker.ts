@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import { TypeChecker, TypeAnalysis } from "./types";
+import { TypeChecker, TypeAnalysis, VarFuncDecls } from "./types";
 import { indexOfRegexGroup } from "./utils";
 
 
@@ -662,6 +662,149 @@ export class TypeScriptTypeChecker implements TypeChecker {
     } else {
       return null;
     }
+  }
+
+  // findTopLevelDeclarations(sourceCode: string, fileName = "temp.ts") {
+  findTopLevelDeclarations(program: ts.Program, fileName: string): VarFuncDecls[] {
+    // const compilerOptions: ts.CompilerOptions = { target: ts.ScriptTarget.ESNext };
+    // NOTE: This is only necessary when you are passing the code string only.
+    // This is a nifty trick to create a temporary file to store your code string literal.
+    // In this case the function should accept (sourceCode: string, fileName = "temp.ts").
+    // If you know what file you need to read, then there is no need for this.
+    // const host = ts.createCompilerHost(compilerOptions);
+    // host.getSourceFile = (fileName, languageVersion) =>
+    //   ts.createSourceFile(fileName, sourceCode, languageVersion, true);
+    // const program = ts.createProgram([fileName], compilerOptions, host);
+
+    // const program = ts.createProgram([fileName], compilerOptions);
+    const sourceFile = program.getSourceFile(fileName)!;
+    const checker = program.getTypeChecker();
+
+    const results: VarFuncDecls[] = [];
+
+    function getLineChar(pos: number) {
+      const { line, character } = sourceFile.getLineAndCharacterOfPosition(pos);
+      return { line: line + 1, character: character + 1 }; // 1-based
+    }
+
+    function visit(node: ts.Node) {
+      // Only look at top-level nodes
+      if (node.parent && node.parent.kind !== ts.SyntaxKind.SourceFile) return;
+
+
+      if (ts.isFunctionDeclaration(node) && node.name) {
+        // const symbol = checker.getSymbolAtLocation(node.name);
+        // const type = symbol && checker.getTypeOfSymbolAtLocation(symbol, node);
+        // const typeString = type ? checker.typeToString(type) : "unknown";
+        const signature = checker.getSignatureFromDeclaration(node);
+        const signatureString = signature ? checker.signatureToString(signature) : "unknown";
+        const returnType = signature ? checker.typeToString(signature.getReturnType()) : null;
+
+        let result: VarFuncDecls = {
+          kind: "function",
+          name: node.name.text,
+          type: signatureString,
+          position: getLineChar(node.getStart()),
+          declarationText: node.getText(sourceFile),
+          sourceFile: fileName
+        }
+
+        if (returnType) {
+          result = {
+            ...result,
+            returnType: returnType
+          }
+        }
+
+        results.push(result);
+      }
+
+
+      if (ts.isVariableStatement(node)) {
+        for (const decl of node.declarationList.declarations) {
+          if (!ts.isIdentifier(decl.name)) continue;
+
+          const name = decl.name.text;
+          const type = checker.getTypeAtLocation(decl);
+          let kind: "function" | "variable" | "arrowFunction" | "classMethod" = "variable";
+          let returnType: string | null = null;
+
+          if (decl.initializer && ts.isArrowFunction(decl.initializer)) {
+            kind =
+              decl.initializer && ts.isArrowFunction(decl.initializer)
+                ? "arrowFunction"
+                : "variable";
+
+            const arrowFunc = decl.initializer as ts.ArrowFunction;
+            const signature = checker.getSignatureFromDeclaration(arrowFunc);
+            if (signature) {
+              const returnTypeSymbol = checker.getReturnTypeOfSignature(signature);
+              returnType = checker.typeToString(returnTypeSymbol);
+            }
+          }
+
+          let result: VarFuncDecls = {
+            kind,
+            name,
+            type: checker.typeToString(type),
+            position: getLineChar(decl.getStart()),
+            declarationText: decl.getText(sourceFile),
+            sourceFile: fileName
+          }
+
+          if (returnType) {
+            result = {
+              ...result,
+              returnType: returnType
+            }
+          }
+
+          results.push(result);
+        }
+      }
+
+      if (ts.isClassDeclaration(node) && node.name) {
+        for (const member of node.members) {
+          if (ts.isMethodDeclaration(member) && member.name && ts.isIdentifier(member.name)) {
+            const symbol = checker.getSymbolAtLocation(member.name);
+            const type = symbol && checker.getTypeOfSymbolAtLocation(symbol, member);
+            results.push({
+              kind: "classMethod",
+              name: `${node.name.text}.${member.name.text}`,
+              type: type ? checker.typeToString(type) : "unknown",
+              position: getLineChar(member.getStart()),
+              declarationText: member.getText(sourceFile),
+              sourceFile: fileName
+            });
+          }
+        }
+      }
+    }
+
+    ts.forEachChild(sourceFile, visit);
+    return results;
+  }
+
+  createTsCompilerProgram(repo: string[]): ts.Program {
+    const compilerOptions: ts.CompilerOptions = { target: ts.ScriptTarget.ESNext };
+    const program = ts.createProgram(repo, compilerOptions);
+    return program
+  }
+
+  replaceTypeAnnotationColonWithArrow(typeStr: string): string {
+    const regex = /^([\(\[][^)]*\)?)(?:\s*:\s*)(.*)$/;
+
+    const match = typeStr.match(regex);
+
+    if (!match) {
+      console.log('Invalid function type signature');
+      return "";
+    }
+
+    const params = match[1].trim();
+    const returnType = match[2].trim();
+
+    return `${params} => ${returnType}`;
   }
 }
 
