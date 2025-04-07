@@ -5,10 +5,11 @@ import { execSync } from "child_process";
 import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
 // import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "ts-lsp-client";
 // import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "dist/ts-lsp-client-dist/src/main";
-import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent, TypeAnalysis } from "./types";
+import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent, TypeAnalysis, VarFuncDecls } from "./types";
 import { TypeScriptTypeChecker } from "./typescript-type-checker";
 import { extractSnippet, removeLines } from "./utils";
 import { Type } from "typescript";
+import { types } from "util";
 
 
 export class TypeScriptDriver implements LanguageDriver {
@@ -96,8 +97,9 @@ export class TypeScriptDriver implements LanguageDriver {
       rootUri: null,
       workspaceFolders: workspaceFolders,
       initializationOptions: {
+        disableAutomaticTypingAcquisition: true,
         preferences: {
-          includeInlayVariableTypeHints: true
+          includeInlayVariableTypeHints: true,
         }
       }
     });
@@ -369,6 +371,7 @@ export class TypeScriptDriver implements LanguageDriver {
         // console.log(foundSoFar.has(identifier.name))
         if (!foundSoFar.has(identifier.name)) {
           try {
+            // const start = performance.now()
             const typeDefinitionResult = await lspClient.typeDefinition({
               textDocument: {
                 uri: currentFile
@@ -378,7 +381,10 @@ export class TypeScriptDriver implements LanguageDriver {
                 line: startLine + identifier.line - 1 // startLine is already 1-indexed
               }
             });
+            // const end = performance.now()
+            // console.log(end - start)
             // if (identifier.name == "Model") {
+            //   console.log(identifier)
             //   console.dir(typeDefinitionResult, { depth: null })
             // }
 
@@ -445,41 +451,85 @@ export class TypeScriptDriver implements LanguageDriver {
 
     const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
 
+    const program = this.typeChecker.createTsCompilerProgram(sources);
+
     // only consider lines that start with let or const
     for (const source of sources) {
       const sourceContent = fs.readFileSync(source).toString("utf8");
-      const filteredLines = sourceContent.split("\n").filter((line) => {
-        return line.slice(0, 3) === "let" || line.slice(0, 5) === "const";
-      });
+      // TODO: this can be replaced by using typescript compiler api
+      // what really needs to happen is the following:
+      // filter by variable and function decls
+      // get a d.ts of them (or get a type decl)
+      // type decl makes more sense because d.ts format is a bit weird with class methods
+      const start = performance.now()
+      const varFuncDecls = this.typeChecker.findTopLevelDeclarations(program, source);
+      const end = performance.now()
+      // console.log(varFuncDecls, end - start)
 
-      // check for relationship between each line and relevant types
-      filteredLines.forEach(line => {
+      varFuncDecls.forEach((decl) => {
+        // const typeAnalysisResult = this.typeChecker.analyzeTypeString(decl.type);
+        // console.log(`typeAnalysisResult: ${JSON.stringify(typeAnalysisResult, null, 2)}`)
+        console.dir(decl, { depth: 2 })
 
-        // console.time(`helper, line: ${line}`);
+        this.extractRelevantHeadersHelper2(
+          decl.declarationText,
+          decl.returnType ? decl.returnType : decl.type,
+          targetTypes,
+          relevantTypes,
+          relevantContext,
+          source,
+          relevantContextMap,
+          trace,
+          foundNormalForms,
+          foundTypeAnalysisResults
+        );
+      })
 
-        let tag = false;
-        if (line === `const initFormState: [[Weekday, TimeOfDay], string] = [["M", "AM"], ""];`) {
-          tag = true;
-        }
-        // TODO: Use the compiler API to split this.
-        const splittedLine = line.split(" = ")[0];
 
-        const typeSpanPattern = /(^[^:]*: )(.+)/;
-        const regexMatch = splittedLine.match(typeSpanPattern)
-        if (regexMatch) {
-          const returnTypeSpan = regexMatch[2];
-          // console.log(`returnTypeSpan: ${returnTypeSpan}`)
-
-          // const typeAnalysisResult = this.typeChecker.analyzeTypeString(returnTypeSpan);
-          // console.log(`typeAnalysisResult: ${JSON.stringify(typeAnalysisResult, null, 2)}`)
-
-          if (!this.typeChecker.isPrimitive(returnTypeSpan.split(" => ")[1])) {
-            this.extractRelevantHeadersHelper(returnTypeSpan, targetTypes, relevantTypes, relevantContext, splittedLine, source, relevantContextMap, tag, trace, foundNormalForms, foundTypeAnalysisResults);
-          }
-        }
-
-        // console.timeEnd(`helper, line: ${line}`);
-      });
+      // const filteredLines = sourceContent.split("\n").filter((line) => {
+      //   return line.slice(0, 3) === "let" || line.slice(0, 5) === "const";
+      // });
+      //
+      // // check for relationship between each line and relevant types
+      // filteredLines.forEach(line => {
+      //
+      //   // console.time(`helper, line: ${line}`);
+      //
+      //   let tag = false;
+      //   // if (line === `const initFormState: [[Weekday, TimeOfDay], string] = [["M", "AM"], ""];`) {
+      //   //   tag = true;
+      //   // }
+      //   // TODO: Use the compiler API to split this.
+      //   const splittedLine = line.split(" = ")[0];
+      //
+      //   const typeSpanPattern = /(^[^:]*: )(.+)/;
+      //   const regexMatch = splittedLine.match(typeSpanPattern)
+      //   if (regexMatch) {
+      //     const returnTypeSpan = regexMatch[2];
+      //     // console.log(`returnTypeSpan: ${returnTypeSpan}`)
+      //
+      //     // const typeAnalysisResult = this.typeChecker.analyzeTypeString(returnTypeSpan);
+      //     // console.log(`typeAnalysisResult: ${JSON.stringify(typeAnalysisResult, null, 2)}`)
+      //
+      //     if (!this.typeChecker.isPrimitive(returnTypeSpan.split(" => ")[1])) {
+      //       this.extractRelevantHeadersHelper(
+      //         returnTypeSpan,
+      //         targetTypes,
+      //         relevantTypes,
+      //         relevantContext,
+      //         splittedLine,
+      //         source,
+      //         relevantContextMap,
+      //         tag,
+      //         trace,
+      //         foundNormalForms,
+      //         foundTypeAnalysisResults
+      //       );
+      //     }
+      //   }
+      //
+      //   // console.timeEnd(`helper, line: ${line}`);
+      // });
     }
     // console.log(JSON.stringify(relevantContextMap, null, 2))
     // console.log(relevantContextMap.keys())
@@ -870,6 +920,71 @@ export class TypeScriptDriver implements LanguageDriver {
       // console.log(`else: ${typeSpan}`)
       return typeSpan;
     }
+  }
+
+  extractRelevantHeadersHelper2(
+    declText: string,
+    typeSpan: string,
+    targetTypes: Set<string>,
+    relevantTypes: Map<string, TypeSpanAndSourceFile>,
+    relevantContext: Set<TypeSpanAndSourceFile>,
+    source: string,
+    relevantContextMap: Map<string, TypeSpanAndSourceFile>,
+    trace: string[],
+    foundNormalForms: Map<string, string>,
+    foundTypeAnalysisResults: Map<string, TypeAnalysis> // filename+typeSpan -> typeAnalysisResult
+  ) {
+    let typeAnalysisResult: TypeAnalysis;
+    if (!foundTypeAnalysisResults.has(source + ":" + typeSpan)) {
+      typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan);
+      foundTypeAnalysisResults.set(source + ":" + typeSpan, typeAnalysisResult);
+    } else {
+      typeAnalysisResult = foundTypeAnalysisResults.get(source + ":" + typeSpan)!;
+    }
+
+    targetTypes.forEach(typ => {
+      if (this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms)) {
+        // NOTE: This checks for dupes. ctx is an object so you need to check for each field.
+        // relevantContext.add({ typeSpan: line, sourceFile: source });
+        const ctx = { typeSpan: declText, sourceFile: source };
+        relevantContextMap.set(JSON.stringify(ctx), ctx);
+      }
+
+      if (this.typeChecker.isFunction2(typeAnalysisResult)) {
+        const rettype = typeAnalysisResult.returnType!;
+
+        this.extractRelevantHeadersHelper2(
+          declText,
+          rettype.text,
+          targetTypes,
+          relevantTypes,
+          relevantContext,
+          source,
+          relevantContextMap,
+          trace,
+          foundNormalForms,
+          foundTypeAnalysisResults
+        );
+        foundTypeAnalysisResults
+
+      } else if (this.typeChecker.isTuple2(typeAnalysisResult)) {
+        typeAnalysisResult.constituents!.forEach(constituent => {
+          this.extractRelevantHeadersHelper2(
+            declText,
+            constituent.text,
+            targetTypes,
+            relevantTypes,
+            relevantContext,
+            source,
+            relevantContextMap,
+            trace,
+            foundNormalForms,
+            foundTypeAnalysisResults
+          );
+        });
+
+      }
+    });
   }
 }
 
