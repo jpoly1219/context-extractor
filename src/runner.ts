@@ -20,28 +20,28 @@ import * as fs from "fs"
       "/home/jacob/projects/context-extractor/targets/todo/",
     )
     console.dir(x, { depth: null })
-
+    //
     // x = await extractContext(
     //   Language.TypeScript,
     //   "/home/jacob/projects/context-extractor/targets/playlist/sketch.ts",
     //   "/home/jacob/projects/context-extractor/targets/playlist/",
     // )
     // console.dir(x, { depth: null })
-
+    //
     // x = await extractContext(
     //   Language.TypeScript,
     //   "/home/jacob/projects/context-extractor/targets/passwords/sketch.ts",
     //   "/home/jacob/projects/context-extractor/targets/passwords/",
     // )
     // console.dir(x, { depth: null })
-
+    //
     // x = await extractContext(
     //   Language.TypeScript,
     //   "/home/jacob/projects/context-extractor/targets/booking/sketch.ts",
     //   "/home/jacob/projects/context-extractor/targets/booking/",
     // )
     // console.dir(x, { depth: null })
-
+    //
     // x = await extractContext(
     //   Language.TypeScript,
     //   "/home/jacob/projects/context-extractor/targets/emojipaint/sketch.ts",
