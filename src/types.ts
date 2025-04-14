@@ -59,9 +59,12 @@ interface typesAndLocationsQueryResult {
 }
 
 interface LanguageDriver {
-  init: (lspClient: LspClient, sketchPath: string) => Promise<void>;
+  init: (
+    lspClient: LspClient | null,
+    sketchPath: string
+  ) => Promise<void>;
   getHoleContext: (
-    lspClient: LspClient,
+    lspClient: LspClient | null,
     sketchFilePath: string,
   ) => Promise<{
     fullHoverResult: string;
@@ -76,17 +79,17 @@ interface LanguageDriver {
     trueHoleFunction?: string;
   }>;
   extractRelevantTypes: (
-    lspClient: LspClient,
+    lspClient: LspClient | null,
     fullHoverResult: string,
     typeName: string,
     startLine: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
     foundContents: Map<string, string>,
-    logStream: fs.WriteStream
+    logStream: fs.WriteStream | null
   ) => Promise<Map<string, TypeSpanAndSourceFile>>;
   extractRelevantHeaders: (
-    lspClient: LspClient,
+    lspClient: LspClient | null,
     // preludeFilePath: string,
     sources: string[],
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
@@ -181,4 +184,16 @@ enum IDE {
   Standalone
 }
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis, VarFuncDecls, IDE }
+type VSCodeBuiltinProvider =
+  | ExecuteHoverProvider
+  | ExecuteDefinitionProvider
+  | ExecuteTypeDefinitionProvider
+  | ExecuteDocumentSymbolProvider
+
+type ExecuteHoverProvider = "vscode.executeHoverProvider"
+type ExecuteDefinitionProvider = "vscode.executeDefinitionProvider"
+type ExecuteTypeDefinitionProvider = "vscode.executeTypeDefinitionProvider"
+type ExecuteDocumentSymbolProvider = "vscode.executeDocumentSymbolProvider"
+
+
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis, VarFuncDecls, IDE, VSCodeBuiltinProvider }
