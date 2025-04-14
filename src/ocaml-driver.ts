@@ -9,250 +9,282 @@ import { LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config, Model } fro
 import { OcamlTypeChecker } from "./ocaml-type-checker";
 import { extractSnippet, removeLines } from "./utils";
 import ocamlParser = require("../src/ocaml-utils/_build/default/test_parser.bc.js");
+import { channel } from "diagnostics_channel";
 
 
 export class OcamlDriver implements LanguageDriver {
   typeChecker: OcamlTypeChecker = new OcamlTypeChecker();
 
-  async init(lspClient: LspClient, sketchPath: string) {
-    const capabilities: ClientCapabilities = {
-      'textDocument': {
-        'codeAction': { 'dynamicRegistration': true },
-        'codeLens': { 'dynamicRegistration': true },
-        'colorProvider': { 'dynamicRegistration': true },
-        'completion': {
-          'completionItem': {
-            'commitCharactersSupport': true,
-            'documentationFormat': ['markdown', 'plaintext'],
-            'snippetSupport': true
+  async init(lspClient: LspClient | null, sketchPath: string) {
+    if (lspClient) {
+      const capabilities: ClientCapabilities = {
+        'textDocument': {
+          'codeAction': { 'dynamicRegistration': true },
+          'codeLens': { 'dynamicRegistration': true },
+          'colorProvider': { 'dynamicRegistration': true },
+          'completion': {
+            'completionItem': {
+              'commitCharactersSupport': true,
+              'documentationFormat': ['markdown', 'plaintext'],
+              'snippetSupport': true
+            },
+            'completionItemKind': {
+              'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+            },
+            'contextSupport': true,
+            'dynamicRegistration': true
           },
-          'completionItemKind': {
-            'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+          'definition': { 'dynamicRegistration': true },
+          'documentHighlight': { 'dynamicRegistration': true },
+          'documentLink': { 'dynamicRegistration': true },
+          'documentSymbol': {
+            'dynamicRegistration': true,
+            'symbolKind': {
+              'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+            }
           },
-          'contextSupport': true,
-          'dynamicRegistration': true
+          'formatting': { 'dynamicRegistration': true },
+          'hover': {
+            'contentFormat': ['markdown', 'plaintext'],
+            'dynamicRegistration': true
+          },
+          'implementation': { 'dynamicRegistration': true },
+          // 'inlayhint': { 'dynamicRegistration': true },
+          'onTypeFormatting': { 'dynamicRegistration': true },
+          'publishDiagnostics': { 'relatedInformation': true },
+          'rangeFormatting': { 'dynamicRegistration': true },
+          'references': { 'dynamicRegistration': true },
+          'rename': { 'dynamicRegistration': true },
+          'signatureHelp': {
+            'dynamicRegistration': true,
+            'signatureInformation': { 'documentationFormat': ['markdown', 'plaintext'] }
+          },
+          'synchronization': {
+            'didSave': true,
+            'dynamicRegistration': true,
+            'willSave': true,
+            'willSaveWaitUntil': true
+          },
+          'typeDefinition': { 'dynamicRegistration': true, 'linkSupport': true },
+          // 'typeHierarchy': { 'dynamicRegistration': true }
         },
-        'definition': { 'dynamicRegistration': true },
-        'documentHighlight': { 'dynamicRegistration': true },
-        'documentLink': { 'dynamicRegistration': true },
-        'documentSymbol': {
-          'dynamicRegistration': true,
-          'symbolKind': {
-            'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
-          }
+        'workspace': {
+          'applyEdit': true,
+          'configuration': true,
+          'didChangeConfiguration': { 'dynamicRegistration': true },
+          'didChangeWatchedFiles': { 'dynamicRegistration': true },
+          'executeCommand': { 'dynamicRegistration': true },
+          'symbol': {
+            'dynamicRegistration': true,
+            'symbolKind': {
+              'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+            }
+          }, 'workspaceEdit': { 'documentChanges': true },
+          'workspaceFolders': true
         },
-        'formatting': { 'dynamicRegistration': true },
-        'hover': {
-          'contentFormat': ['markdown', 'plaintext'],
-          'dynamicRegistration': true
+        'general': {
+          'positionEncodings': ['utf-8']
         },
-        'implementation': { 'dynamicRegistration': true },
-        // 'inlayhint': { 'dynamicRegistration': true },
-        'onTypeFormatting': { 'dynamicRegistration': true },
-        'publishDiagnostics': { 'relatedInformation': true },
-        'rangeFormatting': { 'dynamicRegistration': true },
-        'references': { 'dynamicRegistration': true },
-        'rename': { 'dynamicRegistration': true },
-        'signatureHelp': {
-          'dynamicRegistration': true,
-          'signatureInformation': { 'documentationFormat': ['markdown', 'plaintext'] }
-        },
-        'synchronization': {
-          'didSave': true,
-          'dynamicRegistration': true,
-          'willSave': true,
-          'willSaveWaitUntil': true
-        },
-        'typeDefinition': { 'dynamicRegistration': true, 'linkSupport': true },
-        // 'typeHierarchy': { 'dynamicRegistration': true }
-      },
-      'workspace': {
-        'applyEdit': true,
-        'configuration': true,
-        'didChangeConfiguration': { 'dynamicRegistration': true },
-        'didChangeWatchedFiles': { 'dynamicRegistration': true },
-        'executeCommand': { 'dynamicRegistration': true },
-        'symbol': {
-          'dynamicRegistration': true,
-          'symbolKind': {
-            'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
-          }
-        }, 'workspaceEdit': { 'documentChanges': true },
-        'workspaceFolders': true
-      },
-      'general': {
-        'positionEncodings': ['utf-8']
-      },
-    };
+      };
 
-    const rootPath = path.dirname(sketchPath)
-    const rootUri = `file://${rootPath}`;
-    const workspaceFolders = [{ 'name': 'context-extractor', 'uri': rootUri }];
+      const rootPath = path.dirname(sketchPath)
+      const rootUri = `file://${rootPath}`;
+      const workspaceFolders = [{ 'name': 'context-extractor', 'uri': rootUri }];
 
-    await lspClient.initialize({
-      processId: process.pid,
-      capabilities: capabilities,
-      trace: 'off',
-      rootUri: null,
-      workspaceFolders: workspaceFolders,
-      initializationOptions: {
-        preferences: {
-          includeInlayVariableTypeHints: true
+      await lspClient.initialize({
+        processId: process.pid,
+        capabilities: capabilities,
+        trace: 'off',
+        rootUri: null,
+        workspaceFolders: workspaceFolders,
+        initializationOptions: {
+          preferences: {
+            includeInlayVariableTypeHints: true
+          }
         }
-      }
-    });
+      });
 
+    }
   }
 
 
-  async getHoleContext(lspClient: LspClient, sketchFilePath: string) {
+  async getHoleContext(lspClient: LspClient | null, sketchFilePath: string) {
     const sketchDir = path.dirname(sketchFilePath);
     const sketchFileContent = fs.readFileSync(sketchFilePath, "utf8");
 
-    // Sync client and server by notifying that the client has opened all the files inside the target directory.
-    fs.readdirSync(sketchDir).map(fileName => {
-      if (fs.lstatSync(path.join(sketchDir, fileName)).isFile()) {
-        const langType = (() => {
-          switch (fileName) {
-            case "dune":
-              return "dune";
-            case "dune-project":
-              return "dune-project";
-            case ".ocamlformat":
-              return ".ocamlformat";
-            default:
-              return "ocaml";
+    if (lspClient) {
+      // Sync client and server by notifying that the client has opened all the files inside the target directory.
+      fs.readdirSync(sketchDir).map(fileName => {
+        if (fs.lstatSync(path.join(sketchDir, fileName)).isFile()) {
+          const langType = (() => {
+            switch (fileName) {
+              case "dune":
+                return "dune";
+              case "dune-project":
+                return "dune-project";
+              case ".ocamlformat":
+                return ".ocamlformat";
+              default:
+                return "ocaml";
+            }
+          })();
+
+          lspClient.didOpen({
+            textDocument: {
+              uri: `file://${sketchDir}/${fileName}`,
+              languageId: langType,
+              text: fs.readFileSync(`${sketchDir}/${fileName}`).toString("ascii"),
+              version: 1
+            }
+          });
+        }
+      });
+
+      // Get hole context.
+      const holeCtx = (await lspClient.ocamlMerlinCallCompatible({
+        uri: `file://${sketchFilePath}`,
+        command: "holes",
+        args: [],
+        resultAsSexp: false
+      }))
+
+      const sketchSymbol = await lspClient.documentSymbol({
+        textDocument: {
+          uri: `file://${sketchFilePath}`
+        }
+      })
+
+      return {
+        fullHoverResult: "", //
+        functionName: "_", // _
+        functionTypeSpan: JSON.parse(holeCtx.result).value[0].type, // model * action -> model
+        linePosition: JSON.parse(holeCtx.result).value[0].start.line, // hole's line
+        characterPosition: JSON.parse(holeCtx.result).value[0].start.col, // hole's character
+        holeTypeDefLinePos: 3, // 
+        holeTypeDefCharPos: 0, // "
+        range: (sketchSymbol![0] as SymbolInformation).location.range,
+        source: `file://${sketchFilePath}`
+      };
+    } else {
+      // TODO: Do vscode things.
+      return {
+        fullHoverResult: "", //
+        functionName: "_", // _
+        functionTypeSpan: "",
+        linePosition: 0,
+        characterPosition: 0,
+        holeTypeDefLinePos: 0, // 
+        holeTypeDefCharPos: 0, // "
+        range: {
+          start: {
+            line: 0,
+            character: 0
+          },
+          end: {
+            line: 0,
+            character: 0
           }
-        })();
-
-        lspClient.didOpen({
-          textDocument: {
-            uri: `file://${sketchDir}/${fileName}`,
-            languageId: langType,
-            text: fs.readFileSync(`${sketchDir}/${fileName}`).toString("ascii"),
-            version: 1
-          }
-        });
-      }
-    });
-
-    // Get hole context.
-    const holeCtx = (await lspClient.ocamlMerlinCallCompatible({
-      uri: `file://${sketchFilePath}`,
-      command: "holes",
-      args: [],
-      resultAsSexp: false
-    }))
-
-    const sketchSymbol = await lspClient.documentSymbol({
-      textDocument: {
-        uri: `file://${sketchFilePath}`
-      }
-    })
-
-    return {
-      fullHoverResult: "", //
-      functionName: "_", // _
-      functionTypeSpan: JSON.parse(holeCtx.result).value[0].type, // model * action -> model
-      linePosition: JSON.parse(holeCtx.result).value[0].start.line, // hole's line
-      characterPosition: JSON.parse(holeCtx.result).value[0].start.col, // hole's character
-      holeTypeDefLinePos: 3, // 
-      holeTypeDefCharPos: 0, // "
-      range: (sketchSymbol![0] as SymbolInformation).location.range,
-      source: `file://${sketchFilePath}`
-    };
+        },
+        source: ""
+      };
+    }
   }
 
 
   async extractRelevantTypes(
-    lspClient: LspClient,
+    lspClient: LspClient | null,
     fullHoverResult: string,
     typeName: string,
     startLine: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
   ) {
-    if (!foundSoFar.has(typeName)) {
-      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
-      // outputFile.write(`${fullHoverResult};\n`);
+    if (lspClient) {
+      if (!foundSoFar.has(typeName)) {
+        foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
+        // outputFile.write(`${fullHoverResult};\n`);
 
-      const content = fs.readFileSync(currentFile.slice(7), "utf8");
+        const content = fs.readFileSync(currentFile.slice(7), "utf8");
 
-      for (let linePos = startLine; linePos <= fullHoverResult.length; ++linePos) {
-        const numOfCharsInLine = parseInt(execSync(`wc -m <<< "${content.split("\n")[linePos]}"`, { shell: "/bin/bash" }).toString());
+        for (let linePos = startLine; linePos <= fullHoverResult.length; ++linePos) {
+          const numOfCharsInLine = parseInt(execSync(`wc -m <<< "${content.split("\n")[linePos]}"`, { shell: "/bin/bash" }).toString());
 
-        for (let charPos = 0; charPos < numOfCharsInLine; ++charPos) {
-          try {
-            const typeDefinitionResult = await lspClient.typeDefinition({
-              textDocument: {
-                uri: currentFile
-              },
-              position: {
-                character: charPos,
-                line: linePos
-              }
-            });
-
-            if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
-              // Use documentSymbol instead of hover.
-              // This prevents type alias "squashing" done by tsserver.
-              // This also allows for grabbing the entire definition range and not just the symbol range.
-              // PERF: feels like this could be memoized to improve performance.
-              const documentSymbolResult = await lspClient.documentSymbol({
+          for (let charPos = 0; charPos < numOfCharsInLine; ++charPos) {
+            try {
+              const typeDefinitionResult = await lspClient.typeDefinition({
                 textDocument: {
-                  uri: (typeDefinitionResult[0] as Location).uri
+                  uri: currentFile
+                },
+                position: {
+                  character: charPos,
+                  line: linePos
                 }
               });
 
-              // grab if the line number of typeDefinitionResult and documentSymbolResult matches
-              // FIX: This overwrites older definitions if the lines are the same. Especially for type constructors, such as playlist_state.
-              // Generally the one that comes first is the largest, but this could be dependent on the source code.
-              const dsMap = documentSymbolResult!.reduce((m, obj) => {
-                const newSymbol = (obj as SymbolInformation);
-                const existing = m.get(newSymbol.location.range.start.line);
-                if (existing) {
-                  // Compare range between existing doucment symbol and the current symbol.
-                  if (existing.end.line - existing.start.line >= newSymbol.location.range.end.line - newSymbol.location.range.start.line) {
-                    return m;
-                  } else if (existing.end.character - existing.start.character >= newSymbol.location.range.end.character - newSymbol.location.range.start.character) {
-                    return m;
+              if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
+                // Use documentSymbol instead of hover.
+                // This prevents type alias "squashing" done by tsserver.
+                // This also allows for grabbing the entire definition range and not just the symbol range.
+                // PERF: feels like this could be memoized to improve performance.
+                const documentSymbolResult = await lspClient.documentSymbol({
+                  textDocument: {
+                    uri: (typeDefinitionResult[0] as Location).uri
                   }
+                });
+
+                // grab if the line number of typeDefinitionResult and documentSymbolResult matches
+                // FIX: This overwrites older definitions if the lines are the same. Especially for type constructors, such as playlist_state.
+                // Generally the one that comes first is the largest, but this could be dependent on the source code.
+                const dsMap = documentSymbolResult!.reduce((m, obj) => {
+                  const newSymbol = (obj as SymbolInformation);
+                  const existing = m.get(newSymbol.location.range.start.line);
+                  if (existing) {
+                    // Compare range between existing doucment symbol and the current symbol.
+                    if (existing.end.line - existing.start.line >= newSymbol.location.range.end.line - newSymbol.location.range.start.line) {
+                      return m;
+                    } else if (existing.end.character - existing.start.character >= newSymbol.location.range.end.character - newSymbol.location.range.start.character) {
+                      return m;
+                    }
+                  }
+                  m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
+                  return m;
+                }, new Map<number, Range>());
+
+                const matchingSymbolRange: Range | undefined = dsMap.get((typeDefinitionResult[0] as Location).range.start.line);
+                if (matchingSymbolRange) {
+                  const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
+                  // TODO: this can potentially be its own method. the driver would require some way to get type context.
+                  // potentially, this type checker can be its own class.
+                  const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
+
+                  await this.extractRelevantTypes(
+                    lspClient,
+                    snippetInRange,
+                    identifier,
+                    matchingSymbolRange.start.line,
+                    foundSoFar,
+                    (typeDefinitionResult[0] as Location).uri,
+                  );
+
                 }
-                m.set((obj as SymbolInformation).location.range.start.line, (obj as SymbolInformation).location.range as unknown as Range);
-                return m;
-              }, new Map<number, Range>());
-
-              const matchingSymbolRange: Range | undefined = dsMap.get((typeDefinitionResult[0] as Location).range.start.line);
-              if (matchingSymbolRange) {
-                const snippetInRange = extractSnippet(fs.readFileSync((typeDefinitionResult[0] as Location).uri.slice(7)).toString("utf8"), matchingSymbolRange.start, matchingSymbolRange.end)
-                // TODO: this can potentially be its own method. the driver would require some way to get type context.
-                // potentially, this type checker can be its own class.
-                const identifier = this.typeChecker.getIdentifierFromDecl(snippetInRange);
-
-                await this.extractRelevantTypes(
-                  lspClient,
-                  snippetInRange,
-                  identifier,
-                  matchingSymbolRange.start.line,
-                  foundSoFar,
-                  (typeDefinitionResult[0] as Location).uri,
-                );
-
               }
+            } catch (err) {
+              console.log(`${err}`)
             }
-          } catch (err) {
-            console.log(`${err}`)
           }
         }
       }
-    }
 
-    return foundSoFar;
+      return foundSoFar;
+    } else {
+      // TODO: Do vscode things.
+      return foundSoFar;
+    }
   }
 
 
   async extractRelevantHeaders(
-    lspClient: LspClient,
+    lspClient: LspClient | null,
     // preludeFilePath: string,
     sources: string[],
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
@@ -260,30 +292,34 @@ export class OcamlDriver implements LanguageDriver {
   ): Promise<Set<TypeSpanAndSourceFile>> {
     const relevantContext = new Set<TypeSpanAndSourceFile>();
 
-    for (const source of sources) {
-      const headerTypeSpans = await this.extractHeaderTypeSpans(lspClient, source);
-      const targetTypes = this.generateTargetTypes(holeType, relevantTypes, source);
+    if (lspClient) {
+      for (const source of sources) {
+        const headerTypeSpans = await this.extractHeaderTypeSpans(lspClient, source);
+        const targetTypes = this.generateTargetTypes(holeType, relevantTypes, source);
 
-      try {
-        for (const hts of headerTypeSpans) {
-          const recursiveChildTypes: string[] = ocamlParser.parse(hts.typeSpan);
+        try {
+          for (const hts of headerTypeSpans) {
+            const recursiveChildTypes: string[] = ocamlParser.parse(hts.typeSpan);
 
-          if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
-            relevantContext.add({ typeSpan: (hts.identifier + " : " + hts.typeSpan), sourceFile: source });
-            continue;
+            if (recursiveChildTypes.some((rct) => targetTypes.has(rct))) {
+              relevantContext.add({ typeSpan: (hts.identifier + " : " + hts.typeSpan), sourceFile: source });
+              continue;
+            }
+
+            this.extractRelevantHeadersHelper(hts.typeSpan, targetTypes, relevantTypes, relevantContext, hts.snippet, source);
           }
 
-          this.extractRelevantHeadersHelper(hts.typeSpan, targetTypes, relevantTypes, relevantContext, hts.snippet, source);
+        } catch (err) {
+          return new Set<TypeSpanAndSourceFile>();
+          console.log(err)
         }
 
-      } catch (err) {
-        return new Set<TypeSpanAndSourceFile>();
-        console.log(err)
       }
 
+      return relevantContext;
+    } else {
+      return relevantContext;
     }
-
-    return relevantContext;
   }
 
 
