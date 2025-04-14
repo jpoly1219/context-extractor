@@ -1,6 +1,9 @@
 import * as ts from 'typescript';
 import { TypeChecker, TypeAnalysis, VarFuncDecls } from "./types";
 import { indexOfRegexGroup } from "./utils";
+import { sign } from 'crypto';
+import path from 'path';
+import { config } from 'process';
 
 
 export class TypeScriptTypeChecker implements TypeChecker {
@@ -596,8 +599,8 @@ export class TypeScriptTypeChecker implements TypeChecker {
   }
 
   extractIdentifiersWithPosHelper(sourceFile: ts.SourceFile, node: ts.Node, identifiers: { name: string; start: number; end: number; line: number; column: number }[]) {
+    // console.log(`iter on ${node.getText()} =*= ${node.kind}`)
     if (ts.isIdentifier(node)) {
-      // console.log(node.kind, node.text)
       if (
         ts.isTypeReferenceNode(node.parent) ||
         ts.isTypeAliasDeclaration(node.parent) ||
@@ -614,6 +617,24 @@ export class TypeScriptTypeChecker implements TypeChecker {
           column: character + 1 // Convert 0-based to 1-based
         });
       }
+    } else if (
+      // Handle keywords such as SyntaxKind.BooleanKeyword (boolean)
+      node.kind == ts.SyntaxKind.BooleanKeyword ||
+      node.kind == ts.SyntaxKind.StringKeyword ||
+      node.kind == ts.SyntaxKind.NumberKeyword ||
+      node.kind == ts.SyntaxKind.UndefinedKeyword ||
+      node.kind == ts.SyntaxKind.NullKeyword
+      // NOTE: this might be too all-encompassing.
+      // node.kind >= 83 && node.kind <= 165
+    ) {
+      const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+      identifiers.push({
+        name: node.getText(),
+        start: node.getStart(),
+        end: node.getEnd(),
+        line: line + 1, // Convert 0-based to 1-based
+        column: character + 1 // Convert 0-based to 1-based
+      });
     }
     node.forEachChild(child => this.extractIdentifiersWithPosHelper(sourceFile, child, identifiers));
   }
@@ -739,7 +760,28 @@ export class TypeScriptTypeChecker implements TypeChecker {
             const signature = checker.getSignatureFromDeclaration(arrowFunc);
             if (signature) {
               const returnTypeSymbol = checker.getReturnTypeOfSignature(signature);
-              returnType = checker.typeToString(returnTypeSymbol);
+              console.log(">=>", name)
+              console.log(ts.TypeFlags[returnTypeSymbol.flags]);
+              const apparent = checker.getApparentType(returnTypeSymbol);
+              const returnTypeApparent = checker.typeToString(apparent);
+              console.log(returnTypeApparent)
+              console.log(returnTypeSymbol.getSymbol()?.getName());
+
+              console.log({
+                isArray: checker.isArrayType(returnTypeSymbol),
+                symbol: returnTypeSymbol.symbol?.name,
+              });
+
+
+
+              if (checker.isArrayType(returnTypeSymbol)) {
+                console.log(">=>", name, "isArrayType")
+                const elementType = (returnTypeSymbol as ts.TypeReference).typeArguments?.[0];
+                const inner = elementType ? checker.typeToString(elementType) : 'unknown';
+                returnType = `${inner}[]`;
+              } else {
+                returnType = checker.typeToString(returnTypeSymbol);
+              }
             }
           }
 
@@ -785,10 +827,48 @@ export class TypeScriptTypeChecker implements TypeChecker {
     return results;
   }
 
-  createTsCompilerProgram(repo: string[]): ts.Program {
-    const compilerOptions: ts.CompilerOptions = { target: ts.ScriptTarget.ESNext };
+  createTsCompilerProgram(repo: string[], projectRoot: string): ts.Program {
+    // NOTE: This was an attempt to use an existing TS type system.
+    const existingConfig = this.getCompilerOptionsFromTsconfig(projectRoot);
+    console.log(existingConfig)
+
+    if (existingConfig) {
+      const program = ts.createProgram({
+        rootNames: existingConfig.fileNames,
+        options: existingConfig.options
+      });
+      console.log(program.getSourceFiles().map(f => f.fileName));
+      return program;
+    }
+
+    const compilerOptions: ts.CompilerOptions = {
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.CommonJS,
+      moduleResolution: ts.ModuleResolutionKind.NodeJs,
+      esModuleInterop: true,
+      strict: true,
+      skipLibCheck: true,
+      baseUrl: projectRoot, // Optional but useful for consistent resolution
+      paths: { "*": ["node_modules/*"] }, // Optional fallback
+    };
     const program = ts.createProgram(repo, compilerOptions);
     return program
+  }
+
+  getCompilerOptionsFromTsconfig(projectRoot: string): ts.ParsedCommandLine | null {
+    const configPath = ts.findConfigFile(projectRoot, ts.sys.fileExists, "tsconfig.json");
+    console.log(configPath)
+    if (!configPath) return null;
+
+    const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+    const parsedConfig = ts.parseJsonConfigFileContent(
+      configFile.config,
+      ts.sys,
+      // path.dirname(configPath)
+      projectRoot
+    );
+
+    return parsedConfig;
   }
 
   replaceTypeAnnotationColonWithArrow(typeStr: string): string {
