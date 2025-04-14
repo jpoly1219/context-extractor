@@ -17,3 +17,4 @@ targets/**/*.js
 _opam
 # _build
 **/injected_sketch.ts
+*.log
