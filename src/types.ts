@@ -83,13 +83,15 @@ interface LanguageDriver {
     foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
     foundContents: Map<string, string>,
+    logStream: fs.WriteStream
   ) => Promise<Map<string, TypeSpanAndSourceFile>>;
   extractRelevantHeaders: (
     lspClient: LspClient,
     // preludeFilePath: string,
     sources: string[],
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
-    holeType: string
+    holeType: string,
+    projectRoot: string
   ) => Promise<Set<TypeSpanAndSourceFile>>;
   // completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
   // correctWithLLM: (targetDirectoryPath: string, context: Context, message: string) => Promise<string>;
@@ -172,4 +174,11 @@ interface VarFuncDecls {
   sourceFile: string;
 }
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis, VarFuncDecls }
+// We currently support running the extractor under
+// a vscode extension or as a standalone script.
+enum IDE {
+  VSCode,
+  Standalone
+}
+
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis, VarFuncDecls, IDE }
