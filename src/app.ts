@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { spawn } from "child_process";
+import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import { execSync } from "child_process";
 import OpenAI from "openai";
 import { LspClient, JSONRPCEndpoint, SymbolInformation, Location, Range } from "../ts-lsp-client-dist/src/main";
@@ -17,107 +17,105 @@ import { time } from "console";
 export class App {
   private language: Language;
   private languageDriver: LanguageDriver;
-  private languageServer;
-  private lspClient: LspClient;
+  private languageServer: ChildProcessWithoutNullStreams | null;
+  private lspClient: LspClient | null;
   private sketchPath: string; // not prefixed with file://
   private repoPath: string; // not prefixed with file://
-  // private result: {
-  //   hole: string;
-  //   relevantTypes: string[];
-  //   relevantHeaders: string[];
-  // } | null = null;
   private result: Context | null = null;
-  private logStream: fs.WriteStream;
+  private logStream: fs.WriteStream | null;
   private ide: IDE
-
-  // Optional timeout for forced termination
-  // private timeout = setTimeout(() => {
-  //   if (!this.languageServer.killed) {
-  //     console.log('Forcibly killing the process...');
-  //     this.languageServer.kill('SIGKILL');
-  //   }
-  // }, 5000);
-
-
 
   constructor(language: Language, sketchPath: string, repoPath: string, ide: IDE) {
     this.language = language;
     this.sketchPath = sketchPath;
     this.repoPath = repoPath;
+    this.ide = ide;
 
-    const r = (() => {
-      switch (language) {
-        case Language.TypeScript: {
-          this.languageDriver = new TypeScriptDriver();
-          // PERF: 6ms
-          // return spawn("typescript-language-server", ["--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
-          return spawn("node", ["/home/jacob/projects/typescript-language-server/lib/cli.mjs", "--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
-        }
-        case Language.OCaml: {
-          this.languageDriver = new OcamlDriver();
-          try {
-            execSync(`eval $(opam env --switch=. --set-switch)`, { shell: "/bin/bash" })
-            // execSync("opam switch .", { shell: "/bin/bash" })
-            const currDir = __dirname;
-            process.chdir(path.dirname(sketchPath));
-            // execSync("which dune", { shell: "/bin/bash" })
-            spawn("dune", ["build", "-w"]);
-            process.chdir(currDir);
-          } catch (err) {
-            console.log("ERROR:", err)
+    switch (ide) {
+      case IDE.VSCode: {
+        // Most things will be done via vscode's command api
+        this.languageServer = null;
+        this.lspClient = null;
+        this.logStream = null;
+      }
+      case IDE.Standalone: {
+        const r = (() => {
+          switch (language) {
+            case Language.TypeScript: {
+              this.languageDriver = new TypeScriptDriver(this.ide);
+              // PERF: 6ms
+              // return spawn("typescript-language-server", ["--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
+              return spawn("node", ["/home/jacob/projects/typescript-language-server/lib/cli.mjs", "--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
+            }
+            case Language.OCaml: {
+              this.languageDriver = new OcamlDriver();
+              try {
+                execSync(`eval $(opam env --switch=. --set-switch)`, { shell: "/bin/bash" })
+                // execSync("opam switch .", { shell: "/bin/bash" })
+                const currDir = __dirname;
+                process.chdir(path.dirname(sketchPath));
+                // execSync("which dune", { shell: "/bin/bash" })
+                spawn("dune", ["build", "-w"]);
+                process.chdir(currDir);
+              } catch (err) {
+                console.log("ERROR:", err)
+              }
+              // TODO: Spawn a dune build -w on sketch directory.
+              // try {
+              //   execSync("which dune", { shell: "/bin/bash" })
+              //   spawn("dune", ["build", "-w"]);
+              // } catch (err) {
+              //   console.log("ERROR:", err)
+              // }
+              // process.chdir(currDir);
+              return spawn("ocamllsp", ["--stdio"]);
+            }
           }
-          // TODO: Spawn a dune build -w on sketch directory.
-          // try {
-          //   execSync("which dune", { shell: "/bin/bash" })
-          //   spawn("dune", ["build", "-w"]);
-          // } catch (err) {
-          //   console.log("ERROR:", err)
-          // }
-          // process.chdir(currDir);
-          return spawn("ocamllsp", ["--stdio"]);
-        }
+        })();
+        const e = new JSONRPCEndpoint(r.stdin, r.stdout);
+        const c = new LspClient(e);
+        this.languageServer = r;
+        this.lspClient = c;
+
+        // Logging tsserver output
+        const logStream = fs.createWriteStream(`tsserver-${getTimestampForFilename()}.log`, { flags: "w" });
+        this.logStream = logStream;
+        r.stdout.pipe(this.logStream);
+        r.stderr.pipe(this.logStream);
+
+        // Helper function to prepend timestamps
+        const logWithTimestamp = (data: Buffer) => {
+          const timestamp = new Date().toISOString();
+          // console.log(timestamp)
+          // console.log(timestamp, data.toString())
+          this.logStream?.write(`\n\n=*=*=*=*=*=[${timestamp}] ${data.toString()}\n\n`);
+        };
+
+        // Capture and log stdout and stderr with timestamps
+        r.stdout.on("data", logWithTimestamp);
+        r.stderr.on("data", logWithTimestamp);
+
+        // console.log(r.pid)
+
+        this.languageServer.on('close', (code) => {
+          if (code !== 0) {
+            console.log(`ls process exited with code ${code}`);
+          }
+        });
+        // Clear timeout once the process exits
+        this.languageServer.on('exit', () => {
+          // clearTimeout(this.timeout);
+          this.logStream?.close();
+          console.log('Process terminated cleanly.');
+        });
+
+
+        // const logFile = fs.createWriteStream("log.txt");
+        // r.stdout.on('data', (d) => logFile.write(d));
       }
-    })();
-    const e = new JSONRPCEndpoint(r.stdin, r.stdout);
-    const c = new LspClient(e);
-    this.languageServer = r;
-    this.lspClient = c;
-
-    // Logging tsserver output
-    const logStream = fs.createWriteStream(`tsserver-${getTimestampForFilename()}.log`, { flags: "w" });
-    this.logStream = logStream;
-    r.stdout.pipe(this.logStream);
-    r.stderr.pipe(this.logStream);
-
-    // Helper function to prepend timestamps
-    const logWithTimestamp = (data: Buffer) => {
-      const timestamp = new Date().toISOString();
-      // console.log(timestamp)
-      // console.log(timestamp, data.toString())
-      this.logStream.write(`\n\n=*=*=*=*=*=[${timestamp}] ${data.toString()}\n\n`);
-    };
-
-    // Capture and log stdout and stderr with timestamps
-    r.stdout.on("data", logWithTimestamp);
-    r.stderr.on("data", logWithTimestamp);
-
-    // console.log(r.pid)
-
-    this.languageServer.on('close', (code) => {
-      if (code !== 0) {
-        console.log(`ls process exited with code ${code}`);
-      }
-    });
-    // Clear timeout once the process exits
-    this.languageServer.on('exit', () => {
-      // clearTimeout(this.timeout);
-      this.logStream.close();
-      console.log('Process terminated cleanly.');
-    });
+    }
 
 
-    // const logFile = fs.createWriteStream("log.txt");
-    // r.stdout.on('data', (d) => logFile.write(d));
   }
 
 
@@ -155,15 +153,15 @@ export class App {
       // });
 
       // let start = performance.now()
-      await this.lspClient.typeDefinition({
-        textDocument: {
-          uri: `file://${this.repoPath}injected_sketch.ts`,
-        },
-        position: {
-          character: 35,
-          line: 1
-        }
-      });
+      // await this.lspClient.typeDefinition({
+      //   textDocument: {
+      //     uri: `file://${this.repoPath}injected_sketch.ts`,
+      //   },
+      //   position: {
+      //     character: 35,
+      //     line: 1
+      //   }
+      // });
       // let end = performance.now()
       // console.log("elapsed:", end - start)
 
@@ -288,7 +286,7 @@ export class App {
   close() {
     // TODO:
     try {
-      this.lspClient.exit();
+      this.lspClient?.exit();
     } catch (err) {
       console.log(err)
     }
