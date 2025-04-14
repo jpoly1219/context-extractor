@@ -13,13 +13,31 @@ import * as fs from "fs"
   const profile = await pprof.time.start(10000); // Collect for 10s
   try {
     let x;
-
-    x = await extractContext(
-      Language.TypeScript,
-      "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
-      "/home/jacob/projects/context-extractor/targets/todo/",
-    )
-    console.dir(x, { depth: null })
+    // x = await extractContext(
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/vscode/src/main.ts",
+    //   "/home/jacob/projects/context-extractor/targets/vscode/",
+    // )
+    // console.dir(x, { depth: null })
+    // x = await extractContext(
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/angular/packages/elements/src/utils.ts",
+    //   "/home/jacob/projects/context-extractor/targets/angular/",
+    // )
+    // console.dir(x, { depth: null })
+    // x = await extractContext(
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/ionic-framework/core/src/components/img/img.tsx",
+    //   "/home/jacob/projects/context-extractor/targets/ionic-framework/",
+    // )
+    // console.dir(x, { depth: null })
+    //
+    // x = await extractContext(
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/context-extractor/targets/todo/sketch.ts",
+    //   "/home/jacob/projects/context-extractor/targets/todo/",
+    // )
+    // console.dir(x, { depth: null })
     //
     // x = await extractContext(
     //   Language.TypeScript,
@@ -35,17 +53,23 @@ import * as fs from "fs"
     // )
     // console.dir(x, { depth: null })
     //
-    // x = await extractContext(
-    //   Language.TypeScript,
-    //   "/home/jacob/projects/context-extractor/targets/booking/sketch.ts",
-    //   "/home/jacob/projects/context-extractor/targets/booking/",
-    // )
-    // console.dir(x, { depth: null })
+    x = await extractContext(
+      Language.TypeScript,
+      "/home/jacob/projects/context-extractor/targets/booking/sketch.ts",
+      "/home/jacob/projects/context-extractor/targets/booking/",
+    )
+    console.dir(x, { depth: null })
     //
     // x = await extractContext(
     //   Language.TypeScript,
     //   "/home/jacob/projects/context-extractor/targets/emojipaint/sketch.ts",
     //   "/home/jacob/projects/context-extractor/targets/emojipaint/",
+    // )
+    // console.dir(x, { depth: null })
+    // x = await extractContext(
+    //   Language.TypeScript,
+    //   "/home/jacob/projects/continue/manual-testing-sandbox/booking/sketch.ts",
+    //   "/home/jacob/projects/continue/manual-testing-sandbox/booking",
     // )
     // console.dir(x, { depth: null })
 
