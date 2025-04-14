@@ -5,108 +5,117 @@ import { execSync } from "child_process";
 import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
 // import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "ts-lsp-client";
 // import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "dist/ts-lsp-client-dist/src/main";
-import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent, TypeAnalysis, VarFuncDecls } from "./types";
+import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent, TypeAnalysis, VarFuncDecls, IDE } from "./types";
 import { TypeScriptTypeChecker } from "./typescript-type-checker";
 import { extractSnippet, removeLines } from "./utils";
 import { Type } from "typescript";
 import { types } from "util";
+import * as vscode from "vscode";
+import { VsCode } from "./vscode";
 
 
 export class TypeScriptDriver implements LanguageDriver {
+  ide: IDE;
   typeChecker: TypeScriptTypeChecker = new TypeScriptTypeChecker();
 
-  async init(lspClient: LspClient, sketchPath: string) {
-    const capabilities: ClientCapabilities = {
-      'textDocument': {
-        'codeAction': { 'dynamicRegistration': true },
-        'codeLens': { 'dynamicRegistration': true },
-        'colorProvider': { 'dynamicRegistration': true },
-        'completion': {
-          'completionItem': {
-            'commitCharactersSupport': true,
-            'documentationFormat': ['markdown', 'plaintext'],
-            'snippetSupport': true
-          },
-          'completionItemKind': {
-            'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
-          },
-          'contextSupport': true,
-          'dynamicRegistration': true
-        },
-        'definition': { 'dynamicRegistration': true },
-        'documentHighlight': { 'dynamicRegistration': true },
-        'documentLink': { 'dynamicRegistration': true },
-        'documentSymbol': {
-          'dynamicRegistration': true,
-          'symbolKind': {
-            'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
-          }
-        },
-        'formatting': { 'dynamicRegistration': true },
-        'hover': {
-          'contentFormat': ['markdown', 'plaintext'],
-          'dynamicRegistration': true
-        },
-        'implementation': { 'dynamicRegistration': true },
-        // 'inlayhint': { 'dynamicRegistration': true },
-        'onTypeFormatting': { 'dynamicRegistration': true },
-        'publishDiagnostics': { 'relatedInformation': true },
-        'rangeFormatting': { 'dynamicRegistration': true },
-        'references': { 'dynamicRegistration': true },
-        'rename': { 'dynamicRegistration': true },
-        'signatureHelp': {
-          'dynamicRegistration': true,
-          'signatureInformation': { 'documentationFormat': ['markdown', 'plaintext'] }
-        },
-        'synchronization': {
-          'didSave': true,
-          'dynamicRegistration': true,
-          'willSave': true,
-          'willSaveWaitUntil': true
-        },
-        'typeDefinition': { 'dynamicRegistration': true, 'linkSupport': true },
-        // 'typeHierarchy': { 'dynamicRegistration': true }
-      },
-      'workspace': {
-        'applyEdit': true,
-        'configuration': true,
-        'didChangeConfiguration': { 'dynamicRegistration': true },
-        'didChangeWatchedFiles': { 'dynamicRegistration': true },
-        'executeCommand': { 'dynamicRegistration': true },
-        'symbol': {
-          'dynamicRegistration': true,
-          'symbolKind': {
-            'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
-          }
-        }, 'workspaceEdit': { 'documentChanges': true },
-        'workspaceFolders': true
-      },
-      'general': {
-        'positionEncodings': ['utf-8']
-      },
-    };
+  constructor(ide: IDE) {
+    this.ide = ide;
+  }
 
-    const rootPath = path.dirname(sketchPath)
-    const rootUri = `file://${rootPath}`;
-    const workspaceFolders = [{ 'name': 'context-extractor', 'uri': rootUri }];
+  async init(lspClient: LspClient | null, sketchPath: string) {
+    if (lspClient) {
+      const capabilities: ClientCapabilities = {
+        'textDocument': {
+          'codeAction': { 'dynamicRegistration': true },
+          'codeLens': { 'dynamicRegistration': true },
+          'colorProvider': { 'dynamicRegistration': true },
+          'completion': {
+            'completionItem': {
+              'commitCharactersSupport': true,
+              'documentationFormat': ['markdown', 'plaintext'],
+              'snippetSupport': true
+            },
+            'completionItemKind': {
+              'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+            },
+            'contextSupport': true,
+            'dynamicRegistration': true
+          },
+          'definition': { 'dynamicRegistration': true },
+          'documentHighlight': { 'dynamicRegistration': true },
+          'documentLink': { 'dynamicRegistration': true },
+          'documentSymbol': {
+            'dynamicRegistration': true,
+            'symbolKind': {
+              'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+            }
+          },
+          'formatting': { 'dynamicRegistration': true },
+          'hover': {
+            'contentFormat': ['markdown', 'plaintext'],
+            'dynamicRegistration': true
+          },
+          'implementation': { 'dynamicRegistration': true },
+          // 'inlayhint': { 'dynamicRegistration': true },
+          'onTypeFormatting': { 'dynamicRegistration': true },
+          'publishDiagnostics': { 'relatedInformation': true },
+          'rangeFormatting': { 'dynamicRegistration': true },
+          'references': { 'dynamicRegistration': true },
+          'rename': { 'dynamicRegistration': true },
+          'signatureHelp': {
+            'dynamicRegistration': true,
+            'signatureInformation': { 'documentationFormat': ['markdown', 'plaintext'] }
+          },
+          'synchronization': {
+            'didSave': true,
+            'dynamicRegistration': true,
+            'willSave': true,
+            'willSaveWaitUntil': true
+          },
+          'typeDefinition': { 'dynamicRegistration': true, 'linkSupport': true },
+          // 'typeHierarchy': { 'dynamicRegistration': true }
+        },
+        'workspace': {
+          'applyEdit': true,
+          'configuration': true,
+          'didChangeConfiguration': { 'dynamicRegistration': true },
+          'didChangeWatchedFiles': { 'dynamicRegistration': true },
+          'executeCommand': { 'dynamicRegistration': true },
+          'symbol': {
+            'dynamicRegistration': true,
+            'symbolKind': {
+              'valueSet': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+            }
+          }, 'workspaceEdit': { 'documentChanges': true },
+          'workspaceFolders': true
+        },
+        'general': {
+          'positionEncodings': ['utf-8']
+        },
+      };
 
-    await lspClient.initialize({
-      processId: process.pid,
-      capabilities: capabilities,
-      trace: 'off',
-      rootUri: null,
-      workspaceFolders: workspaceFolders,
-      initializationOptions: {
-        disableAutomaticTypingAcquisition: true,
-        preferences: {
-          includeInlayVariableTypeHints: true,
+      const rootPath = path.dirname(sketchPath)
+      const rootUri = `file://${rootPath}`;
+      const workspaceFolders = [{ 'name': 'context-extractor', 'uri': rootUri }];
+
+      await lspClient.initialize({
+        processId: process.pid,
+        capabilities: capabilities,
+        trace: 'off',
+        rootUri: null,
+        workspaceFolders: workspaceFolders,
+        initializationOptions: {
+          disableAutomaticTypingAcquisition: true,
+          preferences: {
+            includeInlayVariableTypeHints: true,
+          }
         }
-      }
-    });
+      });
+    }
   }
 
 
-  async getHoleContext(lspClient: LspClient, sketchFilePath: string) {
+  async getHoleContext(lspClient: LspClient | null, sketchFilePath: string) {
     // For TypeScript programs, we need to inject the hole function before getting its context.
     // NOTE: this can be abstracted to its own method?
     const sketchDir = path.dirname(sketchFilePath);
@@ -115,85 +124,144 @@ export class TypeScriptDriver implements LanguageDriver {
     const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
     fs.writeFileSync(injectedSketchFilePath, injectedSketchFileContent);
 
-    // Sync client and server by notifying that the client has opened all the files inside the target directory.
-    fs.readdirSync(sketchDir).map(fileName => {
-      if (fs.lstatSync(path.join(sketchDir, fileName)).isFile()) {
-        lspClient.didOpen({
-          textDocument: {
-            uri: `file://${sketchDir}/${fileName}`,
-            languageId: "typescript",
-            text: fs.readFileSync(`${sketchDir}/${fileName}`).toString("ascii"),
-            version: 1
-          }
-        });
-      }
-    });
-
-    // Get hole context.
+    // Get the hole's position.
     const holePattern = /_\(\)/;
     const firstPatternIndex = injectedSketchFileContent.search(holePattern);
-    const linePosition = (injectedSketchFileContent.substring(0, firstPatternIndex).match(/\n/g))!.length;
-    const characterPosition = firstPatternIndex - injectedSketchFileContent.split("\n", linePosition).join("\n").length - 1;
+    const linePosition = (
+      injectedSketchFileContent
+        .substring(0, firstPatternIndex)
+        .match(/\n/g)
+    )!.length;
+    const characterPosition = firstPatternIndex - (
+      injectedSketchFileContent
+        .split("\n", linePosition)
+        .join("\n")
+        .length
+    ) - 1;
 
-    const holeHoverResult = await lspClient.hover({
-      textDocument: {
-        uri: injectedSketchFilePath
-      },
-      position: {
-        character: characterPosition,
-        line: linePosition
-      }
-    });
+    if (lspClient) {
+      // Sync client and server by notifying that
+      // the client has opened all the files
+      // inside the target directory.
+      fs.readdirSync(sketchDir).map(fileName => {
+        if (fs.lstatSync(path.join(sketchDir, fileName)).isFile()) {
+          lspClient.didOpen({
+            textDocument: {
+              uri: `file://${sketchDir}/${fileName}`,
+              languageId: "typescript",
+              text: fs.readFileSync(`${sketchDir}/${fileName}`).toString("ascii"),
+              version: 1
+            }
+          });
+        }
+      });
 
-    const formattedHoverResult = (holeHoverResult.contents as MarkupContent).value.split("\n").reduce((acc: string, curr: string) => {
-      if (curr != "" && curr != "```typescript" && curr != "```") {
-        return acc + curr;
-      } else {
-        return acc;
-      }
-    }, "");
+      const holeHoverResult = await lspClient.hover({
+        textDocument: {
+          uri: injectedSketchFilePath
+        },
+        position: {
+          character: characterPosition,
+          line: linePosition
+        }
+      });
 
-    // function _<(a: Apple, c: Cherry, b: Banana) => Cherry > (): (a: Apple, c: Cherry, b: Banana) => Cherry
-    const holeFunctionPattern = /(function _)(\<.+\>)(\(\): )(.+)/;
-    const match = formattedHoverResult.match(holeFunctionPattern);
-    const functionName = "_()";
-    const functionTypeSpan = match![4];
+      const formattedHoverResult = (holeHoverResult.contents as MarkupContent).value.split("\n").reduce((acc: string, curr: string) => {
+        if (curr != "" && curr != "```typescript" && curr != "```") {
+          return acc + curr;
+        } else {
+          return acc;
+        }
+      }, "");
 
-    // Clean up and inject the true hole function without the generic type signature.
-    // NOTE: this can be abstracted to its own method?
-    const trueHoleFunction = `declare function _(): ${functionTypeSpan}`
-    const trueInjectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
-    fs.writeFileSync(injectedSketchFilePath, trueInjectedSketchFileContent);
+      // function _<(a: Apple, c: Cherry, b: Banana) => Cherry > (): (a: Apple, c: Cherry, b: Banana) => Cherry
+      const holeFunctionPattern = /(function _)(\<.+\>)(\(\): )(.+)/;
+      const match = formattedHoverResult.match(holeFunctionPattern);
+      const functionName = "_()";
+      const functionTypeSpan = match![4];
 
-    lspClient.didChange({
-      textDocument: {
-        uri: `file://${injectedSketchFilePath}`,
-        version: 2
-      },
-      contentChanges: [{
-        text: trueInjectedSketchFileContent
-      }]
-    });
+      // Clean up and inject the true hole function without the generic type signature.
+      // NOTE: this can be abstracted to its own method?
+      const trueHoleFunction = `declare function _(): ${functionTypeSpan}`
+      const trueInjectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
+      fs.writeFileSync(injectedSketchFilePath, trueInjectedSketchFileContent);
 
-    const sketchSymbol = await lspClient.documentSymbol({
-      textDocument: {
-        uri: `file://${injectedSketchFilePath}`,
-      }
-    });
+      lspClient.didChange({
+        textDocument: {
+          uri: `file://${injectedSketchFilePath}`,
+          version: 2
+        },
+        contentChanges: [{
+          text: trueInjectedSketchFileContent
+        }]
+      });
 
-    return {
-      fullHoverResult: formattedHoverResult,
-      functionName: functionName,
-      functionTypeSpan: functionTypeSpan,
-      linePosition: linePosition,
-      characterPosition: characterPosition,
-      holeTypeDefLinePos: 0,
-      holeTypeDefCharPos: "declare function _(): ".length,
-      // range: { start: { line: 0, character: 0 }, end: { line: 0, character: 52 } }
-      range: (sketchSymbol![0] as SymbolInformation).location.range,
-      source: `file://${injectedSketchFilePath}`,
-      trueHoleFunction: trueHoleFunction
-    };
+      const sketchSymbol = await lspClient.documentSymbol({
+        textDocument: {
+          uri: `file://${injectedSketchFilePath}`,
+        }
+      });
+
+      return {
+        fullHoverResult: formattedHoverResult,
+        functionName: functionName,
+        functionTypeSpan: functionTypeSpan,
+        linePosition: linePosition,
+        characterPosition: characterPosition,
+        holeTypeDefLinePos: 0,
+        holeTypeDefCharPos: "declare function _(): ".length,
+        // range: { start: { line: 0, character: 0 }, end: { line: 0, character: 52 } }
+        range: (sketchSymbol![0] as SymbolInformation).location.range,
+        source: `file://${injectedSketchFilePath}`,
+        trueHoleFunction: trueHoleFunction
+      };
+    } else {
+      const holeHoverResult = await VsCode.hover(
+        {
+          filepath: injectedSketchFilePath,
+          position: {
+            line: linePosition,
+            character: characterPosition
+          }
+        }
+      );
+
+      const formattedHoverResult = holeHoverResult.text.split("\n").reduce((acc: string, curr: string) => {
+        if (curr != "" && curr != "```typescript" && curr != "```") {
+          return acc + curr;
+        } else {
+          return acc;
+        }
+      }, "");
+
+      const holeFunctionPattern = /(function _)(\<.+\>)(\(\): )(.+)/;
+      const match = formattedHoverResult.match(holeFunctionPattern);
+      const functionName = "_()";
+      const functionTypeSpan = match![4];
+
+      // Clean up and inject the true hole function without the generic type signature.
+      // NOTE: this can be abstracted to its own method?
+      const trueHoleFunction = `declare function _(): ${functionTypeSpan}`
+      const trueInjectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
+      fs.writeFileSync(injectedSketchFilePath, trueInjectedSketchFileContent);
+
+      const sketchSymbol = await VsCode.getDocumentSymbols({
+        filepath: injectedSketchFilePath
+      });
+
+      return {
+        fullHoverResult: formattedHoverResult,
+        functionName: functionName,
+        functionTypeSpan: functionTypeSpan,
+        linePosition: linePosition,
+        characterPosition: characterPosition,
+        holeTypeDefLinePos: 0,
+        holeTypeDefCharPos: "declare function _(): ".length,
+        range: sketchSymbol[0].range,
+        source: `file://${injectedSketchFilePath}`,
+        trueHoleFunction: trueHoleFunction
+      };
+    }
   }
 
 
@@ -324,17 +392,19 @@ export class TypeScriptDriver implements LanguageDriver {
 
 
   async extractRelevantTypes(
-    lspClient: LspClient,
+    lspClient: LspClient | null,
     fullHoverResult: string,
     typeName: string,
     startLine: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>, // identifier -> [full hover result, source]
     currentFile: string,
     foundContents: Map<string, string>, // uri -> contents
-    logStream: fs.WriteStream
+    logStream: fs.WriteStream | null
   ) {
 
-    logStream.write(`\n\n=*=*=*=*=*=[begin extracting relevant headers][${new Date().toISOString()}]\n\n`);
+    if (logStream) {
+      logStream.write(`\n\n=*=*=*=*=*=[begin extracting relevant headers][${new Date().toISOString()}]\n\n`);
+    }
 
     const content = fs.readFileSync(currentFile.slice(7), "utf8");
     // console.log(content)
@@ -344,7 +414,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
 
   async extractRelevantTypesHelper(
-    lspClient: LspClient,
+    lspClient: LspClient | null,
     fullHoverResult: string,
     typeName: string,
     startLine: number,
@@ -353,85 +423,87 @@ export class TypeScriptDriver implements LanguageDriver {
     foundContents: Map<string, string>, // uri -> contents
     layer: number
   ) {
-    // console.log("===", fullHoverResult, layer, startLine, "===")
-    // Split the type span into identifiers, where each include the text, line number, and character range.
-    // For each identifier, invoke go to type definition.
-    if (!foundSoFar.has(typeName)) {
-      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
+    if (lspClient) {
+      // console.log("===", fullHoverResult, layer, startLine, "===")
+      // Split the type span into identifiers, where each include the text, line number, and character range.
+      // For each identifier, invoke go to type definition.
+      if (!foundSoFar.has(typeName)) {
+        foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
 
-      // console.log(fullHoverResult)
-      const identifiers = this.typeChecker.extractIdentifiers(fullHoverResult);
-      // DEBUG: REMOVE
-      // console.log("identifiers")
-      // console.dir(identifiers, { depth: null })
+        // console.log(fullHoverResult)
+        const identifiers = this.typeChecker.extractIdentifiers(fullHoverResult);
+        // DEBUG: REMOVE
+        // console.log("identifiers")
+        // console.dir(identifiers, { depth: null })
 
-      for (const identifier of identifiers) {
-        // console.log(`== loop ==`)
-        // console.dir(identifier, { depth: null })
-        // console.time(`loop ${identifier.name} layer ${layer}`)
-        // if (identifier.name === "_") {
-        //   console.timeEnd(`loop ${identifier.name} layer ${layer}`)
-        //   continue;
-        // };
-        // console.log(identifier)
-        // console.log(foundSoFar.has(identifier.name))
-        if (!foundSoFar.has(identifier.name)) {
-          try {
-            // const start = performance.now()
-            const typeDefinitionResult = await lspClient.typeDefinition({
-              textDocument: {
-                uri: currentFile
-              },
-              position: {
-                character: identifier.start,
-                line: startLine + identifier.line - 1 // startLine is already 1-indexed
-              }
-            });
-            // const end = performance.now()
-            // console.log(end - start)
-            // if (identifier.name == "Model") {
-            //   console.log(identifier)
-            //   console.dir(typeDefinitionResult, { depth: null })
-            // }
+        for (const identifier of identifiers) {
+          // console.log(`== loop ==`)
+          // console.dir(identifier, { depth: null })
+          // console.time(`loop ${identifier.name} layer ${layer}`)
+          // if (identifier.name === "_") {
+          //   console.timeEnd(`loop ${identifier.name} layer ${layer}`)
+          //   continue;
+          // };
+          // console.log(identifier)
+          // console.log(foundSoFar.has(identifier.name))
+          if (!foundSoFar.has(identifier.name)) {
+            try {
+              // const start = performance.now()
+              const typeDefinitionResult = await lspClient.typeDefinition({
+                textDocument: {
+                  uri: currentFile
+                },
+                position: {
+                  character: identifier.start,
+                  line: startLine + identifier.line - 1 // startLine is already 1-indexed
+                }
+              });
+              // const end = performance.now()
+              // console.log(end - start)
+              // if (identifier.name == "Model") {
+              //   console.log(identifier)
+              //   console.dir(typeDefinitionResult, { depth: null })
+              // }
 
-            if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
-              const tdLocation = typeDefinitionResult[0] as Location;
-              let content = "";
-              if (foundContents.has(tdLocation.uri.slice(7))) {
-                content = foundContents.get(tdLocation.uri.slice(7))!;
+              if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
+                const tdLocation = typeDefinitionResult[0] as Location;
+                let content = "";
+                if (foundContents.has(tdLocation.uri.slice(7))) {
+                  content = foundContents.get(tdLocation.uri.slice(7))!;
+                } else {
+                  content = fs.readFileSync(tdLocation.uri.slice(7), "utf8");
+                  foundContents.set(tdLocation.uri.slice(7), content);
+                }
+                const decl = this.typeChecker.findDeclarationForIdentifier(content, tdLocation.range.start.line, tdLocation.range.start.character, tdLocation.range.end.character);
+                if (decl) {
+                  // const ident = this.typeChecker.getIdentifierFromDecl(decl);
+                  // console.log(ident == identifier.name, ident, identifier.name, decl)
+                  // console.log(`Decl: ${decl} || Identifier: ${ident}`)
+                  // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
+                  await this.extractRelevantTypesHelper(
+                    lspClient,
+                    decl,
+                    identifier.name,
+                    tdLocation.range.start.line,
+                    foundSoFar,
+                    tdLocation.uri,
+                    foundContents,
+                    layer + 1,
+                  );
+                } else {
+                  console.log("decl not found")
+                  // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
+                }
               } else {
-                content = fs.readFileSync(tdLocation.uri.slice(7), "utf8");
-                foundContents.set(tdLocation.uri.slice(7), content);
+                console.log("td not found")
+                // console.dir(typeDefinitionResult, { depth: null })
               }
-              const decl = this.typeChecker.findDeclarationForIdentifier(content, tdLocation.range.start.line, tdLocation.range.start.character, tdLocation.range.end.character);
-              if (decl) {
-                // const ident = this.typeChecker.getIdentifierFromDecl(decl);
-                // console.log(ident == identifier.name, ident, identifier.name, decl)
-                // console.log(`Decl: ${decl} || Identifier: ${ident}`)
-                // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
-                await this.extractRelevantTypesHelper(
-                  lspClient,
-                  decl,
-                  identifier.name,
-                  tdLocation.range.start.line,
-                  foundSoFar,
-                  tdLocation.uri,
-                  foundContents,
-                  layer + 1,
-                );
-              } else {
-                console.log("decl not found")
-                // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
-              }
-            } else {
-              console.log("td not found")
-              // console.dir(typeDefinitionResult, { depth: null })
+            } catch (err) {
+              console.log(err)
             }
-          } catch (err) {
-            console.log(err)
+          } else {
+            // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
           }
-        } else {
-          // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
         }
       }
     }
@@ -439,7 +511,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
 
   async extractRelevantHeaders(
-    _: LspClient,
+    _: LspClient | null,
     sources: string[],
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
     holeType: string,
