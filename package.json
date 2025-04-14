@@ -27,7 +27,8 @@
     "pprof": "^4.0.0",
     "shx": "^0.3.4",
     "ts-node": "^10.9.2",
-    "tslib": "^2.8.1"
+    "tslib": "^2.8.1",
+    "vscode": "^1.1.37"
   },
   "devDependencies": {
     "typescript": "^5.8.2"
