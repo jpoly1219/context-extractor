@@ -330,8 +330,11 @@ export class TypeScriptDriver implements LanguageDriver {
     startLine: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>, // identifier -> [full hover result, source]
     currentFile: string,
-    foundContents: Map<string, string> // uri -> contents
+    foundContents: Map<string, string>, // uri -> contents
+    logStream: fs.WriteStream
   ) {
+
+    logStream.write(`\n\n=*=*=*=*=*=[begin extracting relevant headers][${new Date().toISOString()}]\n\n`);
 
     const content = fs.readFileSync(currentFile.slice(7), "utf8");
     // console.log(content)
@@ -356,7 +359,10 @@ export class TypeScriptDriver implements LanguageDriver {
     if (!foundSoFar.has(typeName)) {
       foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
 
+      // console.log(fullHoverResult)
       const identifiers = this.typeChecker.extractIdentifiers(fullHoverResult);
+      // DEBUG: REMOVE
+      // console.log("identifiers")
       // console.dir(identifiers, { depth: null })
 
       for (const identifier of identifiers) {
@@ -436,8 +442,10 @@ export class TypeScriptDriver implements LanguageDriver {
     _: LspClient,
     sources: string[],
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
-    holeType: string
+    holeType: string,
+    projectRoot: string,
   ): Promise<Set<TypeSpanAndSourceFile>> {
+    // console.log("extractRelevantHeaders")
     // console.time("extractRelevantHeaders");
 
     const relevantContext = new Set<TypeSpanAndSourceFile>();
@@ -451,7 +459,8 @@ export class TypeScriptDriver implements LanguageDriver {
 
     const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
 
-    const program = this.typeChecker.createTsCompilerProgram(sources);
+    console.log("root", projectRoot)
+    const program = this.typeChecker.createTsCompilerProgram(sources, projectRoot);
 
     // only consider lines that start with let or const
     for (const source of sources) {
@@ -469,7 +478,8 @@ export class TypeScriptDriver implements LanguageDriver {
       varFuncDecls.forEach((decl) => {
         // const typeAnalysisResult = this.typeChecker.analyzeTypeString(decl.type);
         // console.log(`typeAnalysisResult: ${JSON.stringify(typeAnalysisResult, null, 2)}`)
-        console.dir(decl, { depth: 2 })
+        console.log("decl**")
+        console.dir(decl, { depth: null })
 
         this.extractRelevantHeadersHelper2(
           decl.declarationText,
@@ -717,7 +727,7 @@ export class TypeScriptDriver implements LanguageDriver {
     }
     // const normT1 = foundNormalForms.has(t1) ? foundNormalForms.get(t1) : this.normalize2(t1, relevantTypes);
     // const normT2 = foundNormalForms.has(t2) ? foundNormalForms.get(t2) : this.normalize2(t2, relevantTypes);
-    // console.log(normT1, normT2)
+    // console.log("    ", normT1, normT2, normT1 === normT2)
     return normT1 === normT2;
   }
 
@@ -908,6 +918,9 @@ export class TypeScriptDriver implements LanguageDriver {
       // console.log("typeSpan:", typeSpan)
       // console.log("analysis:", analysisResult.text)
       // console.log(relevantTypes.get(analysisResult.text))
+      if (!relevantTypes.has(analysisResult.text)) {
+        return typeSpan;
+      }
       const typ = relevantTypes.get(analysisResult.text)!.typeSpan.split(" = ")[1];
       if (typ === undefined) {
         return typeSpan;
@@ -934,6 +947,11 @@ export class TypeScriptDriver implements LanguageDriver {
     foundNormalForms: Map<string, string>,
     foundTypeAnalysisResults: Map<string, TypeAnalysis> // filename+typeSpan -> typeAnalysisResult
   ) {
+    // console.log("extractRelevantHeaders2")
+    // if (declText.includes("getBookings")) {
+    // if (declText.slice(0, 11) === "getBookings") {
+    //   console.log("toplevel", declText, "-=-=-", typeSpan)
+    // }
     let typeAnalysisResult: TypeAnalysis;
     if (!foundTypeAnalysisResults.has(source + ":" + typeSpan)) {
       typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan);
@@ -943,6 +961,12 @@ export class TypeScriptDriver implements LanguageDriver {
     }
 
     targetTypes.forEach(typ => {
+      // if (declText.includes("getBookings")) {
+      // if (declText.slice(0, 11) === "getBookings") {
+      //   console.log("innermost", declText, "-=-=-", typeSpan)
+      //   console.log(this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms))
+      //   console.log("============")
+      // }
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms)) {
         // NOTE: This checks for dupes. ctx is an object so you need to check for each field.
         // relevantContext.add({ typeSpan: line, sourceFile: source });
