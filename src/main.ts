@@ -7,7 +7,7 @@ import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantHeaders } from "./core";
 import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractHeadersWithCodeQL, extractHoleType, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
 import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants";
-import { Context, Language } from "./types";
+import { Context, IDE, Language } from "./types";
 import { App, CompletionEngine } from "./app";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
@@ -22,7 +22,7 @@ export const extract = async (sketchPath: string) => {
   const r = spawn('typescript-language-server', ['--stdio']);
   const e = new JSONRPCEndpoint(r.stdin, r.stdout);
   const c = new LspClient(e);
-  console.log(JSON.stringify(c));
+  // console.log(JSON.stringify(c));
 
   const capabilities: ClientCapabilities = {
     'textDocument': {
@@ -237,9 +237,11 @@ export const extractContext = async (
   language: Language,
   sketchPath: string,
   repoPath: string,
+  ide: IDE
 ) => {
   // console.time("extractContext")
-  const app = new App(language, sketchPath, repoPath);
+  console.log("=*=*=*=")
+  const app = new App(language, sketchPath, repoPath, ide);
   await app.run();
   const res = app.getSavedResult();
   app.close();
