@@ -5,11 +5,11 @@ import { execSync } from "child_process";
 import OpenAI from "openai";
 import { LspClient, JSONRPCEndpoint, SymbolInformation, Location, Range } from "../ts-lsp-client-dist/src/main";
 // import { LspClient, JSONRPCEndpoint } from "ts-lsp-client";
-import { Language, LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config } from "./types";
+import { Language, LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config, IDE } from "./types";
 // TODO: Bundle the drivers as barrel exports.
 import { TypeScriptDriver } from "./typescript-driver";
 import { OcamlDriver } from "./ocaml-driver";
-import { getAllTSFiles, getAllOCamlFiles, removeLines } from "./utils";
+import { getAllTSFiles, getAllOCamlFiles, removeLines, getTimestampForFilename } from "./utils";
 import { performance } from "perf_hooks";
 import { time } from "console";
 
@@ -27,6 +27,8 @@ export class App {
   //   relevantHeaders: string[];
   // } | null = null;
   private result: Context | null = null;
+  private logStream: fs.WriteStream;
+  private ide: IDE
 
   // Optional timeout for forced termination
   // private timeout = setTimeout(() => {
@@ -38,7 +40,7 @@ export class App {
 
 
 
-  constructor(language: Language, sketchPath: string, repoPath: string) {
+  constructor(language: Language, sketchPath: string, repoPath: string, ide: IDE) {
     this.language = language;
     this.sketchPath = sketchPath;
     this.repoPath = repoPath;
@@ -82,16 +84,17 @@ export class App {
     this.lspClient = c;
 
     // Logging tsserver output
-    const logStream = fs.createWriteStream("tsserver-custom.log", { flags: "w" });
-    r.stdout.pipe(logStream);
-    r.stderr.pipe(logStream);
+    const logStream = fs.createWriteStream(`tsserver-${getTimestampForFilename()}.log`, { flags: "w" });
+    this.logStream = logStream;
+    r.stdout.pipe(this.logStream);
+    r.stderr.pipe(this.logStream);
 
     // Helper function to prepend timestamps
     const logWithTimestamp = (data: Buffer) => {
       const timestamp = new Date().toISOString();
       // console.log(timestamp)
       // console.log(timestamp, data.toString())
-      // logStream.write(`\n\n======[${timestamp}] ${data.toString()}\n\n`);
+      this.logStream.write(`\n\n=*=*=*=*=*=[${timestamp}] ${data.toString()}\n\n`);
     };
 
     // Capture and log stdout and stderr with timestamps
@@ -108,6 +111,7 @@ export class App {
     // Clear timeout once the process exits
     this.languageServer.on('exit', () => {
       // clearTimeout(this.timeout);
+      this.logStream.close();
       console.log('Process terminated cleanly.');
     });
 
@@ -135,30 +139,31 @@ export class App {
         this.lspClient,
         this.sketchPath,
       );
+      console.dir(holeContext, { depth: null })
       // console.timeEnd("getHoleContext");
 
       // console.time("extractRelevantTypes");
-      await this.lspClient.documentSymbol({
-        textDocument: {
-          uri: `file://${this.repoPath}prelude.ts`,
-        }
-      });
-      await this.lspClient.documentSymbol({
-        textDocument: {
-          uri: `file://${this.repoPath}injected_sketch.ts`,
-        }
-      });
-
-      // let start = performance.now()
-      // await this.lspClient.typeDefinition({
+      // await this.lspClient.documentSymbol({
       //   textDocument: {
-      //     uri: `file://${this.repoPath}injected_sketch.ts`,
-      //   },
-      //   position: {
-      //     character: 9,
-      //     line: 1
+      //     uri: `file://${this.repoPath}prelude.ts`,
       //   }
       // });
+      // await this.lspClient.documentSymbol({
+      //   textDocument: {
+      //     uri: `file://${this.repoPath}injected_sketch.ts`,
+      //   }
+      // });
+
+      // let start = performance.now()
+      await this.lspClient.typeDefinition({
+        textDocument: {
+          uri: `file://${this.repoPath}injected_sketch.ts`,
+        },
+        position: {
+          character: 35,
+          line: 1
+        }
+      });
       // let end = performance.now()
       // console.log("elapsed:", end - start)
 
@@ -171,10 +176,18 @@ export class App {
         holeContext.range.start.line,
         new Map<string, TypeSpanAndSourceFile>(),
         holeContext.source,
-        new Map<string, string>()
+        new Map<string, string>(),
+        this.logStream
       );
       const end = performance.now()
       console.log("elapsed:", end - start)
+      // this.logStream.write(`\n\n=*=*=*=*=*=[begin extracting relevant headers][${new Date().toISOString()}]\n\n`);
+      // const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+      // (async () => {
+      //   console.log("Waiting...");
+      //   await sleep(2000);
+      //   console.log("Done!");
+      // })();
       // console.timeEnd("extractRelevantTypes");
 
       // console.dir(relevantTypes, { depth: null })
@@ -202,11 +215,13 @@ export class App {
       // console.timeEnd("extractRelevantHeaders repo");
 
       // console.time("extractRelevantHeaders");
+
       const relevantHeaders = await this.languageDriver.extractRelevantHeaders(
         this.lspClient,
         repo,
         relevantTypes,
-        holeContext.functionTypeSpan
+        holeContext.functionTypeSpan,
+        this.repoPath
       );
       // const relevantHeaders: { typeSpan: string, sourceFile: string }[] = []
       // console.timeEnd("extractRelevantHeaders");
@@ -243,6 +258,7 @@ export class App {
 
       const relevantHeadersToReturn: Map<string, string[]> = new Map<string, string[]>();
       relevantHeaders.forEach(({ typeSpan: v, sourceFile: src }) => {
+        // console.log(v, src)
         if (relevantHeadersToReturn.has(src)) {
           const updated = relevantHeadersToReturn.get(src)!;
           if (!updated.includes(v)) {
@@ -280,6 +296,7 @@ export class App {
 
 
   getSavedResult() {
+    // console.dir(this.result, { depth: null })
     return this.result;
   }
 
