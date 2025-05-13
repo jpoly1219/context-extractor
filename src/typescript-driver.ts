@@ -1,3 +1,4 @@
+import * as ts from 'typescript';
 import * as fs from "fs";
 import * as path from "path";
 import OpenAI from "openai";
@@ -8,21 +9,39 @@ import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolIn
 import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent, TypeAnalysis, VarFuncDecls, IDE } from "./types";
 import { TypeScriptTypeChecker } from "./typescript-type-checker";
 import { extractSnippet, removeLines } from "./utils";
-import { Type } from "typescript";
+import { transpileDeclaration, Type } from "typescript";
 import { types } from "util";
-import * as vscode from "vscode";
-import { VsCode } from "./vscode";
+// import * as vscode from "vscode";
+// import { VsCode } from "./vscode-ide";
+import { flushCompileCache } from "module";
 
 
 export class TypeScriptDriver implements LanguageDriver {
   ide: IDE;
   typeChecker: TypeScriptTypeChecker = new TypeScriptTypeChecker();
+  vscodeImport: any;
+  tsCompilerProgram: ts.Program;
+  tsCompilerTypeChecker: ts.TypeChecker;
 
-  constructor(ide: IDE) {
+  constructor(
+    ide: IDE,
+    sources: string[],
+    projectRoot: string
+  ) {
     this.ide = ide;
+    if (ide == IDE.VSCode) {
+      import("./vscode-ide").then(module => this.vscodeImport = module);
+    }
+
+    // Initialize TypeScript compiler API.
+    this.tsCompilerProgram = this.typeChecker.createTsCompilerProgram(sources, projectRoot);
+    this.tsCompilerTypeChecker = this.tsCompilerProgram.getTypeChecker();
   }
 
-  async init(lspClient: LspClient | null, sketchPath: string) {
+  async init(
+    lspClient: LspClient | null,
+    sketchPath: string,
+  ) {
     if (lspClient) {
       const capabilities: ClientCapabilities = {
         'textDocument': {
@@ -115,14 +134,30 @@ export class TypeScriptDriver implements LanguageDriver {
   }
 
 
-  async getHoleContext(lspClient: LspClient | null, sketchFilePath: string) {
+  injectHole(sketchFilePath: string) {
+    const sketchDir = path.dirname(sketchFilePath);
+    const injectedSketchFilePath = path.join(sketchDir, "injected_sketch.ts");
+    const sketchFileContent = fs.readFileSync(sketchFilePath, "utf8");
+    const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
+    fs.writeFileSync(injectedSketchFilePath, injectedSketchFileContent);
+  }
+
+
+  async getHoleContext(
+    lspClient: LspClient | null,
+    sketchFilePath: string,
+    logStream: fs.WriteStream | null
+  ) {
+    if (logStream) {
+      logStream.write(`\n\n=*=*=*=*=*=[begin extracting hole context][${new Date().toISOString()}]\n\n`);
+    }
     // For TypeScript programs, we need to inject the hole function before getting its context.
     // NOTE: this can be abstracted to its own method?
     const sketchDir = path.dirname(sketchFilePath);
     const injectedSketchFilePath = path.join(sketchDir, "injected_sketch.ts");
     const sketchFileContent = fs.readFileSync(sketchFilePath, "utf8");
     const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
-    fs.writeFileSync(injectedSketchFilePath, injectedSketchFileContent);
+    // fs.writeFileSync(injectedSketchFilePath, injectedSketchFileContent);
 
     // Get the hole's position.
     const holePattern = /_\(\)/;
@@ -143,19 +178,40 @@ export class TypeScriptDriver implements LanguageDriver {
       // Sync client and server by notifying that
       // the client has opened all the files
       // inside the target directory.
-      fs.readdirSync(sketchDir).map(fileName => {
-        if (fs.lstatSync(path.join(sketchDir, fileName)).isFile()) {
-          lspClient.didOpen({
-            textDocument: {
-              uri: `file://${sketchDir}/${fileName}`,
-              languageId: "typescript",
-              text: fs.readFileSync(`${sketchDir}/${fileName}`).toString("ascii"),
-              version: 1
-            }
-          });
-        }
-      });
+      // lspClient.didOpen({
+      //   textDocument: {
+      //     uri: injectedSketchFilePath,
+      //     languageId: "typescript",
+      //     text: injectedSketchFileContent,
+      //     version: 1
+      //   }
+      // });
+      // fs.readdirSync(sketchDir).map(fileName => {
+      //   if (fs.lstatSync(path.join(sketchDir, fileName)).isFile()) {
+      //     lspClient.didOpen({
+      //       textDocument: {
+      //         uri: `file://${sketchDir}/${fileName}`,
+      //         languageId: "typescript",
+      //         text: fs.readFileSync(`${sketchDir}/${fileName}`).toString("ascii"),
+      //         version: 1
+      //       }
+      //     });
+      //   }
+      // });
 
+      // await (async () => {
+      //   return new Promise(resolve => setTimeout(resolve, 500))
+      // })();
+
+      // const blocker = () => {
+      //   for (let i = 0; i < 10000; ++i) {
+      //     console.log(i)
+      //   }
+      // }
+      // blocker();
+
+      // console.log(characterPosition, linePosition)
+      console.time("hover")
       const holeHoverResult = await lspClient.hover({
         textDocument: {
           uri: injectedSketchFilePath
@@ -165,6 +221,7 @@ export class TypeScriptDriver implements LanguageDriver {
           line: linePosition
         }
       });
+      console.timeEnd("hover")
 
       const formattedHoverResult = (holeHoverResult.contents as MarkupContent).value.split("\n").reduce((acc: string, curr: string) => {
         if (curr != "" && curr != "```typescript" && curr != "```") {
@@ -174,11 +231,15 @@ export class TypeScriptDriver implements LanguageDriver {
         }
       }, "");
 
+      // console.log(formattedHoverResult)
+
       // function _<(a: Apple, c: Cherry, b: Banana) => Cherry > (): (a: Apple, c: Cherry, b: Banana) => Cherry
       const holeFunctionPattern = /(function _)(\<.+\>)(\(\): )(.+)/;
       const match = formattedHoverResult.match(holeFunctionPattern);
       const functionName = "_()";
+      // console.log("aaa")
       const functionTypeSpan = match![4];
+      // console.log("bbb")
 
       // Clean up and inject the true hole function without the generic type signature.
       // NOTE: this can be abstracted to its own method?
@@ -186,6 +247,7 @@ export class TypeScriptDriver implements LanguageDriver {
       const trueInjectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
       fs.writeFileSync(injectedSketchFilePath, trueInjectedSketchFileContent);
 
+      console.time("didChange")
       lspClient.didChange({
         textDocument: {
           uri: `file://${injectedSketchFilePath}`,
@@ -195,12 +257,15 @@ export class TypeScriptDriver implements LanguageDriver {
           text: trueInjectedSketchFileContent
         }]
       });
+      console.timeEnd("didChange")
 
+      console.time("documentSymbol")
       const sketchSymbol = await lspClient.documentSymbol({
         textDocument: {
           uri: `file://${injectedSketchFilePath}`,
         }
       });
+      console.timeEnd("documentSymbol")
 
       return {
         fullHoverResult: formattedHoverResult,
@@ -216,7 +281,7 @@ export class TypeScriptDriver implements LanguageDriver {
         trueHoleFunction: trueHoleFunction
       };
     } else {
-      const holeHoverResult = await VsCode.hover(
+      const holeHoverResult = await this.vscodeImport.VsCode.hover(
         {
           filepath: injectedSketchFilePath,
           position: {
@@ -245,7 +310,7 @@ export class TypeScriptDriver implements LanguageDriver {
       const trueInjectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
       fs.writeFileSync(injectedSketchFilePath, trueInjectedSketchFileContent);
 
-      const sketchSymbol = await VsCode.getDocumentSymbols({
+      const sketchSymbol = await this.vscodeImport.VsCode.getDocumentSymbols({
         filepath: injectedSketchFilePath
       });
 
@@ -262,6 +327,89 @@ export class TypeScriptDriver implements LanguageDriver {
         trueHoleFunction: trueHoleFunction
       };
     }
+  }
+
+
+  async getHoleContextWithCompilerAPI(
+    sketchFilePath: string,
+    logStream: fs.WriteStream | null
+  ) {
+    if (logStream) {
+      // logStream.write("")
+    }
+
+    // For TypeScript programs, we need to inject the hole function before getting its context.
+    const sketchDir = path.dirname(sketchFilePath);
+    const injectedSketchFilePath = path.join(sketchDir, "injected_sketch.ts");
+    const sketchFileContent = fs.readFileSync(sketchFilePath, "utf8");
+    const injectedSketchFileContent = `declare function _<T>(): T\n${sketchFileContent}`;
+
+    // Get the hole's position.
+    const holePattern = /_\(\)/;
+    const firstPatternIndex = injectedSketchFileContent.search(holePattern);
+    const linePosition = (
+      injectedSketchFileContent
+        .substring(0, firstPatternIndex)
+        .match(/\n/g)
+    )!.length;
+    const characterPosition = firstPatternIndex - (
+      injectedSketchFileContent
+        .split("\n", linePosition)
+        .join("\n")
+        .length
+    ) - 1;
+
+    // const sourceFile = ts.createSourceFile("sample.ts", injectedSketchFileContent, ts.ScriptTarget.Latest, true);
+    const sourceFile = this.tsCompilerProgram.getSourceFile(injectedSketchFilePath)!;
+    const position = ts.getPositionOfLineAndCharacter(sourceFile, linePosition, characterPosition);
+
+    function findNode(node: ts.Node): ts.Node | undefined {
+      if (position >= node.getStart() && position <= node.getEnd()) {
+        // NOTE: this is probably unnecessary if characterPosition accounted for the (), not just _
+        if (node.getText() === "_()") {
+          return node;
+        }
+        return ts.forEachChild(node, findNode) || node;
+      }
+    }
+
+    const targetNode = findNode(sourceFile);
+
+    if (!(targetNode && ts.isCallExpression(targetNode))) {
+      console.log("Node not found or not a call expression.");
+      throw new Error("Node not found or not a call expression.");
+    }
+
+    const type = this.tsCompilerTypeChecker.getTypeAtLocation(targetNode);
+    const typeString = this.tsCompilerTypeChecker.typeToString(type);
+    const typeStr = `function _<${typeString}>(): ${typeString}`
+    console.log("TYPE:", typeStr);
+
+    // function _<(a: Apple, c: Cherry, b: Banana) => Cherry > (): (a: Apple, c: Cherry, b: Banana) => Cherry
+    const holeFunctionPattern = /(function _)(\<.+\>)(\(\): )(.+)/;
+    const match = typeStr.match(holeFunctionPattern);
+    const functionName = "_()";
+    const functionTypeSpan = match![4];
+
+    // Clean up and inject the true hole function without the generic type signature.
+    // NOTE: this can be abstracted to its own method?
+    const trueHoleFunction = `declare function _(): ${functionTypeSpan}`
+    const trueInjectedSketchFileContent = `${trueHoleFunction}\n${sketchFileContent}`
+    fs.writeFileSync(injectedSketchFilePath, trueInjectedSketchFileContent);
+
+    return {
+      fullHoverResult: typeStr,
+      functionName: functionName,
+      functionTypeSpan: functionTypeSpan,
+      linePosition: linePosition,
+      characterPosition: characterPosition,
+      holeTypeDefLinePos: 0,
+      holeTypeDefCharPos: "declare function _(): ".length,
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 52 } },
+      // range: (sketchSymbol![0] as SymbolInformation).location.range,
+      source: `file://${injectedSketchFilePath}`,
+      trueHoleFunction: trueHoleFunction
+    };
   }
 
 
@@ -406,7 +554,7 @@ export class TypeScriptDriver implements LanguageDriver {
       logStream.write(`\n\n=*=*=*=*=*=[begin extracting relevant headers][${new Date().toISOString()}]\n\n`);
     }
 
-    const content = fs.readFileSync(currentFile.slice(7), "utf8");
+    // const content = fs.readFileSync(currentFile.slice(7), "utf8");
     // console.log(content)
     await this.extractRelevantTypesHelper(lspClient, fullHoverResult, typeName, startLine, foundSoFar, currentFile, foundContents, 0);
     return foundSoFar;
@@ -434,6 +582,7 @@ export class TypeScriptDriver implements LanguageDriver {
         const identifiers = this.typeChecker.extractIdentifiers(fullHoverResult);
         // DEBUG: REMOVE
         // console.log("identifiers")
+        // console.log(fullHoverResult)
         // console.dir(identifiers, { depth: null })
 
         for (const identifier of identifiers) {
@@ -474,6 +623,7 @@ export class TypeScriptDriver implements LanguageDriver {
                   content = fs.readFileSync(tdLocation.uri.slice(7), "utf8");
                   foundContents.set(tdLocation.uri.slice(7), content);
                 }
+                // console.log(extractSnippet(content, { line: tdLocation.range.start.line, character: tdLocation.range.start.character }, { line: tdLocation.range.end.line, character: tdLocation.range.end.character }))
                 const decl = this.typeChecker.findDeclarationForIdentifier(content, tdLocation.range.start.line, tdLocation.range.start.character, tdLocation.range.end.character);
                 if (decl) {
                   // const ident = this.typeChecker.getIdentifierFromDecl(decl);
@@ -491,11 +641,11 @@ export class TypeScriptDriver implements LanguageDriver {
                     layer + 1,
                   );
                 } else {
-                  console.log("decl not found")
+                  // console.log("decl not found")
                   // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
                 }
               } else {
-                console.log("td not found")
+                // console.log("td not found")
                 // console.dir(typeDefinitionResult, { depth: null })
               }
             } catch (err) {
@@ -503,6 +653,60 @@ export class TypeScriptDriver implements LanguageDriver {
             }
           } else {
             // console.timeEnd(`loop ${identifier.name} layer ${layer}`)
+          }
+        }
+      }
+    } else {
+      // TODO: Test this.
+      if (!foundSoFar.has(typeName)) {
+        foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
+
+        const identifiers = this.typeChecker.extractIdentifiers(fullHoverResult);
+        for (const identifier of identifiers) {
+          if (!foundSoFar.has(identifier.name)) {
+            try {
+              const typeDefinitionResult = await this.vscodeImport.VsCode.gotoTypeDefinition({
+                filepath: currentFile,
+                position: {
+                  line: startLine + identifier.line - 1,
+                  character: identifier.start
+                }
+              });
+
+              if (typeDefinitionResult.length != 0) {
+                const tdLocation = typeDefinitionResult[0];
+                let content = "";
+                if (foundContents.has(tdLocation.filepath)) {
+                  content = foundContents.get(tdLocation.filepath)!;
+                } else {
+                  content = fs.readFileSync(tdLocation.filepath, "utf8");
+                  foundContents.set(tdLocation.filepath, content);
+                }
+
+                const decl = this.typeChecker.findDeclarationForIdentifier(content, tdLocation.range.start.line, tdLocation.range.start.character, tdLocation.range.end.character);
+
+                if (decl) {
+                  await this.extractRelevantTypesHelper(
+                    lspClient,
+                    decl,
+                    identifier.name,
+                    tdLocation.range.start.line,
+                    foundSoFar,
+                    tdLocation.filepath,
+                    foundContents,
+                    layer + 1
+                  )
+                } else {
+                  console.log("decl not found");
+                }
+              } else {
+                console.log("td not found");
+              }
+            } catch (err) {
+              console.log(err);
+            }
+          } else {
+
           }
         }
       }
@@ -519,6 +723,11 @@ export class TypeScriptDriver implements LanguageDriver {
   ): Promise<Set<TypeSpanAndSourceFile>> {
     // console.log("extractRelevantHeaders")
     // console.time("extractRelevantHeaders");
+    // NOTE: This takes around 550ms.
+    // TODO: Move this to the init method.
+    // const program = this.typeChecker.createTsCompilerProgram(sources, projectRoot);
+    // const checker = program.getTypeChecker();
+    // NOTE: program = this.typeChecker.createProgramFromSource("")
 
     const relevantContext = new Set<TypeSpanAndSourceFile>();
     // NOTE: This is necessary because TypeScript sucks.
@@ -529,10 +738,11 @@ export class TypeScriptDriver implements LanguageDriver {
     const foundNormalForms = new Map<string, string>();
     const foundTypeAnalysisResults = new Map<string, TypeAnalysis>();
 
-    const targetTypes = this.generateTargetTypes(relevantTypes, holeType);
+    // TODO: As long as you have a this binding to the program and the checker, you don't have to pass it around.
+    const targetTypes = this.generateTargetTypes(relevantTypes, holeType, this.tsCompilerProgram, this.tsCompilerTypeChecker);
 
-    console.log("root", projectRoot)
-    const program = this.typeChecker.createTsCompilerProgram(sources, projectRoot);
+    // console.log("root", projectRoot)
+    const seenDecls = new Set<string>();
 
     // only consider lines that start with let or const
     for (const source of sources) {
@@ -542,29 +752,41 @@ export class TypeScriptDriver implements LanguageDriver {
       // filter by variable and function decls
       // get a d.ts of them (or get a type decl)
       // type decl makes more sense because d.ts format is a bit weird with class methods
-      const start = performance.now()
-      const varFuncDecls = this.typeChecker.findTopLevelDeclarations(program, source);
-      const end = performance.now()
-      // console.log(varFuncDecls, end - start)
+
+      // const start = performance.now()
+      const varFuncDecls = this.typeChecker.findTopLevelDeclarations(this.tsCompilerProgram, this.tsCompilerTypeChecker, source);
+      // const end = performance.now()
+      // console.log("varFuncDecls")
+      // console.log(varFuncDecls)
 
       varFuncDecls.forEach((decl) => {
+        // TODO: Memoize decls that are already seen. (update: this moves 10ms from normalize2 to isTypeEquivalent.)
+
         // const typeAnalysisResult = this.typeChecker.analyzeTypeString(decl.type);
         // console.log(`typeAnalysisResult: ${JSON.stringify(typeAnalysisResult, null, 2)}`)
-        console.log("decl**")
-        console.dir(decl, { depth: null })
+        // NOTE: debugging
+        // console.log("decl**")
+        // console.dir(decl, { depth: null })
+        const declStr = JSON.stringify(decl);
 
-        this.extractRelevantHeadersHelper2(
-          decl.declarationText,
-          decl.returnType ? decl.returnType : decl.type,
-          targetTypes,
-          relevantTypes,
-          relevantContext,
-          source,
-          relevantContextMap,
-          trace,
-          foundNormalForms,
-          foundTypeAnalysisResults
-        );
+        if (!seenDecls.has(declStr)) {
+          this.extractRelevantHeadersHelper2(
+            decl.declarationText,
+            decl.returnType ? decl.returnType : decl.type,
+            targetTypes,
+            relevantTypes,
+            relevantContext,
+            source,
+            relevantContextMap,
+            trace,
+            foundNormalForms,
+            foundTypeAnalysisResults,
+            this.tsCompilerProgram,
+            this.tsCompilerTypeChecker
+          );
+
+          seenDecls.add(declStr);
+        }
       })
 
 
@@ -625,11 +847,11 @@ export class TypeScriptDriver implements LanguageDriver {
   }
 
 
-  generateTargetTypes(relevantTypes: Map<string, TypeSpanAndSourceFile>, holeType: string) {
+  generateTargetTypes(relevantTypes: Map<string, TypeSpanAndSourceFile>, holeType: string, program: ts.Program, checker: ts.TypeChecker) {
     // console.time("generateTargetTypes");
     const targetTypes = new Set<string>();
     targetTypes.add(holeType);
-    this.generateTargetTypesHelper(relevantTypes, holeType, targetTypes);
+    this.generateTargetTypesHelper(relevantTypes, holeType, targetTypes, program, checker);
 
     // console.timeEnd("generateTargetTypes");
     return targetTypes;
@@ -667,27 +889,29 @@ export class TypeScriptDriver implements LanguageDriver {
   generateTargetTypesHelper(
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
     currType: string,
-    targetTypes: Set<string>
+    targetTypes: Set<string>,
+    program: ts.Program,
+    checker: ts.TypeChecker,
   ) {
     // Run analysis on currType.
-    const typeAnalysisResult = this.typeChecker.analyzeTypeString(currType);
+    const typeAnalysisResult = this.typeChecker.analyzeTypeString(currType, program, checker);
 
     // Match on its kind.
     if (this.typeChecker.isFunction2(typeAnalysisResult)) {
       const rettype = typeAnalysisResult.returnType!;
       targetTypes.add(rettype.text)
-      this.generateTargetTypesHelper(relevantTypes, rettype.text, targetTypes)
+      this.generateTargetTypesHelper(relevantTypes, rettype.text, targetTypes, program, checker)
 
     } else if (this.typeChecker.isTuple2(typeAnalysisResult)) {
       typeAnalysisResult.constituents!.forEach(constituent => {
         targetTypes.add(constituent.text);
-        this.generateTargetTypesHelper(relevantTypes, constituent.text, targetTypes);
+        this.generateTargetTypesHelper(relevantTypes, constituent.text, targetTypes, program, checker);
       });
 
     } else {
       if (relevantTypes.has(currType)) {
         const definition = relevantTypes.get(currType)!.typeSpan.split(" = ")[1];
-        this.generateTargetTypesHelper(relevantTypes, definition, targetTypes);
+        this.generateTargetTypesHelper(relevantTypes, definition, targetTypes, program, checker);
       }
     }
   }
@@ -734,7 +958,9 @@ export class TypeScriptDriver implements LanguageDriver {
     tag: boolean,
     trace: string[],
     foundNormalForms: Map<string, string>,
-    foundTypeAnalysisResults: Map<string, TypeAnalysis> // filename+typeSpan -> typeAnalysisResult
+    foundTypeAnalysisResults: Map<string, TypeAnalysis>, // filename+typeSpan -> typeAnalysisResult
+    program: ts.Program,
+    checker: ts.TypeChecker
   ) {
     if (tag) {
       // console.time(`extractRelevantHeadersHelper, typeSpan: ${typeSpan}`)
@@ -744,14 +970,16 @@ export class TypeScriptDriver implements LanguageDriver {
 
     let typeAnalysisResult: TypeAnalysis;
     if (!foundTypeAnalysisResults.has(source + ":" + typeSpan)) {
-      typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan);
+      typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan, program, checker);
       foundTypeAnalysisResults.set(source + ":" + typeSpan, typeAnalysisResult);
     } else {
       typeAnalysisResult = foundTypeAnalysisResults.get(source + ":" + typeSpan)!;
     }
 
+    console.log(targetTypes)
+
     targetTypes.forEach(typ => {
-      if (this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms)) {
+      if (this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms, program, checker)) {
         // NOTE: This checks for dupes. ctx is an object so you need to check for each field.
         // relevantContext.add({ typeSpan: line, sourceFile: source });
         const ctx = { typeSpan: line, sourceFile: source };
@@ -761,11 +989,11 @@ export class TypeScriptDriver implements LanguageDriver {
       if (this.typeChecker.isFunction2(typeAnalysisResult)) {
         const rettype = typeAnalysisResult.returnType!;
 
-        this.extractRelevantHeadersHelper(rettype.text, targetTypes, relevantTypes, relevantContext, line, source, relevantContextMap, tag, trace, foundNormalForms, foundTypeAnalysisResults);
+        this.extractRelevantHeadersHelper(rettype.text, targetTypes, relevantTypes, relevantContext, line, source, relevantContextMap, tag, trace, foundNormalForms, foundTypeAnalysisResults, program, checker);
 
       } else if (this.typeChecker.isTuple2(typeAnalysisResult)) {
         typeAnalysisResult.constituents!.forEach(constituent => {
-          this.extractRelevantHeadersHelper(constituent.text, targetTypes, relevantTypes, relevantContext, line, source, relevantContextMap, tag, trace, foundNormalForms, foundTypeAnalysisResults);
+          this.extractRelevantHeadersHelper(constituent.text, targetTypes, relevantTypes, relevantContext, line, source, relevantContextMap, tag, trace, foundNormalForms, foundTypeAnalysisResults, program, checker);
         });
 
       }
@@ -777,29 +1005,34 @@ export class TypeScriptDriver implements LanguageDriver {
   }
 
   // two types are equivalent if they have the same normal forms
-  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, TypeSpanAndSourceFile>, foundNormalForms: Map<string, string>) {
+  // TODO: Create a memo of comparisons made.
+  isTypeEquivalent(t1: string, t2: string, relevantTypes: Map<string, TypeSpanAndSourceFile>, foundNormalForms: Map<string, string>, program: ts.Program, checker: ts.TypeChecker) {
     // NOTE: BUGFIX
-    // console.log(`isTypeEquivalent: ${t1}, ${t2}`)
+    // console.log(`isTypeEquivalent: ${t1} {}{} ${t2}`)
     // console.log(t1 == undefined)
     // console.log(t2 == undefined)
 
     let normT1 = "";
     let normT2 = "";
     if (foundNormalForms.has(t1)) {
+      // console.log("found t1", true)
       normT1 = foundNormalForms.get(t1)!;
     } else {
-      normT1 = this.normalize2(t1, relevantTypes);
+      // console.log("not found t1", false)
+      normT1 = this.normalize2(t1, relevantTypes, program, checker);
       foundNormalForms.set(t1, normT1);
     }
     if (foundNormalForms.has(t2)) {
+      // console.log("found t2", true)
       normT2 = foundNormalForms.get(t2)!;
     } else {
-      normT2 = this.normalize2(t2, relevantTypes);
+      // console.log("not found t2", false)
+      normT2 = this.normalize2(t2, relevantTypes, program, checker);
       foundNormalForms.set(t2, normT2);
     }
     // const normT1 = foundNormalForms.has(t1) ? foundNormalForms.get(t1) : this.normalize2(t1, relevantTypes);
     // const normT2 = foundNormalForms.has(t2) ? foundNormalForms.get(t2) : this.normalize2(t2, relevantTypes);
-    // console.log("    ", normT1, normT2, normT1 === normT2)
+    // console.log(`normal forms: ${normT1} {}{} ${normT2}`)
     return normT1 === normT2;
   }
 
@@ -899,7 +1132,7 @@ export class TypeScriptDriver implements LanguageDriver {
     }
   }
 
-  normalize2(typeSpan: string, relevantTypes: Map<string, TypeSpanAndSourceFile>) {
+  normalize2(typeSpan: string, relevantTypes: Map<string, TypeSpanAndSourceFile>, program: ts.Program, checker: ts.TypeChecker) {
     // NOTE: BUGFIX
     // console.log(`normalize: ${typeSpan}`)
     // console.log(`normalize: ${typeSpan == undefined}`)
@@ -915,7 +1148,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
     let normalForm = "";
 
-    const analysisResult = this.typeChecker.analyzeTypeString(typeSpan)
+    const analysisResult = this.typeChecker.analyzeTypeString(typeSpan, program, checker)
     // console.dir(analysisResult, { depth: null })
 
     // pattern matching for typeSpan
@@ -932,7 +1165,7 @@ export class TypeScriptDriver implements LanguageDriver {
       elements.forEach(element => {
         if (element !== "") {
           const kv = element.split(": ");
-          normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize2(kv[1], relevantTypes);
+          normalForm += kv[0].slice(1, kv[0].length), ": ", this.normalize2(kv[1], relevantTypes, program, checker);
           normalForm += "; ";
         }
       });
@@ -948,7 +1181,7 @@ export class TypeScriptDriver implements LanguageDriver {
       normalForm += "[";
 
       elements.forEach((element, i) => {
-        normalForm += this.normalize2(element, relevantTypes);
+        normalForm += this.normalize2(element, relevantTypes, program, checker);
         if (i < elements.length - 1) {
           normalForm += ", ";
         }
@@ -964,7 +1197,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
       elements.forEach((element, i) => {
         normalForm += "("
-        normalForm += this.normalize2(element, relevantTypes)
+        normalForm += this.normalize2(element, relevantTypes, program, checker)
         normalForm += ")";
         if (i < elements.length - 1) {
           normalForm += " | ";
@@ -978,7 +1211,7 @@ export class TypeScriptDriver implements LanguageDriver {
       // console.log(`isArray: ${typeSpan}`)
       const element = typeSpan.split("[]")[0];
 
-      normalForm += this.normalize2(element, relevantTypes)
+      normalForm += this.normalize2(element, relevantTypes, program, checker)
       normalForm += "[]";
       return normalForm;
 
@@ -998,7 +1231,7 @@ export class TypeScriptDriver implements LanguageDriver {
         return typeSpan;
       }
 
-      normalForm += this.normalize2(typ, relevantTypes);
+      normalForm += this.normalize2(typ, relevantTypes, program, checker);
       return normalForm;
 
     } else {
@@ -1017,7 +1250,9 @@ export class TypeScriptDriver implements LanguageDriver {
     relevantContextMap: Map<string, TypeSpanAndSourceFile>,
     trace: string[],
     foundNormalForms: Map<string, string>,
-    foundTypeAnalysisResults: Map<string, TypeAnalysis> // filename+typeSpan -> typeAnalysisResult
+    foundTypeAnalysisResults: Map<string, TypeAnalysis>, // filename+typeSpan -> typeAnalysisResult
+    program: ts.Program,
+    checker: ts.TypeChecker
   ) {
     // console.log("extractRelevantHeaders2")
     // if (declText.includes("getBookings")) {
@@ -1026,7 +1261,7 @@ export class TypeScriptDriver implements LanguageDriver {
     // }
     let typeAnalysisResult: TypeAnalysis;
     if (!foundTypeAnalysisResults.has(source + ":" + typeSpan)) {
-      typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan);
+      typeAnalysisResult = this.typeChecker.analyzeTypeString(typeSpan, program, checker);
       foundTypeAnalysisResults.set(source + ":" + typeSpan, typeAnalysisResult);
     } else {
       typeAnalysisResult = foundTypeAnalysisResults.get(source + ":" + typeSpan)!;
@@ -1039,7 +1274,7 @@ export class TypeScriptDriver implements LanguageDriver {
       //   console.log(this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms))
       //   console.log("============")
       // }
-      if (this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms)) {
+      if (this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms, program, checker)) {
         // NOTE: This checks for dupes. ctx is an object so you need to check for each field.
         // relevantContext.add({ typeSpan: line, sourceFile: source });
         const ctx = { typeSpan: declText, sourceFile: source };
@@ -1059,7 +1294,9 @@ export class TypeScriptDriver implements LanguageDriver {
           relevantContextMap,
           trace,
           foundNormalForms,
-          foundTypeAnalysisResults
+          foundTypeAnalysisResults,
+          program,
+          checker
         );
         foundTypeAnalysisResults
 
@@ -1075,7 +1312,9 @@ export class TypeScriptDriver implements LanguageDriver {
             relevantContextMap,
             trace,
             foundNormalForms,
-            foundTypeAnalysisResults
+            foundTypeAnalysisResults,
+            program,
+            checker
           );
         });
 
