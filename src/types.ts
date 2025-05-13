@@ -63,9 +63,28 @@ interface LanguageDriver {
     lspClient: LspClient | null,
     sketchPath: string
   ) => Promise<void>;
+  injectHole: (
+    sketchPath: string
+  ) => void;
   getHoleContext: (
     lspClient: LspClient | null,
     sketchFilePath: string,
+    logStream: fs.WriteStream | null
+  ) => Promise<{
+    fullHoverResult: string;
+    functionName: string;
+    functionTypeSpan: string;
+    linePosition: number;
+    characterPosition: number;
+    holeTypeDefLinePos: number;
+    holeTypeDefCharPos: number;
+    range: Range;
+    source: string;
+    trueHoleFunction?: string;
+  }>;
+  getHoleContextWithCompilerAPI: (
+    sketchFilePath: string,
+    logStream: fs.WriteStream | null
   ) => Promise<{
     fullHoverResult: string;
     functionName: string;
