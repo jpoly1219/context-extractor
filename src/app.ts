@@ -12,6 +12,7 @@ import { OcamlDriver } from "./ocaml-driver";
 import { getAllTSFiles, getAllOCamlFiles, removeLines, getTimestampForFilename } from "./utils";
 import { performance } from "perf_hooks";
 import { time } from "console";
+// import * as pprof from "pprof";
 
 
 export class App {
@@ -42,10 +43,11 @@ export class App {
         const r = (() => {
           switch (language) {
             case Language.TypeScript: {
-              this.languageDriver = new TypeScriptDriver(this.ide);
+              const sources = getAllTSFiles(this.repoPath);
+              this.languageDriver = new TypeScriptDriver(this.ide, sources, repoPath);
               // PERF: 6ms
               // return spawn("typescript-language-server", ["--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
-              return spawn("node", ["/home/jacob/projects/typescript-language-server/lib/cli.mjs", "--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
+              return spawn("node", ["/home/jacob/projects/typescript-language-server/lib/cli.mjs", "--stdio", "--log-level", "4"], { stdio: ["pipe", "pipe", "pipe"] });
             }
             case Language.OCaml: {
               this.languageDriver = new OcamlDriver();
@@ -112,10 +114,10 @@ export class App {
 
         // const logFile = fs.createWriteStream("log.txt");
         // r.stdout.on('data', (d) => logFile.write(d));
+        this.languageDriver.init(this.lspClient, this.sketchPath)
+        this.languageDriver.injectHole(this.sketchPath)
       }
     }
-
-
   }
 
 
@@ -124,21 +126,76 @@ export class App {
   }
 
 
-  async run() {
+
+  async run2(version: number) {
+
+    if (this.lspClient) {
+      const files = getAllTSFiles(this.repoPath)
+      files.map(filepath => {
+        if (fs.lstatSync(filepath).isFile()) {
+          this.lspClient?.didOpen({
+            textDocument: {
+              uri: `file://${filepath}`,
+              languageId: "typescript",
+              text: fs.readFileSync(filepath).toString("ascii"),
+              version: version
+            }
+          });
+        }
+      });
+    }
+
+    console.time("getHoleContext");
+    // PERF: 801ms
+    // const holeContext = await this.languageDriver.getHoleContext(
+    //   this.lspClient,
+    //   this.sketchPath,
+    //   this.logStream
+    // );
+    const holeContext = await this.languageDriver.getHoleContextWithCompilerAPI(
+      this.sketchPath,
+      this.logStream
+    );
+    console.dir(holeContext, { depth: null })
+    console.timeEnd("getHoleContext");
+  }
+
+  async run(version: number) {
+    // const profile = await pprof.time.start(10000); // Collect for 10s
     // const outputFile = fs.createWriteStream("output.txt");
     try {
 
       // PERF: 94ms
-      await this.init();
+      // await this.init();
+      if (this.lspClient) {
+        const files = getAllTSFiles(this.repoPath)
+        files.map(filepath => {
+          if (fs.lstatSync(filepath).isFile()) {
+            this.lspClient?.didOpen({
+              textDocument: {
+                uri: `file://${filepath}`,
+                languageId: "typescript",
+                text: fs.readFileSync(filepath).toString("ascii"),
+                version: version
+              }
+            });
+          }
+        });
+      }
 
-      // console.time("getHoleContext");
+      console.time("getHoleContext");
       // PERF: 801ms
-      const holeContext = await this.languageDriver.getHoleContext(
-        this.lspClient,
+      // const holeContext = await this.languageDriver.getHoleContext(
+      //   this.lspClient,
+      //   this.sketchPath,
+      //   this.logStream
+      // );
+      const holeContext = await this.languageDriver.getHoleContextWithCompilerAPI(
         this.sketchPath,
+        this.logStream
       );
-      console.dir(holeContext, { depth: null })
-      // console.timeEnd("getHoleContext");
+      // console.dir(holeContext, { depth: null })
+      console.timeEnd("getHoleContext");
 
       // console.time("extractRelevantTypes");
       // await this.lspClient.documentSymbol({
@@ -165,20 +222,19 @@ export class App {
       // let end = performance.now()
       // console.log("elapsed:", end - start)
 
-      const start = performance.now()
+      console.time("extractRelevantTypes");
       const relevantTypes = await this.languageDriver.extractRelevantTypes(
         this.lspClient,
         // NOTE: sometimes fullHoverResult isn't representative of the actual file contents, especially with generic functions.
         holeContext.trueHoleFunction ? holeContext.trueHoleFunction : holeContext.fullHoverResult,
         holeContext.functionName,
-        holeContext.range.start.line,
+        holeContext.range.start.line, // NOTE: this could just default to 0, because we inject the true declaration at the top
         new Map<string, TypeSpanAndSourceFile>(),
         holeContext.source,
         new Map<string, string>(),
         this.logStream
       );
-      const end = performance.now()
-      console.log("elapsed:", end - start)
+      console.timeEnd("extractRelevantTypes");
       // this.logStream.write(`\n\n=*=*=*=*=*=[begin extracting relevant headers][${new Date().toISOString()}]\n\n`);
       // const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
       // (async () => {
@@ -214,6 +270,7 @@ export class App {
 
       // console.time("extractRelevantHeaders");
 
+      console.time("extractRelevantHeaders");
       const relevantHeaders = await this.languageDriver.extractRelevantHeaders(
         this.lspClient,
         repo,
@@ -221,6 +278,7 @@ export class App {
         holeContext.functionTypeSpan,
         this.repoPath
       );
+      console.timeEnd("extractRelevantHeaders");
       // const relevantHeaders: { typeSpan: string, sourceFile: string }[] = []
       // console.timeEnd("extractRelevantHeaders");
 
@@ -274,12 +332,30 @@ export class App {
         relevantTypes: relevantTypesToReturn,
         relevantHeaders: relevantHeadersToReturn
       };
+
+      if (this.lspClient) {
+        const files = getAllTSFiles(this.repoPath)
+        files.map(filepath => {
+          if (fs.lstatSync(filepath).isFile()) {
+            this.lspClient?.didClose({
+              textDocument: {
+                uri: `file://${filepath}`,
+              }
+            });
+          }
+        });
+      }
     } catch (err) {
       console.error("Error during execution:", err);
       throw err;
     } finally {
       // outputFile.end();
     }
+
+    // const buf = await pprof.encode(profile());
+    // fs.writeFile('wall.pb.gz', buf, (err) => {
+    //   if (err) throw err;
+    // });
   }
 
 
