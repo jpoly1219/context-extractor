@@ -5,34 +5,35 @@ import {
 
 export namespace VsCode {
   // Type definitions.
-  export interface Hover {
+  interface Hover {
     text: string;
   }
 
-  export interface DocumentSymbol extends RangeInFile {
+  interface DocumentSymbol extends RangeInFile {
     name: string;
     selectionRange: Range;
   }
 
-  export interface RangeInFile {
+  interface RangeInFile {
     filepath: string;
     range: Range;
   }
 
-  export interface Range {
+  interface Range {
     start: Position;
     end: Position;
   }
 
-  export interface Location {
+  interface Location {
     filepath: string;
     position: Position;
   }
 
-  export interface Position {
+  interface Position {
     line: number;
     character: number;
   }
+
   interface VsCodeLspInput {
     uri: vscode.Uri;
     line?: number;
@@ -40,8 +41,6 @@ export namespace VsCode {
     name: VSCodeBuiltinProvider;
   }
 
-  // NOTE: Currently, the cache is reset per extraction.
-  // TEST: Check if the cache is actually resetting per extraction.
   const MAX_CACHE_SIZE = 50;
   const lspCache = new Map<string, RangeInFile[] | Hover | DocumentSymbol[]>();
 
