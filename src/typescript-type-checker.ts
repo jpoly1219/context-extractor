@@ -512,7 +512,7 @@ export class TypeScriptTypeChecker implements TypeChecker {
     };
   }
 
-  analyzeTypeString(typeString: string, program: ts.Program = this.createProgramFromSource("")): TypeAnalysis {
+  analyzeTypeString(typeString: string, program: ts.Program = this.createProgramFromSource(""), checker: ts.TypeChecker): TypeAnalysis {
     const sourceFile = ts.createSourceFile('temp.ts', `type T = ${typeString};`, ts.ScriptTarget.Latest, true);
     let typeNode: ts.TypeNode | undefined;
 
@@ -526,7 +526,7 @@ export class TypeScriptTypeChecker implements TypeChecker {
       throw new Error('Failed to parse type string');
     }
 
-    const checker = program.getTypeChecker();
+    // const checker = program.getTypeChecker();
     return this.analyzeTypeNode(typeNode, checker);
   }
 
@@ -568,6 +568,15 @@ export class TypeScriptTypeChecker implements TypeChecker {
     return typeAnalysisResult.kind === "TypeReference";
   }
 
+  // Extract identifiers from a given code string.
+  // For example:
+  // type Model = [BookingFormData, Booking[], BookingID];
+  // [
+  //   { name: 'Model', start: 5, end: 10, line: 1, column: 6 },
+  //   { name: 'BookingFormData', start: 14, end: 29, line: 1, column: 15 },
+  //   { name: 'Booking', start: 31, end: 38, line: 1, column: 32 },
+  //   { name: 'BookingID', start: 42, end: 51, line: 1, column: 43 }
+  // ]
   extractIdentifiers(code: string) {
     const sourceFile = ts.createSourceFile(
       "sample.ts",
@@ -639,6 +648,10 @@ export class TypeScriptTypeChecker implements TypeChecker {
     node.forEachChild(child => this.extractIdentifiersWithPosHelper(sourceFile, child, identifiers));
   }
 
+  // Find Declaration given an identifier.
+  //
+  // For example:
+  // Decl: type Booking = [Time, User, BookingID]; || Identifier: Booking
   findDeclarationForIdentifier(
     sourceCode: string,
     targetLine: number,
@@ -686,7 +699,7 @@ export class TypeScriptTypeChecker implements TypeChecker {
   }
 
   // findTopLevelDeclarations(sourceCode: string, fileName = "temp.ts") {
-  findTopLevelDeclarations(program: ts.Program, fileName: string): VarFuncDecls[] {
+  findTopLevelDeclarations(program: ts.Program, checker: ts.TypeChecker, fileName: string): VarFuncDecls[] {
     // const compilerOptions: ts.CompilerOptions = { target: ts.ScriptTarget.ESNext };
     // NOTE: This is only necessary when you are passing the code string only.
     // This is a nifty trick to create a temporary file to store your code string literal.
@@ -699,7 +712,7 @@ export class TypeScriptTypeChecker implements TypeChecker {
 
     // const program = ts.createProgram([fileName], compilerOptions);
     const sourceFile = program.getSourceFile(fileName)!;
-    const checker = program.getTypeChecker();
+    // const checker = program.getTypeChecker();
 
     const results: VarFuncDecls[] = [];
 
@@ -760,22 +773,26 @@ export class TypeScriptTypeChecker implements TypeChecker {
             const signature = checker.getSignatureFromDeclaration(arrowFunc);
             if (signature) {
               const returnTypeSymbol = checker.getReturnTypeOfSignature(signature);
-              console.log(">=>", name)
-              console.log(ts.TypeFlags[returnTypeSymbol.flags]);
-              const apparent = checker.getApparentType(returnTypeSymbol);
-              const returnTypeApparent = checker.typeToString(apparent);
-              console.log(returnTypeApparent)
-              console.log(returnTypeSymbol.getSymbol()?.getName());
+              // NOTE: debugging
+              // console.log(">=>", name)
+              // console.log(ts.TypeFlags[returnTypeSymbol.flags]);
+              // const apparent = checker.getApparentType(returnTypeSymbol);
+              // const returnTypeApparent = checker.typeToString(apparent);
+              // NOTE: debugging
+              // console.log(returnTypeApparent)
+              // console.log(returnTypeSymbol.getSymbol()?.getName());
 
-              console.log({
-                isArray: checker.isArrayType(returnTypeSymbol),
-                symbol: returnTypeSymbol.symbol?.name,
-              });
+              // NOTE: debugging
+              // console.log({
+              //   isArray: checker.isArrayType(returnTypeSymbol),
+              //   symbol: returnTypeSymbol.symbol?.name,
+              // });
 
 
 
               if (checker.isArrayType(returnTypeSymbol)) {
-                console.log(">=>", name, "isArrayType")
+                // NOTE: debugging
+                // console.log(">=>", name, "isArrayType")
                 const elementType = (returnTypeSymbol as ts.TypeReference).typeArguments?.[0];
                 const inner = elementType ? checker.typeToString(elementType) : 'unknown';
                 returnType = `${inner}[]`;
@@ -830,14 +847,16 @@ export class TypeScriptTypeChecker implements TypeChecker {
   createTsCompilerProgram(repo: string[], projectRoot: string): ts.Program {
     // NOTE: This was an attempt to use an existing TS type system.
     const existingConfig = this.getCompilerOptionsFromTsconfig(projectRoot);
-    console.log(existingConfig)
+    // NOTE: debugging
+    // console.log(existingConfig)
 
     if (existingConfig) {
       const program = ts.createProgram({
         rootNames: existingConfig.fileNames,
         options: existingConfig.options
       });
-      console.log(program.getSourceFiles().map(f => f.fileName));
+      // NOTE: debugging
+      // console.log(program.getSourceFiles().map(f => f.fileName));
       return program;
     }
 
@@ -857,7 +876,8 @@ export class TypeScriptTypeChecker implements TypeChecker {
 
   getCompilerOptionsFromTsconfig(projectRoot: string): ts.ParsedCommandLine | null {
     const configPath = ts.findConfigFile(projectRoot, ts.sys.fileExists, "tsconfig.json");
-    console.log(configPath)
+    // NOTE: debugging
+    // console.log(configPath)
     if (!configPath) return null;
 
     const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
