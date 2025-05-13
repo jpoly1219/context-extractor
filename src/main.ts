@@ -4,6 +4,7 @@ import { JSONRPCEndpoint, LspClient, ClientCapabilities } from "../ts-lsp-client
 import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+// import * as pprof from "pprof"
 import { extractRelevantTypes, getHoleContext, extractRelevantHeaders } from "./core";
 import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractHeadersWithCodeQL, extractHoleType, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
 import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants";
@@ -240,13 +241,21 @@ export const extractContext = async (
   ide: IDE
 ) => {
   // console.time("extractContext")
+  // const profile = await pprof.time.start(10000); // Collect for 10s
   console.log("=*=*=*=")
+  const start = performance.now()
   const app = new App(language, sketchPath, repoPath, ide);
-  await app.run();
+  await app.run(1);
   const res = app.getSavedResult();
   app.close();
+  // const buf = await pprof.encode(profile());
+  // fs.writeFile('wall.pb.gz', buf, (err) => {
+  //   if (err) throw err;
+  // });
   // console.timeEnd("extractContext")
-  return res;
+  const end = performance.now()
+  // console.log("elapsed:", end - start)
+  return { res: res, elapsed: end - start };
 
   // if (!getCompletion) {
   //   await app.close()
@@ -260,6 +269,27 @@ export const extractContext = async (
   //   await app.close()
   //   return { context: null, completion: null };
   // }
+}
+
+export const spawnApp = (
+  language: Language,
+  sketchPath: string,
+  repoPath: string,
+  ide: IDE
+) => {
+  const app = new App(language, sketchPath, repoPath, ide);
+  return app;
+}
+
+export const extractContextWithReuse = async (
+  app: App,
+  version: number
+) => {
+  // await app.init();
+  await app.run(version);
+  const res = app.getSavedResult();
+  // app.close();
+  return res;
 }
 
 export const completeWithLLM = async (
