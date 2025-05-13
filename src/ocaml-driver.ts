@@ -108,6 +108,11 @@ export class OcamlDriver implements LanguageDriver {
   }
 
 
+  injectHole(sketchPath: string) {
+
+  }
+
+
   async getHoleContext(lspClient: LspClient | null, sketchFilePath: string) {
     const sketchDir = path.dirname(sketchFilePath);
     const sketchFileContent = fs.readFileSync(sketchFilePath, "utf8");
@@ -188,6 +193,33 @@ export class OcamlDriver implements LanguageDriver {
         source: ""
       };
     }
+  }
+
+
+  async getHoleContextWithCompilerAPI(
+    sketchFilePath: string,
+    logStream: fs.WriteStream | null
+  ) {
+    return {
+      fullHoverResult: "", //
+      functionName: "_", // _
+      functionTypeSpan: "",
+      linePosition: 0,
+      characterPosition: 0,
+      holeTypeDefLinePos: 0, // 
+      holeTypeDefCharPos: 0, // "
+      range: {
+        start: {
+          line: 0,
+          character: 0
+        },
+        end: {
+          line: 0,
+          character: 0
+        }
+      },
+      source: ""
+    };
   }
 
 
