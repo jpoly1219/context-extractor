@@ -107,6 +107,16 @@ interface LanguageDriver {
     foundContents: Map<string, string>,
     logStream: fs.WriteStream | null
   ) => Promise<Map<string, TypeSpanAndSourceFile>>;
+  extractRelevantTypesWithCompilerAPI: (
+    fullHoverResult: string,
+    typeName: string,
+    linePosition: number,
+    characterPosition: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFile>,
+    currentFile: string,
+    foundContents: Map<string, string>,
+    logStream: fs.WriteStream | null
+  ) => Promise<Map<string, TypeSpanAndSourceFile>>;
   extractRelevantHeaders: (
     lspClient: LspClient | null,
     // preludeFilePath: string,
