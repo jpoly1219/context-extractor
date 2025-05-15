@@ -314,6 +314,17 @@ export class OcamlDriver implements LanguageDriver {
     }
   }
 
+  async extractRelevantTypesWithCompilerAPI(
+    fullHoverResult: string,
+    typeName: string,
+    linePosition: number,
+    characterPosition: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFile>,
+    currentFile: string,
+  ) {
+    return foundSoFar;
+  }
+
 
   async extractRelevantHeaders(
     lspClient: LspClient | null,
