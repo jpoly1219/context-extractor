@@ -223,12 +223,22 @@ export class App {
       // console.log("elapsed:", end - start)
 
       console.time("extractRelevantTypes");
-      const relevantTypes = await this.languageDriver.extractRelevantTypes(
-        this.lspClient,
-        // NOTE: sometimes fullHoverResult isn't representative of the actual file contents, especially with generic functions.
+      // const relevantTypes = await this.languageDriver.extractRelevantTypes(
+      //   this.lspClient,
+      //   // NOTE: sometimes fullHoverResult isn't representative of the actual file contents, especially with generic functions.
+      //   holeContext.trueHoleFunction ? holeContext.trueHoleFunction : holeContext.fullHoverResult,
+      //   holeContext.functionName,
+      //   holeContext.range.start.line, // NOTE: this could just default to 0, because we inject the true declaration at the top
+      //   new Map<string, TypeSpanAndSourceFile>(),
+      //   holeContext.source,
+      //   new Map<string, string>(),
+      //   this.logStream
+      // );
+      const relevantTypes = await this.languageDriver.extractRelevantTypesWithCompilerAPI(
         holeContext.trueHoleFunction ? holeContext.trueHoleFunction : holeContext.fullHoverResult,
         holeContext.functionName,
         holeContext.range.start.line, // NOTE: this could just default to 0, because we inject the true declaration at the top
+        holeContext.range.start.character,
         new Map<string, TypeSpanAndSourceFile>(),
         holeContext.source,
         new Map<string, string>(),
@@ -244,7 +254,7 @@ export class App {
       // })();
       // console.timeEnd("extractRelevantTypes");
 
-      // console.dir(relevantTypes, { depth: null })
+      console.dir(relevantTypes, { depth: null })
 
       // Postprocess the map.
       // console.time("extractRelevantTypes postprocess");
