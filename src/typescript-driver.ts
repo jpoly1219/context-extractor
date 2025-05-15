@@ -413,6 +413,7 @@ export class TypeScriptDriver implements LanguageDriver {
   }
 
 
+  // TODO: delete
   async extractRelevantTypes1(
     lspClient: LspClient,
     fullHoverResult: string,
@@ -536,7 +537,6 @@ export class TypeScriptDriver implements LanguageDriver {
 
     return foundSoFar;
   }
-
 
 
   async extractRelevantTypes(
@@ -708,6 +708,151 @@ export class TypeScriptDriver implements LanguageDriver {
           } else {
 
           }
+        }
+      }
+    }
+  }
+
+
+  async extractRelevantTypesWithCompilerAPI(
+    fullHoverResult: string,
+    typeName: string,
+    linePosition: number,
+    characterPosition: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFile>, // identifier -> [full hover result, source]
+    currentFile: string,
+    foundContents: Map<string, string>, // uri -> contents
+    logStream: fs.WriteStream | null
+  ) {
+
+    if (logStream) {
+      logStream.write(`\n\n=*=*=*=*=*=[begin extracting relevant headers][${new Date().toISOString()}]\n\n`);
+    }
+
+    // const content = fs.readFileSync(currentFile.slice(7), "utf8");
+    // console.log(content)
+    await this.extractRelevantTypesHelperWithCompilerAPI(fullHoverResult, typeName, linePosition, characterPosition, foundSoFar, currentFile, foundContents, 0);
+    return foundSoFar;
+  }
+
+
+  async extractRelevantTypesHelperWithCompilerAPI(
+    fullHoverResult: string,
+    typeName: string,
+    linePosition: number,
+    characterPosition: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFile>, // identifier -> [full hover result, source]
+    currentFile: string,
+    foundContents: Map<string, string>, // uri -> contents
+    layer: number
+  ) {
+    console.log("CURRENT TYPE:", typeName, fullHoverResult)
+    // Split the type span into identifiers, where each include the text, line number, and character range.
+    // For each identifier, invoke go to type definition.
+    if (!foundSoFar.has(typeName)) {
+      foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7) });
+
+      const identifiers = this.typeChecker.extractIdentifiers(fullHoverResult);
+      const sourceFile = this.tsCompilerProgram.getSourceFile(currentFile.slice(7))!;
+
+      for (const identifier of identifiers) {
+        if (!foundSoFar.has(identifier.name)) {
+          try {
+            console.log(identifier, linePosition, characterPosition, linePosition + identifier.line, identifier.start)
+            const position = ts.getPositionOfLineAndCharacter(sourceFile, linePosition + identifier.line - 1, identifier.start);
+            // const typeDefinitionResult = await lspClient.typeDefinition({
+            //   textDocument: {
+            //     uri: currentFile
+            //   },
+            //   position: {
+            //     character: identifier.start,
+            //     line: startLine + identifier.line - 1 // startLine is already 1-indexed
+            //   }
+            // });
+            function findNodeAtPosition(node: ts.Node): ts.Node | undefined {
+              if (position >= node.getStart() && position < node.getEnd()) {
+                return ts.forEachChild(node, findNodeAtPosition) || node;
+              }
+              return undefined;
+            }
+            function findIdentifierAtPosition(sourceFile: ts.SourceFile, position: number): ts.Identifier | undefined {
+              function find(node: ts.Node): ts.Identifier | undefined {
+                if (ts.isIdentifier(node) && position >= node.getStart() && position <= node.getEnd()) {
+                  return node;
+                }
+                return ts.forEachChild(node, find);
+              }
+              return find(sourceFile);
+            }
+            const node = findNodeAtPosition(sourceFile);
+            // const node = findIdentifierAtPosition(sourceFile, position);
+            if (!node) {
+              throw new Error("Node not found");
+            }
+
+            const possiblyPrimitiveType = this.tsCompilerTypeChecker.getTypeAtLocation(node);
+            if (
+              possiblyPrimitiveType.flags & ts.TypeFlags.String ||
+              possiblyPrimitiveType.flags & ts.TypeFlags.Number ||
+              possiblyPrimitiveType.flags & ts.TypeFlags.Boolean ||
+              possiblyPrimitiveType.flags & ts.TypeFlags.Null ||
+              possiblyPrimitiveType.flags & ts.TypeFlags.Undefined ||
+              possiblyPrimitiveType.flags & ts.TypeFlags.Void ||
+              possiblyPrimitiveType.flags & ts.TypeFlags.ESSymbol ||
+              possiblyPrimitiveType.flags & ts.TypeFlags.ESSymbolLike ||
+              possiblyPrimitiveType.flags & ts.TypeFlags.UniqueESSymbol ||
+              possiblyPrimitiveType.flags & ts.TypeFlags.BigInt
+            ) {
+              console.log("Primitive type", this.tsCompilerTypeChecker.typeToString(possiblyPrimitiveType))
+              return
+            }
+
+            const symbol = this.tsCompilerTypeChecker.getSymbolAtLocation(node);
+            if (!symbol || !symbol.declarations?.length) {
+              throw new Error("Symbol not found");
+            }
+            const trueSymbol = symbol && symbol.flags & ts.SymbolFlags.Alias
+              ? this.tsCompilerTypeChecker.getAliasedSymbol(symbol)
+              : symbol;
+
+            if (trueSymbol?.declarations?.length) {
+              const decl = trueSymbol.declarations[0];
+              // console.log(decl)
+              if (ts.isTypeAliasDeclaration(decl)) {
+                console.log("DECL TEXT", decl.getText())
+                // const rhs = decl.type;
+                // const typ = this.tsCompilerTypeChecker.getTypeAtLocation(rhs);
+                // const typStr = this.tsCompilerTypeChecker.typeToString(typ);
+                //
+                // console.log("Resolved type (RHS):", typStr);
+
+                // const rhsSource = rhs.getSourceFile();
+                // console.log(symbol.declarations)
+                // console.log("DECL", decl)
+                // console.log("TYPE AT LOC", this.tsCompilerTypeChecker.getTypeAtLocation(decl))
+                console.log("TYPE TO STR", this.tsCompilerTypeChecker.typeToString(this.tsCompilerTypeChecker.getTypeAtLocation(decl)))
+                const declSourceFile = decl.getSourceFile();
+                const start = ts.getLineAndCharacterOfPosition(declSourceFile, decl.getStart());
+                const end = ts.getLineAndCharacterOfPosition(declSourceFile, decl.getEnd());
+                console.log("LOCATION", start, end, declSourceFile.fileName)
+
+                await this.extractRelevantTypesHelperWithCompilerAPI(
+                  decl.getText(),
+                  identifier.name,
+                  start.line,
+                  start.character,
+                  foundSoFar,
+                  `file://${declSourceFile.fileName}`,
+                  foundContents,
+                  layer + 1,
+                );
+              }
+            }
+
+          } catch (err) {
+            console.log(err)
+          }
+        } else {
         }
       }
     }
