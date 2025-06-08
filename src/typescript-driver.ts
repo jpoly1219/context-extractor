@@ -383,7 +383,7 @@ export class TypeScriptDriver implements LanguageDriver {
     const type = this.tsCompilerTypeChecker.getTypeAtLocation(targetNode);
     const typeString = this.tsCompilerTypeChecker.typeToString(type);
     const typeStr = `function _<${typeString}>(): ${typeString}`
-    console.log("TYPE:", typeStr);
+    // console.log("TYPE:", typeStr);
 
     // function _<(a: Apple, c: Cherry, b: Banana) => Cherry > (): (a: Apple, c: Cherry, b: Banana) => Cherry
     const holeFunctionPattern = /(function _)(\<.+\>)(\(\): )(.+)/;
@@ -746,7 +746,7 @@ export class TypeScriptDriver implements LanguageDriver {
     foundContents: Map<string, string>, // uri -> contents
     layer: number
   ) {
-    console.log("CURRENT TYPE:", typeName, fullHoverResult)
+    // console.log("CURRENT TYPE:", typeName, fullHoverResult)
     // Split the type span into identifiers, where each include the text, line number, and character range.
     // For each identifier, invoke go to type definition.
     if (!foundSoFar.has(typeName)) {
@@ -758,7 +758,7 @@ export class TypeScriptDriver implements LanguageDriver {
       for (const identifier of identifiers) {
         if (!foundSoFar.has(identifier.name)) {
           try {
-            console.log(identifier, linePosition, characterPosition, linePosition + identifier.line, identifier.start)
+            // console.log(identifier, linePosition, characterPosition, linePosition + identifier.line, identifier.start)
             const position = ts.getPositionOfLineAndCharacter(sourceFile, linePosition + identifier.line - 1, identifier.start);
             // const typeDefinitionResult = await lspClient.typeDefinition({
             //   textDocument: {
@@ -803,7 +803,7 @@ export class TypeScriptDriver implements LanguageDriver {
               possiblyPrimitiveType.flags & ts.TypeFlags.UniqueESSymbol ||
               possiblyPrimitiveType.flags & ts.TypeFlags.BigInt
             ) {
-              console.log("Primitive type", this.tsCompilerTypeChecker.typeToString(possiblyPrimitiveType))
+              // console.log("Primitive type", this.tsCompilerTypeChecker.typeToString(possiblyPrimitiveType))
               return
             }
 
@@ -819,7 +819,7 @@ export class TypeScriptDriver implements LanguageDriver {
               const decl = trueSymbol.declarations[0];
               // console.log(decl)
               if (ts.isTypeAliasDeclaration(decl)) {
-                console.log("DECL TEXT", decl.getText())
+                // console.log("DECL TEXT", decl.getText())
                 // const rhs = decl.type;
                 // const typ = this.tsCompilerTypeChecker.getTypeAtLocation(rhs);
                 // const typStr = this.tsCompilerTypeChecker.typeToString(typ);
@@ -830,11 +830,11 @@ export class TypeScriptDriver implements LanguageDriver {
                 // console.log(symbol.declarations)
                 // console.log("DECL", decl)
                 // console.log("TYPE AT LOC", this.tsCompilerTypeChecker.getTypeAtLocation(decl))
-                console.log("TYPE TO STR", this.tsCompilerTypeChecker.typeToString(this.tsCompilerTypeChecker.getTypeAtLocation(decl)))
+                // console.log("TYPE TO STR", this.tsCompilerTypeChecker.typeToString(this.tsCompilerTypeChecker.getTypeAtLocation(decl)))
                 const declSourceFile = decl.getSourceFile();
                 const start = ts.getLineAndCharacterOfPosition(declSourceFile, decl.getStart());
                 const end = ts.getLineAndCharacterOfPosition(declSourceFile, decl.getEnd());
-                console.log("LOCATION", start, end, declSourceFile.fileName)
+                // console.log("LOCATION", start, end, declSourceFile.fileName)
 
                 await this.extractRelevantTypesHelperWithCompilerAPI(
                   decl.getText(),

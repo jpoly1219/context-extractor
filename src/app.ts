@@ -18,8 +18,8 @@ import { time } from "console";
 export class App {
   private language: Language;
   private languageDriver: LanguageDriver;
-  private languageServer: ChildProcessWithoutNullStreams | null;
-  private lspClient: LspClient | null;
+  private languageServer: ChildProcessWithoutNullStreams | null = null;
+  private lspClient: LspClient | null = null;
   private sketchPath: string; // not prefixed with file://
   private repoPath: string; // not prefixed with file://
   private result: Context | null = null;
@@ -40,50 +40,53 @@ export class App {
         this.logStream = null;
       }
       case IDE.Standalone: {
-        const r = (() => {
-          switch (language) {
-            case Language.TypeScript: {
-              const sources = getAllTSFiles(this.repoPath);
-              this.languageDriver = new TypeScriptDriver(this.ide, sources, repoPath);
-              // PERF: 6ms
-              // return spawn("typescript-language-server", ["--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
-              return spawn("node", ["/home/jacob/projects/typescript-language-server/lib/cli.mjs", "--stdio", "--log-level", "4"], { stdio: ["pipe", "pipe", "pipe"] });
-            }
-            case Language.OCaml: {
-              this.languageDriver = new OcamlDriver();
-              try {
-                execSync(`eval $(opam env --switch=. --set-switch)`, { shell: "/bin/bash" })
-                // execSync("opam switch .", { shell: "/bin/bash" })
-                const currDir = __dirname;
-                process.chdir(path.dirname(sketchPath));
-                // execSync("which dune", { shell: "/bin/bash" })
-                spawn("dune", ["build", "-w"]);
-                process.chdir(currDir);
-              } catch (err) {
-                console.log("ERROR:", err)
-              }
-              // TODO: Spawn a dune build -w on sketch directory.
-              // try {
-              //   execSync("which dune", { shell: "/bin/bash" })
-              //   spawn("dune", ["build", "-w"]);
-              // } catch (err) {
-              //   console.log("ERROR:", err)
-              // }
-              // process.chdir(currDir);
-              return spawn("ocamllsp", ["--stdio"]);
-            }
-          }
-        })();
-        const e = new JSONRPCEndpoint(r.stdin, r.stdout);
-        const c = new LspClient(e);
-        this.languageServer = r;
-        this.lspClient = c;
+        // const r = (() => {
+        //   switch (language) {
+        //     case Language.TypeScript: {
+        //       const sources = getAllTSFiles(this.repoPath);
+        //       this.languageDriver = new TypeScriptDriver(this.ide, sources, repoPath);
+        //       // PERF: 6ms
+        //       // return spawn("typescript-language-server", ["--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
+        //       return spawn("node", ["/home/jacob/projects/typescript-language-server/lib/cli.mjs", "--stdio", "--log-level", "4"], { stdio: ["pipe", "pipe", "pipe"] });
+        //     }
+        //     case Language.OCaml: {
+        //       this.languageDriver = new OcamlDriver();
+        //       try {
+        //         execSync(`eval $(opam env --switch=. --set-switch)`, { shell: "/bin/bash" })
+        //         // execSync("opam switch .", { shell: "/bin/bash" })
+        //         const currDir = __dirname;
+        //         process.chdir(path.dirname(sketchPath));
+        //         // execSync("which dune", { shell: "/bin/bash" })
+        //         spawn("dune", ["build", "-w"]);
+        //         process.chdir(currDir);
+        //       } catch (err) {
+        //         console.log("ERROR:", err)
+        //       }
+        //       // TODO: Spawn a dune build -w on sketch directory.
+        //       // try {
+        //       //   execSync("which dune", { shell: "/bin/bash" })
+        //       //   spawn("dune", ["build", "-w"]);
+        //       // } catch (err) {
+        //       //   console.log("ERROR:", err)
+        //       // }
+        //       // process.chdir(currDir);
+        //       return spawn("ocamllsp", ["--stdio"]);
+        //     }
+        //   }
+        // })();
+        // const e = new JSONRPCEndpoint(r.stdin, r.stdout);
+        // const c = new LspClient(e);
+        // this.languageServer = r;
+        // this.lspClient = c;
 
+
+        const sources = getAllTSFiles(this.repoPath);
+        this.languageDriver = new TypeScriptDriver(this.ide, sources, repoPath);
         // Logging tsserver output
         const logStream = fs.createWriteStream(`tsserver-${getTimestampForFilename()}.log`, { flags: "w" });
         this.logStream = logStream;
-        r.stdout.pipe(this.logStream);
-        r.stderr.pipe(this.logStream);
+        // r.stdout.pipe(this.logStream);
+        // r.stderr.pipe(this.logStream);
 
         // Helper function to prepend timestamps
         const logWithTimestamp = (data: Buffer) => {
@@ -94,27 +97,27 @@ export class App {
         };
 
         // Capture and log stdout and stderr with timestamps
-        r.stdout.on("data", logWithTimestamp);
-        r.stderr.on("data", logWithTimestamp);
+        // r.stdout.on("data", logWithTimestamp);
+        // r.stderr.on("data", logWithTimestamp);
 
         // console.log(r.pid)
 
-        this.languageServer.on('close', (code) => {
-          if (code !== 0) {
-            console.log(`ls process exited with code ${code}`);
-          }
-        });
-        // Clear timeout once the process exits
-        this.languageServer.on('exit', () => {
-          // clearTimeout(this.timeout);
-          this.logStream?.close();
-          console.log('Process terminated cleanly.');
-        });
+        // this.languageServer.on('close', (code) => {
+        //   if (code !== 0) {
+        //     console.log(`ls process exited with code ${code}`);
+        //   }
+        // });
+        // // Clear timeout once the process exits
+        // this.languageServer.on('exit', () => {
+        //   // clearTimeout(this.timeout);
+        //   this.logStream?.close();
+        //   console.log('Process terminated cleanly.');
+        // });
 
 
         // const logFile = fs.createWriteStream("log.txt");
         // r.stdout.on('data', (d) => logFile.write(d));
-        this.languageDriver.init(this.lspClient, this.sketchPath)
+        this.languageDriver.init(null, this.sketchPath)
         this.languageDriver.injectHole(this.sketchPath)
       }
     }
@@ -254,7 +257,7 @@ export class App {
       // })();
       // console.timeEnd("extractRelevantTypes");
 
-      console.dir(relevantTypes, { depth: null })
+      // console.dir(relevantTypes, { depth: null })
 
       // Postprocess the map.
       // console.time("extractRelevantTypes postprocess");
