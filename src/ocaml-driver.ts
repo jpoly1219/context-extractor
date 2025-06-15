@@ -5,7 +5,7 @@ import { execSync } from "child_process";
 import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
 // import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "ts-lsp-client";
 // import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "dist/ts-lsp-client-dist/src/main";
-import { LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config, Model } from "./types";
+import { LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config, Model, TypeSpanAndSourceFileAndAst } from "./types";
 import { OcamlTypeChecker } from "./ocaml-type-checker";
 import { extractSnippet, removeLines } from "./utils";
 import ocamlParser = require("../src/ocaml-utils/_build/default/test_parser.bc.js");
@@ -222,6 +222,33 @@ export class OcamlDriver implements LanguageDriver {
     };
   }
 
+  async getHoleContextWithTreesitter(
+    sketchFilePath: string,
+    cursorPosition: { line: number, character: number },
+    logStream: fs.WriteStream | null
+  ) {
+    return {
+      fullHoverResult: "", //
+      functionName: "_", // _
+      functionTypeSpan: "",
+      linePosition: 0,
+      characterPosition: 0,
+      holeTypeDefLinePos: 0, // 
+      holeTypeDefCharPos: 0, // "
+      range: {
+        start: {
+          line: 0,
+          character: 0
+        },
+        end: {
+          line: 0,
+          character: 0
+        }
+      },
+      source: ""
+    };
+  }
+
 
   async extractRelevantTypes(
     lspClient: LspClient | null,
@@ -321,6 +348,19 @@ export class OcamlDriver implements LanguageDriver {
     characterPosition: number,
     foundSoFar: Map<string, TypeSpanAndSourceFile>,
     currentFile: string,
+  ) {
+    return foundSoFar;
+  }
+
+  async extractRelevantTypesWithTreesitter(
+    lspClient: LspClient | null,
+    fullHoverResult: string,
+    typeName: string,
+    startLine: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFileAndAst>, // identifier -> [full hover result, source]
+    currentFile: string,
+    foundContents: Map<string, string>, // uri -> contents
+    logStream: fs.WriteStream | null
   ) {
     return foundSoFar;
   }
@@ -532,6 +572,17 @@ export class OcamlDriver implements LanguageDriver {
     } else {
       return typeSpan;
     }
+  }
+
+  async extractRelevantHeadersWithTreesitter(
+    lspClient: LspClient | null,
+    sources: string[],
+    relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>,
+    holeType: string,
+    holeIdentifier: string,
+    projectRoot: string
+  ): Promise<Set<TypeSpanAndSourceFile>> {
+    return new Set<TypeSpanAndSourceFile>();
   }
 }
 

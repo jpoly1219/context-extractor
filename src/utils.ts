@@ -1,3 +1,4 @@
+import * as URI from "uri-js";
 import * as fs from "fs";
 import * as path from "path";
 import { relevantTypeObject, varsObject, typesObject, typesQueryResult, varsQueryResult, relevantTypeQueryResult, typesAndLocationsQueryResult, Language } from "./types";
@@ -345,6 +346,55 @@ const getTimestampForFilename = (): string => {
   return `${year}${month}${day}_${hours}${minutes}${seconds}`;
 }
 
+const insertAtPosition = (
+  contents: string,
+  cursorPosition: { line: number, character: number },
+  insertText: string
+): string => {
+  const lines = contents.split(/\r?\n/); // Handle both LF and CRLF line endings
+  const { line, character } = cursorPosition;
+
+  if (line < 0 || line >= lines.length) {
+    throw new Error("Invalid line number");
+  }
+
+  const targetLine = lines[line];
+  if (character < 0 || character > targetLine.length) {
+    throw new Error("Invalid character index");
+  }
+
+  // Insert the text
+  lines[line] = targetLine.slice(0, character) + insertText + targetLine.slice(character);
+
+  return lines.join("\n"); // Reconstruct the file
+}
+
+function getCleanUriPath(uri: string) {
+  const path = URI.parse(uri).path ?? "";
+  let clean = path.replace(/^\//, ""); // remove start slash
+  clean = clean.replace(/\/$/, ""); // remove end slash
+  return clean;
+}
+
+function getUriPathBasename(uri: string): string {
+  const path = getCleanUriPath(uri);
+  const basename = path.split("/").pop() || "";
+  return decodeURIComponent(basename);
+}
+
+function getFileExtensionFromBasename(basename: string) {
+  const parts = basename.split(".");
+  if (parts.length < 2) {
+    return "";
+  }
+  return (parts.slice(-1)[0] ?? "").toLowerCase();
+}
+
+function getUriFileExtension(uri: string) {
+  const baseName = getUriPathBasename(uri);
+  return getFileExtensionFromBasename(baseName);
+}
+
 export {
   indexOfRegexGroup,
   formatTypeSpan,
@@ -378,5 +428,10 @@ export {
   supportsHole,
   getAllTSFiles,
   getAllOCamlFiles,
-  getTimestampForFilename
-};
+  getTimestampForFilename,
+  insertAtPosition,
+  getCleanUriPath,
+  getUriPathBasename,
+  getFileExtensionFromBasename,
+  getUriFileExtension,
+}

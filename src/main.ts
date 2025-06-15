@@ -245,7 +245,7 @@ export const extractContext = async (
   console.log("=*=*=*=")
   const start = performance.now()
   const app = new App(language, sketchPath, repoPath, ide);
-  await app.run(1);
+  await app.run2(1);
   const res = app.getSavedResult();
   app.close();
   // const buf = await pprof.encode(profile());

@@ -5,11 +5,11 @@ import { execSync } from "child_process";
 import OpenAI from "openai";
 import { LspClient, JSONRPCEndpoint, SymbolInformation, Location, Range } from "../ts-lsp-client-dist/src/main";
 // import { LspClient, JSONRPCEndpoint } from "ts-lsp-client";
-import { Language, LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config, IDE } from "./types";
+import { Language, LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config, IDE, TypeSpanAndSourceFileAndAst } from "./types";
 // TODO: Bundle the drivers as barrel exports.
 import { TypeScriptDriver } from "./typescript-driver";
 import { OcamlDriver } from "./ocaml-driver";
-import { getAllTSFiles, getAllOCamlFiles, removeLines, getTimestampForFilename } from "./utils";
+import { getAllTSFiles, getAllOCamlFiles, removeLines, getTimestampForFilename, extractSnippet } from "./utils";
 import { performance } from "perf_hooks";
 import { time } from "console";
 // import * as pprof from "pprof";
@@ -40,44 +40,44 @@ export class App {
         this.logStream = null;
       }
       case IDE.Standalone: {
-        // const r = (() => {
-        //   switch (language) {
-        //     case Language.TypeScript: {
-        //       const sources = getAllTSFiles(this.repoPath);
-        //       this.languageDriver = new TypeScriptDriver(this.ide, sources, repoPath);
-        //       // PERF: 6ms
-        //       // return spawn("typescript-language-server", ["--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
-        //       return spawn("node", ["/home/jacob/projects/typescript-language-server/lib/cli.mjs", "--stdio", "--log-level", "4"], { stdio: ["pipe", "pipe", "pipe"] });
-        //     }
-        //     case Language.OCaml: {
-        //       this.languageDriver = new OcamlDriver();
-        //       try {
-        //         execSync(`eval $(opam env --switch=. --set-switch)`, { shell: "/bin/bash" })
-        //         // execSync("opam switch .", { shell: "/bin/bash" })
-        //         const currDir = __dirname;
-        //         process.chdir(path.dirname(sketchPath));
-        //         // execSync("which dune", { shell: "/bin/bash" })
-        //         spawn("dune", ["build", "-w"]);
-        //         process.chdir(currDir);
-        //       } catch (err) {
-        //         console.log("ERROR:", err)
-        //       }
-        //       // TODO: Spawn a dune build -w on sketch directory.
-        //       // try {
-        //       //   execSync("which dune", { shell: "/bin/bash" })
-        //       //   spawn("dune", ["build", "-w"]);
-        //       // } catch (err) {
-        //       //   console.log("ERROR:", err)
-        //       // }
-        //       // process.chdir(currDir);
-        //       return spawn("ocamllsp", ["--stdio"]);
-        //     }
-        //   }
-        // })();
-        // const e = new JSONRPCEndpoint(r.stdin, r.stdout);
-        // const c = new LspClient(e);
-        // this.languageServer = r;
-        // this.lspClient = c;
+        const r = (() => {
+          switch (language) {
+            case Language.TypeScript: {
+              const sources = getAllTSFiles(this.repoPath);
+              this.languageDriver = new TypeScriptDriver(this.ide, sources, repoPath);
+              // PERF: 6ms
+              // return spawn("typescript-language-server", ["--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
+              return spawn("node", ["/home/jacob/projects/typescript-language-server/lib/cli.mjs", "--stdio", "--log-level", "4"], { stdio: ["pipe", "pipe", "pipe"] });
+            }
+            case Language.OCaml: {
+              this.languageDriver = new OcamlDriver();
+              try {
+                execSync(`eval $(opam env --switch=. --set-switch)`, { shell: "/bin/bash" })
+                // execSync("opam switch .", { shell: "/bin/bash" })
+                const currDir = __dirname;
+                process.chdir(path.dirname(sketchPath));
+                // execSync("which dune", { shell: "/bin/bash" })
+                spawn("dune", ["build", "-w"]);
+                process.chdir(currDir);
+              } catch (err) {
+                console.log("ERROR:", err)
+              }
+              // TODO: Spawn a dune build -w on sketch directory.
+              // try {
+              //   execSync("which dune", { shell: "/bin/bash" })
+              //   spawn("dune", ["build", "-w"]);
+              // } catch (err) {
+              //   console.log("ERROR:", err)
+              // }
+              // process.chdir(currDir);
+              return spawn("ocamllsp", ["--stdio"]);
+            }
+          }
+        })();
+        const e = new JSONRPCEndpoint(r.stdin, r.stdout);
+        const c = new LspClient(e);
+        this.languageServer = r;
+        this.lspClient = c;
 
 
         const sources = getAllTSFiles(this.repoPath);
@@ -117,7 +117,7 @@ export class App {
 
         // const logFile = fs.createWriteStream("log.txt");
         // r.stdout.on('data', (d) => logFile.write(d));
-        this.languageDriver.init(null, this.sketchPath)
+        this.languageDriver.init(this.lspClient, this.sketchPath)
         this.languageDriver.injectHole(this.sketchPath)
       }
     }
@@ -155,12 +155,52 @@ export class App {
     //   this.sketchPath,
     //   this.logStream
     // );
-    const holeContext = await this.languageDriver.getHoleContextWithCompilerAPI(
+    // const holeContext = await this.languageDriver.getHoleContextWithCompilerAPI(
+    //   this.sketchPath,
+    //   this.logStream
+    // );
+    const cursorPosition = { line: 3, character: 56 };
+    const holeContext = await this.languageDriver.getHoleContextWithTreesitter(
       this.sketchPath,
+      cursorPosition,
       this.logStream
     );
-    console.dir(holeContext, { depth: null })
     console.timeEnd("getHoleContext");
+    console.dir(holeContext, { depth: null })
+
+    console.time("extractRelevantTypes");
+    const relevantTypes = await this.languageDriver.extractRelevantTypesWithTreesitter(
+      this.lspClient,
+      holeContext.fullHoverResult,
+      holeContext.functionName,
+      holeContext.range.start.line,
+      // holeContext.range.start.character,
+      new Map<string, TypeSpanAndSourceFileAndAst>(),
+      holeContext.source,
+      new Map<string, string>(),
+      this.logStream
+    );
+    console.timeEnd("extractRelevantTypes");
+    // console.dir(relevantTypes, { depth: null })
+
+    console.time("extractRelevantHeaders")
+    let repo: string[] = [];
+    if (this.language === Language.TypeScript) {
+      repo = getAllTSFiles(this.repoPath);
+    } else if (this.language === Language.OCaml) {
+      repo = getAllOCamlFiles(this.repoPath);
+    }
+
+    const relevantHeaders = await this.languageDriver.extractRelevantHeadersWithTreesitter(
+      this.lspClient,
+      repo,
+      relevantTypes,
+      holeContext.functionTypeSpan,
+      holeContext.functionName,
+      this.repoPath
+    );
+    console.dir(relevantHeaders, { depth: null })
+    console.timeEnd("extractRelevantHeaders")
   }
 
   async run(version: number) {

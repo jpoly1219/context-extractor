@@ -4,6 +4,7 @@
 // import { LspClient, Range } from "dist/ts-lsp-client-dist/src/main";
 import { Location, LspClient, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
 import * as fs from "fs"
+import { Node, Tree } from "web-tree-sitter";
 
 interface relevantTypeObject {
   typeAliasDeclaration: string;
@@ -97,6 +98,22 @@ interface LanguageDriver {
     source: string;
     trueHoleFunction?: string;
   }>;
+  getHoleContextWithTreesitter: (
+    sketchFilePath: string,
+    cursorPosition: { line: number, character: number },
+    logStream: fs.WriteStream | null
+  ) => Promise<{
+    fullHoverResult: string;
+    functionName: string;
+    functionTypeSpan: string;
+    linePosition: number;
+    characterPosition: number;
+    holeTypeDefLinePos: number;
+    holeTypeDefCharPos: number;
+    range: Range;
+    source: string;
+    trueHoleFunction?: string;
+  }>;
   extractRelevantTypes: (
     lspClient: LspClient | null,
     fullHoverResult: string,
@@ -117,6 +134,16 @@ interface LanguageDriver {
     foundContents: Map<string, string>,
     logStream: fs.WriteStream | null
   ) => Promise<Map<string, TypeSpanAndSourceFile>>;
+  extractRelevantTypesWithTreesitter: (
+    lspClient: LspClient | null,
+    fullHoverResult: string,
+    typeName: string,
+    startLine: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFileAndAst>, // identifier -> [full hover result, source]
+    currentFile: string,
+    foundContents: Map<string, string>, // uri -> contents
+    logStream: fs.WriteStream | null
+  ) => Promise<Map<string, TypeSpanAndSourceFileAndAst>>;
   extractRelevantHeaders: (
     lspClient: LspClient | null,
     // preludeFilePath: string,
@@ -124,6 +151,14 @@ interface LanguageDriver {
     relevantTypes: Map<string, TypeSpanAndSourceFile>,
     holeType: string,
     projectRoot: string
+  ) => Promise<Set<TypeSpanAndSourceFile>>;
+  extractRelevantHeadersWithTreesitter: (
+    _: LspClient | null,
+    sources: string[],
+    relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>,
+    holeType: string,
+    holeIdentifier: string,
+    projectRoot: string,
   ) => Promise<Set<TypeSpanAndSourceFile>>;
   // completeWithLLM: (targetDirectoryPath: string, context: Context) => Promise<string>;
   // correctWithLLM: (targetDirectoryPath: string, context: Context, message: string) => Promise<string>;
@@ -153,9 +188,12 @@ interface TypeChecker {
 
 interface TypeSpanAndSourceFile {
   typeSpan: string,
-  sourceFile: string
+  sourceFile: string,
 }
 
+interface TypeSpanAndSourceFileAndAst extends TypeSpanAndSourceFile {
+  ast: Tree
+}
 
 enum Model {
   None,
@@ -224,5 +262,22 @@ type ExecuteDefinitionProvider = "vscode.executeDefinitionProvider"
 type ExecuteTypeDefinitionProvider = "vscode.executeTypeDefinitionProvider"
 type ExecuteDocumentSymbolProvider = "vscode.executeDocumentSymbolProvider"
 
+interface RangeInFile {
+  filepath: string;
+  range: Range;
+}
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis, VarFuncDecls, IDE, VSCodeBuiltinProvider }
+interface RangeInFileWithContents extends RangeInFile {
+  contents: string;
+}
+
+interface SymbolWithRange extends RangeInFile {
+  name: string;
+  type: Node["type"];
+  content: string;
+}
+
+type FileSymbolMap = Record<string, SymbolWithRange[]>;
+
+
+export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, TypeSpanAndSourceFileAndAst, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis, VarFuncDecls, IDE, VSCodeBuiltinProvider, RangeInFile, RangeInFileWithContents, SymbolWithRange, FileSymbolMap }

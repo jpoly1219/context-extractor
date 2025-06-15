@@ -6,14 +6,18 @@ import { execSync } from "child_process";
 import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
 // import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "ts-lsp-client";
 // import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "dist/ts-lsp-client-dist/src/main";
-import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent, TypeAnalysis, VarFuncDecls, IDE } from "./types";
+import { LanguageDriver, Context, TypeSpanAndSourceFile, Model, GPT4Config, GPT4PromptComponent, TypeAnalysis, VarFuncDecls, IDE, TypeSpanAndSourceFileAndAst } from "./types";
 import { TypeScriptTypeChecker } from "./typescript-type-checker";
-import { extractSnippet, removeLines } from "./utils";
+import { extractSnippet, insertAtPosition, removeLines } from "./utils";
 import { transpileDeclaration, Type } from "typescript";
 import { types } from "util";
 // import * as vscode from "vscode";
 // import { VsCode } from "./vscode-ide";
 import { flushCompileCache } from "module";
+import { LinkedEditingRanges, Position } from 'vscode';
+import { getAst } from './ast';
+import { extractFunctionTypeFromDecl, extractTopLevelDecls, findEnclosingTypeDeclaration, findTypeDeclarationGivenIdentifier, getFullLanguageName, getQueryForFile } from './tree-sitter';
+import { Parser, Node, QueryMatch } from 'web-tree-sitter';
 
 
 export class TypeScriptDriver implements LanguageDriver {
@@ -412,6 +416,103 @@ export class TypeScriptDriver implements LanguageDriver {
     };
   }
 
+  async getHoleContextWithTreesitter(
+    sketchFilePath: string,
+    cursorPosition: { line: number, character: number },
+    logStream: fs.WriteStream | null
+  ) {
+    if (logStream) {
+      // logStream.write("")
+    }
+
+    // We need to inject the hole @ to trigger an error node.
+    const sketchFileContent = fs.readFileSync(sketchFilePath, "utf8");
+    const injectedContent = insertAtPosition(sketchFileContent, cursorPosition, "@;")
+
+    // The hole's position is cursorPosition.
+    const snip = extractSnippet(injectedContent, cursorPosition, { line: cursorPosition.line, character: cursorPosition.character + 2 });
+    // console.log(snip)
+
+    // Use treesitter to parse.
+    const ast = await getAst(sketchFilePath, injectedContent);
+    if (!ast) {
+      throw new Error("failed to get ast");
+    }
+    const language = getFullLanguageName(sketchFilePath);
+    const query = await getQueryForFile(
+      sketchFilePath,
+      `hole-queries/${language}.scm`,
+    );
+    if (!query) {
+      throw new Error(`failed to get query for file ${sketchFilePath} and language ${language}`);
+    }
+
+    // const matches = query.matches(ast.rootNode);
+    // console.log(JSON.stringify(matches))
+    // for (const m of matches) {
+    //   console.log(m)
+    // }
+    // for (const m of matches) {
+    //   for (const c of m.captures) {
+    //     const { name, node } = c;
+    //     console.log(`${name} →`, node.text, node.startPosition, node.endPosition);
+    //   }
+    // }
+    const captures = query.captures(ast.rootNode);
+    const res: {
+      fullHoverResult: string;
+      functionName: string;
+      functionTypeSpan: string;
+      linePosition: number;
+      characterPosition: number;
+      holeTypeDefLinePos: number;
+      holeTypeDefCharPos: number;
+      range: Range;
+      source: string;
+      trueHoleFunction?: string;
+    } = {
+      fullHoverResult: "",
+      functionName: "",
+      functionTypeSpan: "",
+      linePosition: 0,
+      characterPosition: 0,
+      holeTypeDefLinePos: 0,
+      holeTypeDefCharPos: "declare function _(): ".length,
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 52 } },
+      // range: (sketchSymbol![0] as SymbolInformation).location.range,
+      source: `file://${sketchFilePath}`,
+      trueHoleFunction: ""
+    }
+    for (const c of captures) {
+      const { name, node } = c;
+      // console.log(`${name} →`, node.text, node.startPosition, node.endPosition);
+
+      switch (name) {
+        case "function.decl": {
+          res.fullHoverResult = node.text;
+        }
+        case "function.name": {
+          res.functionName = node.text;
+        }
+        case "function.type": {
+          res.functionTypeSpan = node.text;
+          res.range = {
+            start: {
+              line: node.startPosition.row,
+              character: node.startPosition.column,
+            },
+            end: {
+              line: node.endPosition.row,
+              character: node.endPosition.column,
+            }
+          }
+        }
+      }
+    }
+
+    return res;
+  }
+
 
   // TODO: delete
   async extractRelevantTypes1(
@@ -557,6 +658,26 @@ export class TypeScriptDriver implements LanguageDriver {
     // const content = fs.readFileSync(currentFile.slice(7), "utf8");
     // console.log(content)
     await this.extractRelevantTypesHelper(lspClient, fullHoverResult, typeName, startLine, foundSoFar, currentFile, foundContents, 0);
+
+    return foundSoFar;
+  }
+
+  async extractRelevantTypesWithTreesitter(
+    lspClient: LspClient | null,
+    fullHoverResult: string,
+    typeName: string,
+    startLine: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFileAndAst>, // identifier -> [full hover result, source]
+    currentFile: string,
+    foundContents: Map<string, string>, // uri -> contents
+    logStream: fs.WriteStream | null
+  ) {
+
+    if (logStream) {
+      logStream.write(`\n\n=*=*=*=*=*=[begin extracting relevant headers][${new Date().toISOString()}]\n\n`);
+    }
+
+    await this.extractRelevantTypesHelperWithTreesitter(lspClient, fullHoverResult, typeName, startLine, foundSoFar, currentFile, foundContents, 0);
     return foundSoFar;
   }
 
@@ -853,6 +974,183 @@ export class TypeScriptDriver implements LanguageDriver {
             console.log(err)
           }
         } else {
+        }
+      }
+    }
+  }
+
+  async extractRelevantTypesHelperWithTreesitter(
+    lspClient: LspClient | null,
+    fullHoverResult: string,
+    typeName: string,
+    startLine: number,
+    foundSoFar: Map<string, TypeSpanAndSourceFileAndAst>, // identifier -> [full hover result, source]
+    currentFile: string,
+    foundContents: Map<string, string>, // uri -> contents
+    layer: number,
+  ) {
+    if (lspClient) {
+      // Split the type span into identifiers, where each include the text, line number, and character range.
+      // For each identifier, invoke go to type definition.
+      if (!foundSoFar.has(typeName)) {
+        // const identifiers = this.typeChecker.extractIdentifiers(fullHoverResult);
+        // const currentFileContent = fs.readFileSync(currentFile, "utf8");
+        const ast = await getAst(currentFile, fullHoverResult);
+        if (!ast) {
+          throw new Error(`failed to get ast for file ${currentFile}`);
+        }
+
+        foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7), ast: ast });
+
+        const language = getFullLanguageName(currentFile);
+        const query = await getQueryForFile(
+          currentFile,
+          `relevant-types-queries/${language}-extract-identifiers.scm`,
+        );
+        if (!query) {
+          throw new Error(`failed to get query for file ${currentFile} and language ${language}`);
+        }
+
+        const identifiers = query.captures(ast.rootNode);
+
+        for (const { name, node } of identifiers) {
+          // console.log(`${name} →`, node.text, node.startPosition, node.endPosition);
+          if (!foundSoFar.has(node.text)) {
+            try {
+              const typeDefinitionResult = await lspClient.typeDefinition({
+                textDocument: {
+                  uri: currentFile
+                },
+                position: {
+                  character: node.startPosition.column,
+                  line: startLine + node.startPosition.row
+                }
+              });
+
+              if (typeDefinitionResult && typeDefinitionResult instanceof Array && typeDefinitionResult.length != 0) {
+                const tdLocation = typeDefinitionResult[0] as Location;
+
+                let content = "";
+
+                if (foundContents.has(tdLocation.uri.slice(7))) {
+                  content = foundContents.get(tdLocation.uri.slice(7))!;
+                } else {
+                  content = fs.readFileSync(tdLocation.uri.slice(7), "utf8");
+                  foundContents.set(tdLocation.uri.slice(7), content);
+                }
+
+                const ast = await getAst(tdLocation.uri, content);
+                if (!ast) {
+                  throw new Error(`failed to get ast for file ${tdLocation.uri}`);
+                }
+                const decl = findEnclosingTypeDeclaration(content, tdLocation.range.start.line, tdLocation.range.start.character, ast);
+                if (!decl) {
+                  // throw new Error(`failed to get decl for file ${tdLocation.uri}`);
+                  console.log(`failed to get decl for file ${tdLocation.uri}`);
+                }
+
+                if (decl) {
+                  await this.extractRelevantTypesHelperWithTreesitter(
+                    lspClient,
+                    decl.fullText,
+                    node.text,
+                    tdLocation.range.start.line,
+                    foundSoFar,
+                    tdLocation.uri,
+                    foundContents,
+                    layer + 1,
+                  );
+                } else {
+                  // console.log("decl not found")
+                }
+              } else {
+                // console.log("td not found")
+                // console.dir(typeDefinitionResult, { depth: null })
+              }
+            } catch (err) {
+              console.log(err)
+            }
+          } else {
+            // console.log(`foundSoFar has ${node.text}`)
+          }
+        }
+      }
+    } else {
+      // TODO: Test this.
+      if (!foundSoFar.has(typeName)) {
+        const ast = await getAst(currentFile, fullHoverResult);
+        if (!ast) {
+          throw new Error(`failed to get ast for file ${currentFile}`);
+        }
+        foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7), ast: ast });
+
+        const language = getFullLanguageName(currentFile);
+        const query = await getQueryForFile(
+          currentFile,
+          `relevant-types-queries/${language}-extract-identifiers.scm`,
+        );
+        if (!query) {
+          throw new Error(`failed to get query for file ${currentFile} and language ${language}`);
+        }
+
+        const identifiers = query.captures(ast.rootNode);
+
+        for (const { name, node } of identifiers) {
+          if (!foundSoFar.has(node.text)) {
+            try {
+              const typeDefinitionResult = await this.vscodeImport.VsCode.gotoTypeDefinition({
+                filepath: currentFile,
+                position: {
+                  character: node.startPosition.column,
+                  line: startLine + node.startPosition.row
+                }
+              });
+
+              if (typeDefinitionResult.length != 0) {
+                const tdLocation = typeDefinitionResult[0];
+
+                let content = "";
+
+                if (foundContents.has(tdLocation.filepath)) {
+                  content = foundContents.get(tdLocation.filepath)!;
+                } else {
+                  content = fs.readFileSync(tdLocation.filepath, "utf8");
+                  foundContents.set(tdLocation.filepath, content);
+                }
+
+                const ast = await getAst(tdLocation.filepath, content);
+                if (!ast) {
+                  throw new Error(`failed to get ast for file ${tdLocation.filepath}`);
+                }
+                const decl = findEnclosingTypeDeclaration(content, tdLocation.range.start.line, tdLocation.range.start.character, ast);
+                if (!decl) {
+                  // throw new Error(`failed to get decl for file ${tdLocation.uri}`);
+                  console.log(`failed to get decl for file ${tdLocation.uri}`);
+                }
+
+                if (decl) {
+                  await this.extractRelevantTypesHelper(
+                    lspClient,
+                    decl.fullText,
+                    node.text,
+                    tdLocation.range.start.line,
+                    foundSoFar,
+                    tdLocation.filepath,
+                    foundContents,
+                    layer + 1
+                  )
+                } else {
+                  // console.log("decl not found");
+                }
+              } else {
+                // console.log("td not found");
+              }
+            } catch (err) {
+              console.log(err);
+            }
+          } else {
+
+          }
         }
       }
     }
@@ -1466,6 +1764,327 @@ export class TypeScriptDriver implements LanguageDriver {
       }
     });
   }
+
+  async extractRelevantHeadersWithTreesitter(
+    _: LspClient | null,
+    sources: string[],
+    relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>,
+    holeType: string,
+    holeIdentifier: string,
+    projectRoot: string,
+  ): Promise<Set<TypeSpanAndSourceFile>> {
+    const relevantContext = new Set<TypeSpanAndSourceFile>();
+    // NOTE: This is necessary because TypeScript sucks.
+    // There is no way to compare objects by value,
+    // so sets of objects starts to accumulate tons of duplicates.
+    const relevantContextMap = new Map<string, TypeSpanAndSourceFile>();
+    const trace: string[] = [];
+    const foundNormalForms = new Map<string, string>();
+    const foundTypeAnalysisResults = new Map<string, TypeAnalysis>();
+
+    const targetTypes = await this.generateTargetTypesWithTreesitter(relevantTypes, holeType, holeIdentifier);
+    // return new Set<TypeSpanAndSourceFileAndAst>();
+
+    const seenDecls = new Set<string>();
+
+    // only consider lines that start with let or const
+    for (const source of sources) {
+      // TODO: this can be replaced by using typescript compiler api
+      // what really needs to happen is the following:
+      // filter by variable and function decls
+      // get a d.ts of them (or get a type decl)
+      // type decl makes more sense because d.ts format is a bit weird with class methods
+
+      const topLevelDecls = await extractTopLevelDecls(source);
+      for (const tld of topLevelDecls) {
+        // pattern 0 is let/const, 1 is var, 2 is fun
+        // if (!seenDecls.has(JSON.stringify()) {
+        const originalDeclText = tld.patternIndex === 2
+          ? tld.captures.find(d => d.name === "top.fn.decl")!.node.text
+          : tld.captures.find(d => d.name === "top.var.decl")!.node.text;
+
+        if (tld.patternIndex === 2) {
+          // build a type span
+          const funcType = extractFunctionTypeFromDecl(tld);
+          const wrapped = `type __TMP = ${funcType}`;
+
+          const ast = await getAst("file.ts", wrapped);
+          if (!ast) {
+            throw new Error(`failed to generate ast for ${wrapped}`);
+          }
+
+          const alias = ast.rootNode.namedChild(0);
+          if (!alias || alias.type !== "type_alias_declaration") {
+            throw new Error("Failed to parse type alias");
+          }
+
+          const valueNode = alias.childForFieldName("value");
+          if (!valueNode) throw new Error("No type value found");
+          console.log(valueNode.text)
+
+          const baseNode = this.unwrapToBaseType(valueNode);
+
+          await this.extractRelevantHeadersWithTreesitterHelper(
+            originalDeclText,
+            baseNode,
+            targetTypes,
+            relevantTypes,
+            relevantContext,
+            relevantContextMap,
+            foundNormalForms,
+            source
+          );
+        } else {
+          const varTypNode = tld.captures.find(d => d.name === "top.var.type")!.node;
+          await this.extractRelevantHeadersWithTreesitterHelper(
+            originalDeclText,
+            varTypNode,
+            targetTypes,
+            relevantTypes,
+            relevantContext,
+            relevantContextMap,
+            foundNormalForms,
+            source
+          );
+        }
+      }
+    }
+
+    for (const v of relevantContextMap.values()) {
+      relevantContext.add(v);
+    }
+
+    return relevantContext;
+  }
+
+  async extractRelevantHeadersWithTreesitterHelper(
+    originalDeclText: string,
+    node: Node,
+    targetTypes: Set<Node>,
+    relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>,
+    relevantContext: Set<TypeSpanAndSourceFile>,
+    relevantContextMap: Map<string, TypeSpanAndSourceFile>,
+    foundNormalForms: Map<string, string>,
+    source: string
+  ) {
+    for (const typ of targetTypes) {
+      if (await this.isTypeEquivalentWithTreesitter(node, typ, relevantTypes, foundNormalForms)) {
+        const ctx = { typeSpan: originalDeclText, sourceFile: source };
+        relevantContextMap.set(JSON.stringify(ctx), ctx);
+      }
+
+      if (node.type === "function_type") {
+        const retTypeNode = node.namedChildren.find(c => c && c.type === "return_type");
+        if (retTypeNode) {
+          this.extractRelevantHeadersWithTreesitterHelper(
+            originalDeclText,
+            retTypeNode,
+            targetTypes,
+            relevantTypes,
+            relevantContext,
+            relevantContextMap,
+            foundNormalForms,
+            source
+          );
+        }
+      } else if (node.type === "tuple_type") {
+        for (const c of node.namedChildren) {
+          await this.extractRelevantHeadersWithTreesitterHelper(
+            originalDeclText,
+            c!,
+            targetTypes,
+            relevantTypes,
+            relevantContext,
+            relevantContextMap,
+            foundNormalForms,
+            source
+          );
+        }
+      }
+    }
+  }
+
+  async generateTargetTypesWithTreesitter(
+    relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>,
+    holeType: string,
+    holeIdentifier: string
+  ) {
+    const targetTypes = new Set<Node>();
+    // const ast = relevantTypes.get(holeIdentifier)!.ast;
+    const ast = await getAst("file.ts", `type T = ${holeType}`);
+    if (!ast) {
+      throw new Error(`failed to generate ast for ${holeType}`);
+    }
+
+    const alias = ast.rootNode.namedChild(0);
+    if (!alias || alias.type !== "type_alias_declaration") {
+      throw new Error("Failed to parse type alias");
+    }
+
+    const valueNode = alias.childForFieldName("value");
+    if (!valueNode) throw new Error("No type value found");
+    // console.log(valueNode.text)
+
+    const baseNode = this.unwrapToBaseType(valueNode);
+    targetTypes.add(baseNode);
+    await this.generateTargetTypesWithTreesitterHelper(relevantTypes, holeType, targetTypes, baseNode);
+
+    // console.log(targetTypes)
+
+    return targetTypes;
+  }
+
+  unwrapToBaseType(node: Node): Node {
+    if (["function_type", "tuple_type", "type_identifier", "predefined_type"].includes(node.type)) {
+      return node;
+    }
+
+    for (const child of node.namedChildren) {
+      const unwrapped = this.unwrapToBaseType(child!);
+      if (unwrapped !== child || ["function_type", "tuple_type", "type_identifier", "predefined_type"].includes(unwrapped.type)) {
+        return unwrapped;
+      }
+    }
+
+    return node;
+  }
+
+  async generateTargetTypesWithTreesitterHelper(
+    relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>,
+    currType: string,
+    targetTypes: Set<Node>,
+    node: Node | null
+  ): Promise<void> {
+    if (!node) return;
+
+    if (node.type === "function_type") {
+      const returnType = node.childForFieldName("return_type");
+      if (returnType) {
+        targetTypes.add(returnType);
+        await this.generateTargetTypesWithTreesitterHelper(relevantTypes, currType, targetTypes, returnType);
+      }
+    }
+
+    if (node.type === "tuple_type") {
+      for (const child of node.namedChildren) {
+        if (child) {
+          targetTypes.add(child);
+          await this.generateTargetTypesWithTreesitterHelper(relevantTypes, currType, targetTypes, child);
+        }
+      }
+    }
+
+    if (relevantTypes.has(node.text)) {
+      // const ast = relevantTypes.get(node.text)!.ast;
+      const typeSpan = relevantTypes.get(node.text)?.typeSpan;
+
+      // const ast = await getAst("file.ts", `type T = ${typeSpan}`);
+      const ast = await getAst("file.ts", typeSpan!);
+      if (!ast) {
+        throw new Error(`failed to generate ast for ${typeSpan}`);
+      }
+
+      const alias = ast.rootNode.namedChild(0);
+      if (!alias || alias.type !== "type_alias_declaration") {
+        throw new Error("Failed to parse type alias");
+      }
+
+      const valueNode = alias.childForFieldName("value");
+      if (!valueNode) throw new Error("No type value found");
+
+      const baseNode = this.unwrapToBaseType(valueNode);
+      await this.generateTargetTypesWithTreesitterHelper(relevantTypes, currType, targetTypes, baseNode);
+    }
+
+    // if (node.type === "type_identifier" || node.type === "predefined_type") {
+    //   return [node.text];
+    // }
+
+    return;
+  }
+
+  async isTypeEquivalentWithTreesitter(
+    node: Node,
+    typ: Node,
+    relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>,
+    foundNormalForms: Map<string, string>
+  ): Promise<boolean> {
+    if (!node || !typ) {
+      return false;
+    }
+    let normT1 = "";
+    let normT2 = "";
+    if (foundNormalForms.has(node.text)) {
+      // console.log("found t1", true)
+      normT1 = foundNormalForms.get(node.text)!;
+    } else {
+      // console.log("not found t1", false)
+      normT1 = await this.normalizeWithTreesitter(node, relevantTypes);
+      foundNormalForms.set(node.text, normT1);
+    }
+    if (foundNormalForms.has(typ.text)) {
+      // console.log("found t2", true)
+      normT2 = foundNormalForms.get(typ.text)!;
+    } else {
+      // console.log("not found t2", false)
+      normT2 = await this.normalizeWithTreesitter(typ, relevantTypes);
+      foundNormalForms.set(typ.text, normT2);
+    }
+    // const normT1 = foundNormalForms.has(t1) ? foundNormalForms.get(t1) : this.normalize2(t1, relevantTypes);
+    // const normT2 = foundNormalForms.has(t2) ? foundNormalForms.get(t2) : this.normalize2(t2, relevantTypes);
+    // console.log(`normal forms: ${normT1} {}{} ${normT2}`)
+    return normT1 === normT2;
+  }
+
+  async normalizeWithTreesitter(node: Node, relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>): Promise<string> {
+    if (!node) return "";
+
+    switch (node.type) {
+      case "function_type": {
+        const params = node.child(0); // formal_parameters
+        const returnType = node.childForFieldName("type") || node.namedChildren[1]; // function_type → parameters, =>, return
+
+        const paramTypes = params?.namedChildren
+          .map(param => this.normalizeWithTreesitter(param!.childForFieldName("type")! || param!.namedChildren.at(-1), relevantTypes))
+          .join(", ") || "";
+
+        const ret = this.normalizeWithTreesitter(returnType!, relevantTypes);
+        return `(${paramTypes}) => ${ret}`;
+      }
+
+      case "tuple_type": {
+        const elements = node.namedChildren.map(c => this.normalizeWithTreesitter(c!, relevantTypes));
+        return `[${elements.join(", ")}]`;
+      }
+
+      case "union_type": {
+        const parts = node.namedChildren.map(c => this.normalizeWithTreesitter(c!, relevantTypes));
+        return parts.join(" | ");
+      }
+
+      case "type_identifier": {
+        const alias = relevantTypes.get(node.text);
+        if (!alias) return node.text;
+
+        // Parse the alias's type span
+        const wrapped = `type __TMP = ${alias};`;
+        const tree = await getAst("file.ts", wrapped);
+        const valueNode = tree!.rootNode.descendantsOfType("type_alias_declaration")[0]?.childForFieldName("value");
+
+        return this.normalizeWithTreesitter(valueNode!, relevantTypes);
+      }
+
+      case "predefined_type":
+      case "number":
+      case "string":
+        return node.text;
+
+      default:
+        // Fallback for types like array, etc.
+        return node.text;
+    }
+  }
+
 }
 
 
