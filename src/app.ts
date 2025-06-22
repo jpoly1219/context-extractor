@@ -150,7 +150,7 @@ export class App {
       });
     }
 
-    console.time("getHoleContext");
+    // console.time("getHoleContext");
     // PERF: 801ms
     // const holeContext = await this.languageDriver.getHoleContext(
     //   this.lspClient,
@@ -167,10 +167,10 @@ export class App {
       this.cursorPosition,
       this.logStream
     );
-    console.timeEnd("getHoleContext");
-    console.dir(holeContext, { depth: null })
+    // console.timeEnd("getHoleContext");
+    // console.dir(holeContext, { depth: null })
 
-    console.time("extractRelevantTypes");
+    // console.time("extractRelevantTypes");
     const relevantTypes = await this.languageDriver.extractRelevantTypesWithTreesitter(
       this.lspClient,
       holeContext.fullHoverResult,
@@ -182,10 +182,10 @@ export class App {
       new Map<string, string>(),
       this.logStream
     );
-    console.timeEnd("extractRelevantTypes");
+    // console.timeEnd("extractRelevantTypes");
     // console.dir(relevantTypes, { depth: null })
 
-    console.time("extractRelevantHeaders")
+    // console.time("extractRelevantHeaders")
     let repo: string[] = [];
     if (this.language === "typescript") {
       repo = getAllTSFiles(this.repoPath);
@@ -201,8 +201,38 @@ export class App {
       holeContext.functionName,
       this.repoPath
     );
-    console.dir(relevantHeaders, { depth: null })
-    console.timeEnd("extractRelevantHeaders")
+    // console.dir(relevantHeaders, { depth: null })
+    // console.timeEnd("extractRelevantHeaders")
+    const relevantTypesToReturn: Map<string, string[]> = new Map<string, string[]>();
+    relevantTypes.forEach(({ typeSpan: v, sourceFile: src }, _) => {
+      if (relevantTypesToReturn.has(src)) {
+        const updated = relevantTypesToReturn.get(src)!;
+        updated.push(v);
+        relevantTypesToReturn.set(src, updated);
+      } else {
+        relevantTypesToReturn.set(src, [v]);
+      }
+    })
+
+
+    const relevantHeadersToReturn: Map<string, string[]> = new Map<string, string[]>();
+    relevantHeaders.forEach(({ typeSpan: v, sourceFile: src }) => {
+      // console.log(v, src)
+      if (relevantHeadersToReturn.has(src)) {
+        const updated = relevantHeadersToReturn.get(src)!;
+        if (!updated.includes(v)) {
+          updated.push(v);
+        }
+        relevantHeadersToReturn.set(src, updated);
+      } else {
+        relevantHeadersToReturn.set(src, [v]);
+      }
+    })
+    this.result = {
+      holeType: holeContext.functionTypeSpan,
+      relevantTypes: relevantTypesToReturn,
+      relevantHeaders: relevantHeadersToReturn
+    };
   }
 
   async run(version: number) {
