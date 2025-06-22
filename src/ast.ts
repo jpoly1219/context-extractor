@@ -3,7 +3,7 @@ import Parser from "web-tree-sitter";
 import { RangeInFileWithContents } from "./types";
 import { getParserForFile } from "./tree-sitter";
 
-export type AstPath = Parser.Node[];
+export type AstPath = Parser.SyntaxNode[];
 
 export async function getAst(
   filepath: string,

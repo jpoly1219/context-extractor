@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-import { Parser, Language, Query, Node, Tree, QueryCapture, QueryMatch } from "web-tree-sitter";
+import Parser from "web-tree-sitter";
 import { SymbolWithRange } from "./types";
 import { getUriFileExtension } from "./utils";
 import { getAst } from "./ast";
@@ -28,6 +28,7 @@ export async function getParserForFile(filepath: string) {
   try {
     await Parser.init();
     const parser = new Parser();
+    console.log("parser:", parser);
 
     const language = await getLanguageForFile(filepath);
     if (!language) {
@@ -46,11 +47,11 @@ export async function getParserForFile(filepath: string) {
 // Loading the wasm files to create a Language object is an expensive operation and with
 // sufficient number of files can result in errors, instead keep a map of language name
 // to Language object
-const nameToLanguage = new Map<string, Language>();
+const nameToLanguage = new Map<string, Parser.Language>();
 
 export async function getLanguageForFile(
-  filepath: string,
-): Promise<Language | undefined> {
+  filepath: string
+): Promise<Parser.Language | undefined> {
   try {
     await Parser.init();
     const extension = getUriFileExtension(filepath);
@@ -79,43 +80,37 @@ export const getFullLanguageName = (filepath: string) => {
 
 export async function getQueryForFile(
   filepath: string,
-  queryPath: string,
-): Promise<Query | undefined> {
+  queryPath: string
+): Promise<Parser.Query | undefined> {
   const language = await getLanguageForFile(filepath);
   if (!language) {
     return undefined;
   }
 
-  const sourcePath = path.join(
-    __dirname,
-    "..",
-    "tree-sitter-files",
-    "queries",
-    queryPath,
-  );
-  if (!fs.existsSync(sourcePath)) {
+  if (!fs.existsSync(queryPath)) {
     return undefined;
   }
-  const querySource = fs.readFileSync(sourcePath).toString();
+
+  const querySource = fs.readFileSync(queryPath).toString();
 
   const query = language.query(querySource);
   return query;
 }
 
 async function loadLanguageForFileExt(
-  fileExtension: string,
-): Promise<Language> {
+  fileExtension: string
+): Promise<Parser.Language> {
   const wasmPath = path.join(
     __dirname,
-    "..",
     "tree-sitter-files",
     "wasms",
-    `tree-sitter-${supportedLanguages[fileExtension]}.wasm`,
+    `tree-sitter-${supportedLanguages[fileExtension]}.wasm`
   );
-  return await Language.load(wasmPath);
+  console.log("Language is", Parser.Language);
+  return await Parser.Language.load(wasmPath);
 }
 
-const GET_SYMBOLS_FOR_NODE_TYPES: Node["type"][] = [
+const GET_SYMBOLS_FOR_NODE_TYPES: Parser.SyntaxNode["type"][] = [
   "class_declaration",
   "class_definition",
   "function_item", // function name = first "identifier" child
@@ -130,14 +125,14 @@ const GET_SYMBOLS_FOR_NODE_TYPES: Node["type"][] = [
 
 export async function getSymbolsForFile(
   filepath: string,
-  contents: string,
+  contents: string
 ): Promise<SymbolWithRange[] | undefined> {
   const parser = await getParserForFile(filepath);
   if (!parser) {
     return;
   }
 
-  let tree: Tree | null;
+  let tree: Parser.Tree | null;
   try {
     tree = parser.parse(contents);
     if (!tree) {
@@ -151,9 +146,9 @@ export async function getSymbolsForFile(
 
   // Function to recursively find all named nodes (classes and functions)
   const symbols: SymbolWithRange[] = [];
-  function findNamedNodesRecursive(node: Node | null) {
+  function findNamedNodesRecursive(node: Parser.SyntaxNode | null) {
     if (!node) {
-      return
+      return;
     }
     // console.log(`node: ${node.type}, ${node.text}`);
     if (GET_SYMBOLS_FOR_NODE_TYPES.includes(node.type)) {
@@ -165,7 +160,7 @@ export async function getSymbolsForFile(
       // Empirically, the actual name is the last identifier in the node
       // Especially with languages where return type is declared before the name
       // TODO use findLast in newer version of node target
-      let identifier: Node | undefined = undefined;
+      let identifier: Parser.SyntaxNode | undefined = undefined;
       for (let i = node.children.length - 1; i >= 0; i--) {
         if (
           node.children[i] &&
@@ -202,14 +197,16 @@ export async function getSymbolsForFile(
   return symbols;
 }
 
-
-export function findTypeDeclarationGivenIdentifier(captures: QueryCapture[], typeIdentifier: string) {
+export function findTypeDeclarationGivenIdentifier(
+  captures: Parser.QueryCapture[],
+  typeIdentifier: string
+) {
   for (let i = 0; i < captures.length; i++) {
     const cap = captures[i];
     if (cap.name === "type.identifier" && cap.node.text === typeIdentifier) {
       const parent = cap.node.parent;
       const value = captures.find(
-        c => c.name === "type.value" && c.node.parent === parent
+        (c) => c.name === "type.value" && c.node.parent === parent
       );
       return { name: cap.node, value: value?.node, kind: parent?.type };
     }
@@ -231,7 +228,7 @@ export function findEnclosingTypeDeclaration(
   sourceCode: string,
   cursorLine: number,
   cursorColumn: number,
-  ast: Tree,
+  ast: Parser.Tree
 ): TypeDeclarationResult | null {
   const point = { row: cursorLine, column: cursorColumn };
   let node = ast.rootNode.descendantForPosition(point);
@@ -244,6 +241,7 @@ export function findEnclosingTypeDeclaration(
       "enum_declaration",
     ].includes(node.type)
   ) {
+    if (!node.parent) return null;
     node = node.parent;
   }
 
@@ -272,10 +270,18 @@ export async function extractTopLevelDecls(currentFile: string) {
   const language = getFullLanguageName(currentFile);
   const query = await getQueryForFile(
     currentFile,
-    `relevant-headers-queries/${language}-get-toplevel-headers.scm`,
+    path.join(
+      __dirname,
+      "tree-sitter-files",
+      "queries",
+      "relevant-headers-queries",
+      `${language}-get-toplevel-headers.scm`
+    )
   );
   if (!query) {
-    throw new Error(`failed to get query for file ${currentFile} and language ${language}`);
+    throw new Error(
+      `failed to get query for file ${currentFile} and language ${language}`
+    );
   }
   return query.matches(ast.rootNode);
 }
@@ -288,10 +294,18 @@ export async function extractTopLevelDeclsWithFormatting(currentFile: string) {
   const language = getFullLanguageName(currentFile);
   const query = await getQueryForFile(
     currentFile,
-    `relevant-headers-queries/${language}-get-toplevel-headers.scm`,
+    path.join(
+      __dirname,
+      "tree-sitter-files",
+      "queries",
+      "relevant-headers-queries",
+      `${language}-get-toplevel-headers.scm`
+    )
   );
   if (!query) {
-    throw new Error(`failed to get query for file ${currentFile} and language ${language}`);
+    throw new Error(
+      `failed to get query for file ${currentFile} and language ${language}`
+    );
   }
   const matches = query.matches(ast.rootNode);
 
@@ -321,10 +335,8 @@ export async function extractTopLevelDeclsWithFormatting(currentFile: string) {
         if (typeNode) {
           item.declaredType = typeNode.text.replace(/^:\s*/, "");
         }
-
       } else if (name === "top.var.name" || name === "top.fn.name") {
         item.name = node.text;
-
       } else if (name === "top.fn.decl") {
         item.nodeType = "function";
         item.declaration = node.text;
@@ -351,9 +363,9 @@ export async function extractTopLevelDeclsWithFormatting(currentFile: string) {
   return results;
 }
 
-export function extractFunctionTypeFromDecl(match: QueryMatch): string {
-  let paramsNode: Node;
-  let returnNode: Node;
+export function extractFunctionTypeFromDecl(match: Parser.QueryMatch): string {
+  let paramsNode: Parser.SyntaxNode;
+  let returnNode: Parser.SyntaxNode;
 
   for (const capture of match.captures) {
     if (capture.name === "top.fn.param.type") {
@@ -362,7 +374,6 @@ export function extractFunctionTypeFromDecl(match: QueryMatch): string {
       returnNode = capture.node;
     }
   }
-
 
   return `${paramsNode!.text} => ${returnNode!.text}`;
 }

@@ -4,7 +4,7 @@
 // import { LspClient, Range } from "dist/ts-lsp-client-dist/src/main";
 import { Location, LspClient, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
 import * as fs from "fs"
-import { Node, Tree } from "web-tree-sitter";
+import { SyntaxNode, Tree } from "web-tree-sitter";
 
 interface relevantTypeObject {
   typeAliasDeclaration: string;
@@ -273,7 +273,7 @@ interface RangeInFileWithContents extends RangeInFile {
 
 interface SymbolWithRange extends RangeInFile {
   name: string;
-  type: Node["type"];
+  type: SyntaxNode["type"];
   content: string;
 }
 

@@ -17,7 +17,7 @@ import { flushCompileCache } from "module";
 import { LinkedEditingRanges, Position } from 'vscode';
 import { getAst } from './ast';
 import { extractFunctionTypeFromDecl, extractTopLevelDecls, findEnclosingTypeDeclaration, findTypeDeclarationGivenIdentifier, getFullLanguageName, getQueryForFile } from './tree-sitter';
-import { Parser, Node, QueryMatch } from 'web-tree-sitter';
+import Parser from 'web-tree-sitter';
 
 
 export class TypeScriptDriver implements LanguageDriver {
@@ -441,7 +441,13 @@ export class TypeScriptDriver implements LanguageDriver {
     const language = getFullLanguageName(sketchFilePath);
     const query = await getQueryForFile(
       sketchFilePath,
-      `hole-queries/${language}.scm`,
+      path.join(
+        __dirname,
+        "tree-sitter-files",
+        "queries",
+        "hole-queries",
+        `${language}.scm`
+      ),
     );
     if (!query) {
       throw new Error(`failed to get query for file ${sketchFilePath} and language ${language}`);
@@ -1005,7 +1011,13 @@ export class TypeScriptDriver implements LanguageDriver {
         const language = getFullLanguageName(currentFile);
         const query = await getQueryForFile(
           currentFile,
-          `relevant-types-queries/${language}-extract-identifiers.scm`,
+          path.join(
+            __dirname,
+            "tree-sitter-files",
+            "queries",
+            "relevant-types-queries",
+            `${language}-extract-identifiers.scm`,
+          )
         );
         if (!query) {
           throw new Error(`failed to get query for file ${currentFile} and language ${language}`);
@@ -1087,7 +1099,13 @@ export class TypeScriptDriver implements LanguageDriver {
         const language = getFullLanguageName(currentFile);
         const query = await getQueryForFile(
           currentFile,
-          `relevant-types-queries/${language}-extract-identifiers.scm`,
+          path.join(
+            __dirname,
+            "tree-sitter-files",
+            "queries",
+            "relevant-headers-queries",
+            `${language}-extract-identifiers.scm`,
+          )
         );
         if (!query) {
           throw new Error(`failed to get query for file ${currentFile} and language ${language}`);
@@ -1799,11 +1817,11 @@ export class TypeScriptDriver implements LanguageDriver {
       for (const tld of topLevelDecls) {
         // pattern 0 is let/const, 1 is var, 2 is fun
         // if (!seenDecls.has(JSON.stringify()) {
-        const originalDeclText = tld.patternIndex === 2
+        const originalDeclText = tld.pattern === 2
           ? tld.captures.find(d => d.name === "top.fn.decl")!.node.text
           : tld.captures.find(d => d.name === "top.var.decl")!.node.text;
 
-        if (tld.patternIndex === 2) {
+        if (tld.pattern === 2) {
           // build a type span
           const funcType = extractFunctionTypeFromDecl(tld);
           const wrapped = `type __TMP = ${funcType}`;
@@ -1820,6 +1838,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
           const valueNode = alias.childForFieldName("value");
           if (!valueNode) throw new Error("No type value found");
+          console.log(valueNode)
           console.log(valueNode.text)
 
           const baseNode = this.unwrapToBaseType(valueNode);
@@ -1859,8 +1878,8 @@ export class TypeScriptDriver implements LanguageDriver {
 
   async extractRelevantHeadersWithTreesitterHelper(
     originalDeclText: string,
-    node: Node,
-    targetTypes: Set<Node>,
+    node: Parser.SyntaxNode,
+    targetTypes: Set<Parser.SyntaxNode>,
     relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>,
     relevantContext: Set<TypeSpanAndSourceFile>,
     relevantContextMap: Map<string, TypeSpanAndSourceFile>,
@@ -1909,7 +1928,7 @@ export class TypeScriptDriver implements LanguageDriver {
     holeType: string,
     holeIdentifier: string
   ) {
-    const targetTypes = new Set<Node>();
+    const targetTypes = new Set<Parser.SyntaxNode>();
     // const ast = relevantTypes.get(holeIdentifier)!.ast;
     const ast = await getAst("file.ts", `type T = ${holeType}`);
     if (!ast) {
@@ -1934,7 +1953,7 @@ export class TypeScriptDriver implements LanguageDriver {
     return targetTypes;
   }
 
-  unwrapToBaseType(node: Node): Node {
+  unwrapToBaseType(node: Parser.SyntaxNode): Parser.SyntaxNode {
     if (["function_type", "tuple_type", "type_identifier", "predefined_type"].includes(node.type)) {
       return node;
     }
@@ -1952,8 +1971,8 @@ export class TypeScriptDriver implements LanguageDriver {
   async generateTargetTypesWithTreesitterHelper(
     relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>,
     currType: string,
-    targetTypes: Set<Node>,
-    node: Node | null
+    targetTypes: Set<Parser.SyntaxNode>,
+    node: Parser.SyntaxNode | null
   ): Promise<void> {
     if (!node) return;
 
@@ -2004,8 +2023,8 @@ export class TypeScriptDriver implements LanguageDriver {
   }
 
   async isTypeEquivalentWithTreesitter(
-    node: Node,
-    typ: Node,
+    node: Parser.SyntaxNode,
+    typ: Parser.SyntaxNode,
     relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>,
     foundNormalForms: Map<string, string>
   ): Promise<boolean> {
@@ -2036,7 +2055,7 @@ export class TypeScriptDriver implements LanguageDriver {
     return normT1 === normT2;
   }
 
-  async normalizeWithTreesitter(node: Node, relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>): Promise<string> {
+  async normalizeWithTreesitter(node: Parser.SyntaxNode, relevantTypes: Map<string, TypeSpanAndSourceFileAndAst>): Promise<string> {
     if (!node) return "";
 
     switch (node.type) {
