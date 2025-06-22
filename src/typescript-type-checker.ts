@@ -1,6 +1,9 @@
 import * as ts from 'typescript';
-import { TypeChecker, TypeAnalysis } from "./types";
+import { TypeChecker, TypeAnalysis, VarFuncDecls } from "./types";
 import { indexOfRegexGroup } from "./utils";
+import { sign } from 'crypto';
+import path from 'path';
+import { config } from 'process';
 
 
 export class TypeScriptTypeChecker implements TypeChecker {
@@ -509,7 +512,7 @@ export class TypeScriptTypeChecker implements TypeChecker {
     };
   }
 
-  analyzeTypeString(typeString: string, program: ts.Program = this.createProgramFromSource("")): TypeAnalysis {
+  analyzeTypeString(typeString: string, program: ts.Program = this.createProgramFromSource(""), checker: ts.TypeChecker): TypeAnalysis {
     const sourceFile = ts.createSourceFile('temp.ts', `type T = ${typeString};`, ts.ScriptTarget.Latest, true);
     let typeNode: ts.TypeNode | undefined;
 
@@ -523,7 +526,7 @@ export class TypeScriptTypeChecker implements TypeChecker {
       throw new Error('Failed to parse type string');
     }
 
-    const checker = program.getTypeChecker();
+    // const checker = program.getTypeChecker();
     return this.analyzeTypeNode(typeNode, checker);
   }
 
@@ -565,6 +568,15 @@ export class TypeScriptTypeChecker implements TypeChecker {
     return typeAnalysisResult.kind === "TypeReference";
   }
 
+  // Extract identifiers from a given code string.
+  // For example:
+  // type Model = [BookingFormData, Booking[], BookingID];
+  // [
+  //   { name: 'Model', start: 5, end: 10, line: 1, column: 6 },
+  //   { name: 'BookingFormData', start: 14, end: 29, line: 1, column: 15 },
+  //   { name: 'Booking', start: 31, end: 38, line: 1, column: 32 },
+  //   { name: 'BookingID', start: 42, end: 51, line: 1, column: 43 }
+  // ]
   extractIdentifiers(code: string) {
     const sourceFile = ts.createSourceFile(
       "sample.ts",
@@ -596,8 +608,8 @@ export class TypeScriptTypeChecker implements TypeChecker {
   }
 
   extractIdentifiersWithPosHelper(sourceFile: ts.SourceFile, node: ts.Node, identifiers: { name: string; start: number; end: number; line: number; column: number }[]) {
+    // console.log(`iter on ${node.getText()} =*= ${node.kind}`)
     if (ts.isIdentifier(node)) {
-      // console.log(node.kind, node.text)
       if (
         ts.isTypeReferenceNode(node.parent) ||
         ts.isTypeAliasDeclaration(node.parent) ||
@@ -614,10 +626,32 @@ export class TypeScriptTypeChecker implements TypeChecker {
           column: character + 1 // Convert 0-based to 1-based
         });
       }
+    } else if (
+      // Handle keywords such as SyntaxKind.BooleanKeyword (boolean)
+      node.kind == ts.SyntaxKind.BooleanKeyword ||
+      node.kind == ts.SyntaxKind.StringKeyword ||
+      node.kind == ts.SyntaxKind.NumberKeyword ||
+      node.kind == ts.SyntaxKind.UndefinedKeyword ||
+      node.kind == ts.SyntaxKind.NullKeyword
+      // NOTE: this might be too all-encompassing.
+      // node.kind >= 83 && node.kind <= 165
+    ) {
+      const { line, character } = sourceFile.getLineAndCharacterOfPosition(node.getStart());
+      identifiers.push({
+        name: node.getText(),
+        start: node.getStart(),
+        end: node.getEnd(),
+        line: line + 1, // Convert 0-based to 1-based
+        column: character + 1 // Convert 0-based to 1-based
+      });
     }
     node.forEachChild(child => this.extractIdentifiersWithPosHelper(sourceFile, child, identifiers));
   }
 
+  // Find Declaration given an identifier.
+  //
+  // For example:
+  // Decl: type Booking = [Time, User, BookingID]; || Identifier: Booking
   findDeclarationForIdentifier(
     sourceCode: string,
     targetLine: number,
@@ -662,6 +696,215 @@ export class TypeScriptTypeChecker implements TypeChecker {
     } else {
       return null;
     }
+  }
+
+  // findTopLevelDeclarations(sourceCode: string, fileName = "temp.ts") {
+  findTopLevelDeclarations(program: ts.Program, checker: ts.TypeChecker, fileName: string): VarFuncDecls[] {
+    // const compilerOptions: ts.CompilerOptions = { target: ts.ScriptTarget.ESNext };
+    // NOTE: This is only necessary when you are passing the code string only.
+    // This is a nifty trick to create a temporary file to store your code string literal.
+    // In this case the function should accept (sourceCode: string, fileName = "temp.ts").
+    // If you know what file you need to read, then there is no need for this.
+    // const host = ts.createCompilerHost(compilerOptions);
+    // host.getSourceFile = (fileName, languageVersion) =>
+    //   ts.createSourceFile(fileName, sourceCode, languageVersion, true);
+    // const program = ts.createProgram([fileName], compilerOptions, host);
+
+    // const program = ts.createProgram([fileName], compilerOptions);
+    const sourceFile = program.getSourceFile(fileName)!;
+    // const checker = program.getTypeChecker();
+
+    const results: VarFuncDecls[] = [];
+
+    function getLineChar(pos: number) {
+      const { line, character } = sourceFile.getLineAndCharacterOfPosition(pos);
+      return { line: line + 1, character: character + 1 }; // 1-based
+    }
+
+    function visit(node: ts.Node) {
+      // Only look at top-level nodes
+      if (node.parent && node.parent.kind !== ts.SyntaxKind.SourceFile) return;
+
+
+      if (ts.isFunctionDeclaration(node) && node.name) {
+        // const symbol = checker.getSymbolAtLocation(node.name);
+        // const type = symbol && checker.getTypeOfSymbolAtLocation(symbol, node);
+        // const typeString = type ? checker.typeToString(type) : "unknown";
+        const signature = checker.getSignatureFromDeclaration(node);
+        const signatureString = signature ? checker.signatureToString(signature) : "unknown";
+        const returnType = signature ? checker.typeToString(signature.getReturnType()) : null;
+
+        let result: VarFuncDecls = {
+          kind: "function",
+          name: node.name.text,
+          type: signatureString,
+          position: getLineChar(node.getStart()),
+          declarationText: node.getText(sourceFile),
+          sourceFile: fileName
+        }
+
+        if (returnType) {
+          result = {
+            ...result,
+            returnType: returnType
+          }
+        }
+
+        results.push(result);
+      }
+
+
+      if (ts.isVariableStatement(node)) {
+        for (const decl of node.declarationList.declarations) {
+          if (!ts.isIdentifier(decl.name)) continue;
+
+          const name = decl.name.text;
+          const type = checker.getTypeAtLocation(decl);
+          let kind: "function" | "variable" | "arrowFunction" | "classMethod" = "variable";
+          let returnType: string | null = null;
+
+          if (decl.initializer && ts.isArrowFunction(decl.initializer)) {
+            kind =
+              decl.initializer && ts.isArrowFunction(decl.initializer)
+                ? "arrowFunction"
+                : "variable";
+
+            const arrowFunc = decl.initializer as ts.ArrowFunction;
+            const signature = checker.getSignatureFromDeclaration(arrowFunc);
+            if (signature) {
+              const returnTypeSymbol = checker.getReturnTypeOfSignature(signature);
+              // NOTE: debugging
+              // console.log(">=>", name)
+              // console.log(ts.TypeFlags[returnTypeSymbol.flags]);
+              // const apparent = checker.getApparentType(returnTypeSymbol);
+              // const returnTypeApparent = checker.typeToString(apparent);
+              // NOTE: debugging
+              // console.log(returnTypeApparent)
+              // console.log(returnTypeSymbol.getSymbol()?.getName());
+
+              // NOTE: debugging
+              // console.log({
+              //   isArray: checker.isArrayType(returnTypeSymbol),
+              //   symbol: returnTypeSymbol.symbol?.name,
+              // });
+
+
+
+              if (checker.isArrayType(returnTypeSymbol)) {
+                // NOTE: debugging
+                // console.log(">=>", name, "isArrayType")
+                const elementType = (returnTypeSymbol as ts.TypeReference).typeArguments?.[0];
+                const inner = elementType ? checker.typeToString(elementType) : 'unknown';
+                returnType = `${inner}[]`;
+              } else {
+                returnType = checker.typeToString(returnTypeSymbol);
+              }
+            }
+          }
+
+          let result: VarFuncDecls = {
+            kind,
+            name,
+            type: checker.typeToString(type),
+            position: getLineChar(decl.getStart()),
+            declarationText: decl.getText(sourceFile),
+            sourceFile: fileName
+          }
+
+          if (returnType) {
+            result = {
+              ...result,
+              returnType: returnType
+            }
+          }
+
+          results.push(result);
+        }
+      }
+
+      if (ts.isClassDeclaration(node) && node.name) {
+        for (const member of node.members) {
+          if (ts.isMethodDeclaration(member) && member.name && ts.isIdentifier(member.name)) {
+            const symbol = checker.getSymbolAtLocation(member.name);
+            const type = symbol && checker.getTypeOfSymbolAtLocation(symbol, member);
+            results.push({
+              kind: "classMethod",
+              name: `${node.name.text}.${member.name.text}`,
+              type: type ? checker.typeToString(type) : "unknown",
+              position: getLineChar(member.getStart()),
+              declarationText: member.getText(sourceFile),
+              sourceFile: fileName
+            });
+          }
+        }
+      }
+    }
+
+    ts.forEachChild(sourceFile, visit);
+    return results;
+  }
+
+  createTsCompilerProgram(repo: string[], projectRoot: string): ts.Program {
+    // NOTE: This was an attempt to use an existing TS type system.
+    const existingConfig = this.getCompilerOptionsFromTsconfig(projectRoot);
+    // NOTE: debugging
+    // console.log(existingConfig)
+
+    if (existingConfig) {
+      const program = ts.createProgram({
+        rootNames: existingConfig.fileNames,
+        options: existingConfig.options
+      });
+      // NOTE: debugging
+      // console.log(program.getSourceFiles().map(f => f.fileName));
+      return program;
+    }
+
+    const compilerOptions: ts.CompilerOptions = {
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.CommonJS,
+      moduleResolution: ts.ModuleResolutionKind.NodeJs,
+      esModuleInterop: true,
+      strict: true,
+      skipLibCheck: true,
+      baseUrl: projectRoot, // Optional but useful for consistent resolution
+      paths: { "*": ["node_modules/*"] }, // Optional fallback
+    };
+    const program = ts.createProgram(repo, compilerOptions);
+    return program
+  }
+
+  getCompilerOptionsFromTsconfig(projectRoot: string): ts.ParsedCommandLine | null {
+    const configPath = ts.findConfigFile(projectRoot, ts.sys.fileExists, "tsconfig.json");
+    // NOTE: debugging
+    // console.log(configPath)
+    if (!configPath) return null;
+
+    const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+    const parsedConfig = ts.parseJsonConfigFileContent(
+      configFile.config,
+      ts.sys,
+      // path.dirname(configPath)
+      projectRoot
+    );
+
+    return parsedConfig;
+  }
+
+  replaceTypeAnnotationColonWithArrow(typeStr: string): string {
+    const regex = /^([\(\[][^)]*\)?)(?:\s*:\s*)(.*)$/;
+
+    const match = typeStr.match(regex);
+
+    if (!match) {
+      console.log('Invalid function type signature');
+      return "";
+    }
+
+    const params = match[1].trim();
+    const returnType = match[2].trim();
+
+    return `${params} => ${returnType}`;
   }
 }
 

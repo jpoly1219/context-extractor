@@ -1,6 +1,16 @@
+import * as URI from "uri-js";
 import * as fs from "fs";
 import * as path from "path";
 import { relevantTypeObject, varsObject, typesObject, typesQueryResult, varsQueryResult, relevantTypeQueryResult, typesAndLocationsQueryResult, Language } from "./types";
+
+const isUri = (str: string) => {
+  try {
+    const url = new URL(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
   return match.reduce((acc, curr, i) => {
@@ -298,11 +308,14 @@ const isQLIdentifier = (typeQLClass: string): boolean => {
 }
 
 const supportsHole = (lang: Language): boolean => {
-  const supportedLangs = [Language.OCaml];
+  const supportedLangs = ["ocaml"];
   return supportedLangs.includes(lang);
 }
 
 const getAllTSFiles = (dirPath: string, arrayOfFiles: string[] = []) => {
+  if (dirPath.slice(0, 7) === "file://") {
+    dirPath = dirPath.slice(7);
+  }
   const files = fs.readdirSync(dirPath);
 
   files.forEach((file) => {
@@ -332,7 +345,70 @@ const getAllOCamlFiles = (dirPath: string, arrayOfFiles: string[] = []) => {
   return arrayOfFiles;
 }
 
+const getTimestampForFilename = (): string => {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");  // Months are 0-based
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const seconds = String(now.getSeconds()).padStart(2, "0");
+
+  return `${year}${month}${day}_${hours}${minutes}${seconds}`;
+}
+
+const insertAtPosition = (
+  contents: string,
+  cursorPosition: { line: number, character: number },
+  insertText: string
+): string => {
+  const lines = contents.split(/\r?\n/); // Handle both LF and CRLF line endings
+  const { line, character } = cursorPosition;
+
+  if (line < 0 || line >= lines.length) {
+    throw new Error("Invalid line number");
+  }
+
+  const targetLine = lines[line];
+  if (character < 0 || character > targetLine.length) {
+    throw new Error("Invalid character index");
+  }
+
+  // Insert the text
+  lines[line] = targetLine.slice(0, character) + insertText + targetLine.slice(character);
+
+  return lines.join("\n"); // Reconstruct the file
+}
+
+function getCleanUriPath(uri: string) {
+  const path = URI.parse(uri).path ?? "";
+  let clean = path.replace(/^\//, ""); // remove start slash
+  clean = clean.replace(/\/$/, ""); // remove end slash
+  return clean;
+}
+
+function getUriPathBasename(uri: string): string {
+  const path = getCleanUriPath(uri);
+  const basename = path.split("/").pop() || "";
+  return decodeURIComponent(basename);
+}
+
+function getFileExtensionFromBasename(basename: string) {
+  const parts = basename.split(".");
+  if (parts.length < 2) {
+    return "";
+  }
+  return (parts.slice(-1)[0] ?? "").toLowerCase();
+}
+
+function getUriFileExtension(uri: string) {
+  const baseName = getUriPathBasename(uri);
+  return getFileExtensionFromBasename(baseName);
+}
+
 export {
+  isUri,
   indexOfRegexGroup,
   formatTypeSpan,
   extractSnippet,
@@ -364,5 +440,11 @@ export {
   isQLIdentifier,
   supportsHole,
   getAllTSFiles,
-  getAllOCamlFiles
-};
+  getAllOCamlFiles,
+  getTimestampForFilename,
+  insertAtPosition,
+  getCleanUriPath,
+  getUriPathBasename,
+  getFileExtensionFromBasename,
+  getUriFileExtension,
+}

@@ -13,22 +13,28 @@
   ],
   "scripts": {
     "build": "rm -rf dist/ && npx tsc && npm run copy-deps",
-    "copy-deps": "npm run copy-lsp-client && npm run copy-ocaml",
+    "copy-deps": "npm run copy-lsp-client && npm run copy-ocaml && npm run copy-tree-sitter",
     "copy-lsp-client": "shx cp -r ts-lsp-client-dist dist/",
     "copy-ocaml": "shx mkdir -p dist/src/ocaml-utils/ && shx cp -r src/ocaml-utils/_build dist/src/ocaml-utils/_build/",
+    "copy-tree-sitter": "shx cp -r src/tree-sitter-files/ dist/src/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "json-rpc-2.0": "^1.7.0",
-    "openai": "^4.30.0",
-    "pino": "^9.3.1",
+    "openai": "^4.86.2",
+    "pino": "^9.6.0",
+    "pprof": "^4.0.0",
     "shx": "^0.3.4",
+    "tree-sitter-wasms": "^0.1.11",
     "ts-node": "^10.9.2",
-    "tslib": "^2.6.3"
+    "tslib": "^2.8.1",
+    "uri-js": "^4.4.1",
+    "web-tree-sitter": "^0.21.0"
   },
   "devDependencies": {
-    "typescript": "^5.4.5"
+    "@types/vscode": "^1.99.1",
+    "typescript": "^5.8.2"
   }
 }
