@@ -16,7 +16,7 @@
     "copy-deps": "npm run copy-lsp-client && npm run copy-ocaml && npm run copy-tree-sitter",
     "copy-lsp-client": "shx cp -r ts-lsp-client-dist dist/",
     "copy-ocaml": "shx mkdir -p dist/src/ocaml-utils/ && shx cp -r src/ocaml-utils/_build dist/src/ocaml-utils/_build/",
-    "copy-tree-sitter": "shx cp -r tree-sitter-files dist/",
+    "copy-tree-sitter": "shx cp -r src/tree-sitter-files/ dist/src/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -27,11 +27,11 @@
     "pino": "^9.6.0",
     "pprof": "^4.0.0",
     "shx": "^0.3.4",
-    "tree-sitter-wasms": "^0.1.12",
+    "tree-sitter-wasms": "^0.1.11",
     "ts-node": "^10.9.2",
     "tslib": "^2.8.1",
     "uri-js": "^4.4.1",
-    "web-tree-sitter": "^0.25.6"
+    "web-tree-sitter": "^0.21.0"
   },
   "devDependencies": {
     "@types/vscode": "^1.99.1",
