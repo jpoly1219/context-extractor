@@ -28,7 +28,6 @@ export async function getParserForFile(filepath: string) {
   try {
     await Parser.init();
     const parser = new Parser();
-    console.log("parser:", parser);
 
     const language = await getLanguageForFile(filepath);
     if (!language) {
@@ -106,7 +105,6 @@ async function loadLanguageForFileExt(
     "wasms",
     `tree-sitter-${supportedLanguages[fileExtension]}.wasm`
   );
-  console.log("Language is", Parser.Language);
   return await Parser.Language.load(wasmPath);
 }
 

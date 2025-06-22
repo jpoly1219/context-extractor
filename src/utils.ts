@@ -3,6 +3,15 @@ import * as fs from "fs";
 import * as path from "path";
 import { relevantTypeObject, varsObject, typesObject, typesQueryResult, varsQueryResult, relevantTypeQueryResult, typesAndLocationsQueryResult, Language } from "./types";
 
+const isUri = (str: string) => {
+  try {
+    const url = new URL(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const indexOfRegexGroup = (match: RegExpMatchArray, n: number) => {
   return match.reduce((acc, curr, i) => {
     if (i < 1 || i >= n) return acc;
@@ -299,11 +308,14 @@ const isQLIdentifier = (typeQLClass: string): boolean => {
 }
 
 const supportsHole = (lang: Language): boolean => {
-  const supportedLangs = [Language.OCaml];
+  const supportedLangs = ["ocaml"];
   return supportedLangs.includes(lang);
 }
 
 const getAllTSFiles = (dirPath: string, arrayOfFiles: string[] = []) => {
+  if (dirPath.slice(0, 7) === "file://") {
+    dirPath = dirPath.slice(7);
+  }
   const files = fs.readdirSync(dirPath);
 
   files.forEach((file) => {
@@ -396,6 +408,7 @@ function getUriFileExtension(uri: string) {
 }
 
 export {
+  isUri,
   indexOfRegexGroup,
   formatTypeSpan,
   extractSnippet,

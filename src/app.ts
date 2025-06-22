@@ -5,7 +5,7 @@ import { execSync } from "child_process";
 import OpenAI from "openai";
 import { LspClient, JSONRPCEndpoint, SymbolInformation, Location, Range } from "../ts-lsp-client-dist/src/main";
 // import { LspClient, JSONRPCEndpoint } from "ts-lsp-client";
-import { Language, LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config, IDE, TypeSpanAndSourceFileAndAst } from "./types";
+import { Language, LanguageDriver, Context, TypeSpanAndSourceFile, GPT4Config, IDE, TypeSpanAndSourceFileAndAst, Position } from "./types";
 // TODO: Bundle the drivers as barrel exports.
 import { TypeScriptDriver } from "./typescript-driver";
 import { OcamlDriver } from "./ocaml-driver";
@@ -24,32 +24,34 @@ export class App {
   private repoPath: string; // not prefixed with file://
   private result: Context | null = null;
   private logStream: fs.WriteStream | null;
-  private ide: IDE
+  private ide: IDE;
+  private cursorPosition: Position;
 
-  constructor(language: Language, sketchPath: string, repoPath: string, ide: IDE) {
+  constructor(language: Language, sketchPath: string, repoPath: string, ide: IDE, cursorPosition: Position) {
     this.language = language;
     this.sketchPath = sketchPath;
     this.repoPath = repoPath;
     this.ide = ide;
+    this.cursorPosition = cursorPosition;
 
     switch (ide) {
-      case IDE.VSCode: {
+      case "vscode": {
         // Most things will be done via vscode's command api
         this.languageServer = null;
         this.lspClient = null;
         this.logStream = null;
       }
-      case IDE.Standalone: {
+      case "standalone": {
         const r = (() => {
           switch (language) {
-            case Language.TypeScript: {
+            case "typescript": {
               const sources = getAllTSFiles(this.repoPath);
               this.languageDriver = new TypeScriptDriver(this.ide, sources, repoPath);
               // PERF: 6ms
               // return spawn("typescript-language-server", ["--stdio", "--log-level", "3"], { stdio: ["pipe", "pipe", "pipe"] });
               return spawn("node", ["/home/jacob/projects/typescript-language-server/lib/cli.mjs", "--stdio", "--log-level", "4"], { stdio: ["pipe", "pipe", "pipe"] });
             }
-            case Language.OCaml: {
+            case "ocaml": {
               this.languageDriver = new OcamlDriver();
               try {
                 execSync(`eval $(opam env --switch=. --set-switch)`, { shell: "/bin/bash" })
@@ -118,7 +120,7 @@ export class App {
         // const logFile = fs.createWriteStream("log.txt");
         // r.stdout.on('data', (d) => logFile.write(d));
         this.languageDriver.init(this.lspClient, this.sketchPath)
-        this.languageDriver.injectHole(this.sketchPath)
+        // this.languageDriver.injectHole(this.sketchPath)
       }
     }
   }
@@ -159,10 +161,10 @@ export class App {
     //   this.sketchPath,
     //   this.logStream
     // );
-    const cursorPosition = { line: 3, character: 56 };
+    // this.cursorPosition = { line: 3, character: 56 };
     const holeContext = await this.languageDriver.getHoleContextWithTreesitter(
       this.sketchPath,
-      cursorPosition,
+      this.cursorPosition,
       this.logStream
     );
     console.timeEnd("getHoleContext");
@@ -185,9 +187,9 @@ export class App {
 
     console.time("extractRelevantHeaders")
     let repo: string[] = [];
-    if (this.language === Language.TypeScript) {
+    if (this.language === "typescript") {
       repo = getAllTSFiles(this.repoPath);
-    } else if (this.language === Language.OCaml) {
+    } else if (this.language === "ocaml") {
       repo = getAllOCamlFiles(this.repoPath);
     }
 
@@ -314,9 +316,9 @@ export class App {
 
       // console.time("extractRelevantHeaders repo");
       let repo: string[] = [];
-      if (this.language === Language.TypeScript) {
+      if (this.language === "typescript") {
         repo = getAllTSFiles(this.repoPath);
-      } else if (this.language === Language.OCaml) {
+      } else if (this.language === "ocaml") {
         repo = getAllOCamlFiles(this.repoPath);
       }
       // console.timeEnd("extractRelevantHeaders repo");
@@ -496,10 +498,10 @@ export class CompletionEngine {
   generateTypesAndHeadersPrompt(sketchFileContent: string, holeType: string, relevantTypes: string, relevantHeaders: string) {
     let holeConstruct = "";
     switch (this.language) {
-      case Language.TypeScript: {
+      case "typescript": {
         holeConstruct = "_()";
       }
-      case Language.OCaml: {
+      case "ocaml": {
         holeConstruct = "_"
       }
     }

@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 import * as fs from "fs";
 import * as path from "path";
+import { pathToFileURL, fileURLToPath } from 'url';
 import OpenAI from "openai";
 import { execSync } from "child_process";
 import { ClientCapabilities, LspClient, Location, MarkupContent, Range, SymbolInformation } from "../ts-lsp-client-dist/src/main";
@@ -33,7 +34,7 @@ export class TypeScriptDriver implements LanguageDriver {
     projectRoot: string
   ) {
     this.ide = ide;
-    if (ide == IDE.VSCode) {
+    if (ide == "vscode") {
       import("./vscode-ide").then(module => this.vscodeImport = module);
     }
 
@@ -1437,8 +1438,6 @@ export class TypeScriptDriver implements LanguageDriver {
       typeAnalysisResult = foundTypeAnalysisResults.get(source + ":" + typeSpan)!;
     }
 
-    console.log(targetTypes)
-
     targetTypes.forEach(typ => {
       if (this.isTypeEquivalent(typeSpan, typ, relevantTypes, foundNormalForms, program, checker)) {
         // NOTE: This checks for dupes. ctx is an object so you need to check for each field.
@@ -1838,8 +1837,6 @@ export class TypeScriptDriver implements LanguageDriver {
 
           const valueNode = alias.childForFieldName("value");
           if (!valueNode) throw new Error("No type value found");
-          console.log(valueNode)
-          console.log(valueNode.text)
 
           const baseNode = this.unwrapToBaseType(valueNode);
 

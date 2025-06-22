@@ -6,6 +6,11 @@ import { Location, LspClient, Range, SymbolInformation } from "../ts-lsp-client-
 import * as fs from "fs"
 import { SyntaxNode, Tree } from "web-tree-sitter";
 
+interface Position {
+  line: number;
+  character: number;
+}
+
 interface relevantTypeObject {
   typeAliasDeclaration: string;
   typeName: string;
@@ -174,10 +179,7 @@ interface Context {
   relevantHeaders: Map<Filepath, RelevantHeader[]>
 }
 
-enum Language {
-  TypeScript,
-  OCaml
-}
+type Language = "typescript" | "ocaml";
 
 interface TypeChecker {
   // Given a type declaration, get the type context. Call checktype().
@@ -246,10 +248,7 @@ interface VarFuncDecls {
 
 // We currently support running the extractor under
 // a vscode extension or as a standalone script.
-enum IDE {
-  VSCode,
-  Standalone
-}
+type IDE = "standalone" | "vscode";
 
 type VSCodeBuiltinProvider =
   | ExecuteHoverProvider
@@ -280,4 +279,4 @@ interface SymbolWithRange extends RangeInFile {
 type FileSymbolMap = Record<string, SymbolWithRange[]>;
 
 
-export { relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, TypeSpanAndSourceFileAndAst, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis, VarFuncDecls, IDE, VSCodeBuiltinProvider, RangeInFile, RangeInFileWithContents, SymbolWithRange, FileSymbolMap }
+export { Position, relevantTypeObject, varsObject, typesObject, typeAndLocation, relevantTypeQueryResult, varsQueryResult, typesQueryResult, typesAndLocationsQueryResult, LanguageDriver, Language, TypeChecker, TypeSpanAndSourceFile, TypeSpanAndSourceFileAndAst, Context, Model, LLMConfig, GPT4Config, GPT4PromptComponent, TypeAnalysis, ParameterAnalysis, VarFuncDecls, IDE, VSCodeBuiltinProvider, RangeInFile, RangeInFileWithContents, SymbolWithRange, FileSymbolMap }

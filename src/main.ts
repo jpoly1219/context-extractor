@@ -8,8 +8,10 @@ import * as path from "path";
 import { extractRelevantTypes, getHoleContext, extractRelevantHeaders } from "./core";
 import { createDatabaseWithCodeQL, extractRelevantTypesWithCodeQL, extractHeadersWithCodeQL, extractHoleType, getRelevantHeaders4, extractTypesAndLocations } from "./codeql";
 import { CODEQL_PATH, DEPS_DIR, QUERY_DIR, ROOT_DIR } from "./constants";
-import { Context, IDE, Language } from "./types";
+import { Context, IDE, Language, Position } from "./types";
 import { App, CompletionEngine } from "./app";
+import { isUri } from "./utils.js";
+import { fileURLToPath } from "url";
 
 // sketchPath: /home/<username>/path/to/sketch/dir/sketch.ts
 export const extract = async (sketchPath: string) => {
@@ -238,13 +240,17 @@ export const extractContext = async (
   language: Language,
   sketchPath: string,
   repoPath: string,
-  ide: IDE
+  ide: IDE,
+  cursorPosition: Position
 ) => {
   // console.time("extractContext")
   // const profile = await pprof.time.start(10000); // Collect for 10s
   console.log("=*=*=*=")
+  if (isUri(sketchPath)) {
+    sketchPath = fileURLToPath(sketchPath);
+  }
   const start = performance.now()
-  const app = new App(language, sketchPath, repoPath, ide);
+  const app = new App(language, sketchPath, repoPath, ide, cursorPosition);
   await app.run2(1);
   const res = app.getSavedResult();
   app.close();
@@ -275,9 +281,10 @@ export const spawnApp = (
   language: Language,
   sketchPath: string,
   repoPath: string,
-  ide: IDE
+  ide: IDE,
+  cursorPosition: Position
 ) => {
-  const app = new App(language, sketchPath, repoPath, ide);
+  const app = new App(language, sketchPath, repoPath, ide, cursorPosition);
   return app;
 }
 
