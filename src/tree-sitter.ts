@@ -99,12 +99,13 @@ export async function getQueryForFile(
 async function loadLanguageForFileExt(
   fileExtension: string
 ): Promise<Parser.Language> {
-  const wasmPath = path.join(
-    __dirname,
-    "tree-sitter-files",
-    "wasms",
-    `tree-sitter-${supportedLanguages[fileExtension]}.wasm`
-  );
+  const wasmPath = require.resolve(`./tree-sitter-files/wasms/tree-sitter-${supportedLanguages[fileExtension]}.wasm`)
+  // const wasmPath = path.join(
+  //   __dirname,
+  //   "tree-sitter-files",
+  //   "wasms",
+  //   `tree-sitter-${supportedLanguages[fileExtension]}.wasm`
+  // );
   return await Parser.Language.load(wasmPath);
 }
 
@@ -266,15 +267,17 @@ export async function extractTopLevelDecls(currentFile: string) {
     throw new Error(`failed to get ast for file ${currentFile}`);
   }
   const language = getFullLanguageName(currentFile);
+  const queryPath = require.resolve(`./tree-sitter-files/queries/relevant-headers-queries/${language}-get-toplevel-headers.scm`)
   const query = await getQueryForFile(
     currentFile,
-    path.join(
-      __dirname,
-      "tree-sitter-files",
-      "queries",
-      "relevant-headers-queries",
-      `${language}-get-toplevel-headers.scm`
-    )
+    queryPath
+    // path.join(
+    //   __dirname,
+    //   "tree-sitter-files",
+    //   "queries",
+    //   "relevant-headers-queries",
+    //   `${language}-get-toplevel-headers.scm`
+    // )
   );
   if (!query) {
     throw new Error(
@@ -290,15 +293,17 @@ export async function extractTopLevelDeclsWithFormatting(currentFile: string) {
     throw new Error(`failed to get ast for file ${currentFile}`);
   }
   const language = getFullLanguageName(currentFile);
+  const queryPath = require.resolve(`./tree-sitter-files/queries/relevant-headers-queries/${language}-get-toplevel-headers.scm`)
   const query = await getQueryForFile(
     currentFile,
-    path.join(
-      __dirname,
-      "tree-sitter-files",
-      "queries",
-      "relevant-headers-queries",
-      `${language}-get-toplevel-headers.scm`
-    )
+    queryPath
+    // path.join(
+    //   __dirname,
+    //   "tree-sitter-files",
+    //   "queries",
+    //   "relevant-headers-queries",
+    //   `${language}-get-toplevel-headers.scm`
+    // )
   );
   if (!query) {
     throw new Error(
