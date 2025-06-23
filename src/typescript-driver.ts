@@ -486,7 +486,7 @@ export class TypeScriptDriver implements LanguageDriver {
     }
     const language = getFullLanguageName(sketchFilePath);
     const queryPath = require.resolve(
-      `@jpoly1219/context-extractor/src/tree-sitter-files/queries/hole-queries/${language}.scm`
+      `@jpoly1219/context-extractor/dist/src/tree-sitter-files/queries/hole-queries/${language}.scm`
     );
     const query = await getQueryForFile(
       sketchFilePath,
@@ -1168,7 +1168,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
         const language = getFullLanguageName(currentFile);
         const queryPath = require.resolve(
-          `@jpoly1219/context-extractor/src/tree-sitter-files/queries/relevant-types-queries/${language}-extract-identifiers.scm`
+          `@jpoly1219/context-extractor/dist/src/tree-sitter-files/queries/relevant-types-queries/${language}-extract-identifiers.scm`
         );
         const query = await getQueryForFile(
           currentFile,
@@ -1277,7 +1277,7 @@ export class TypeScriptDriver implements LanguageDriver {
 
         const language = getFullLanguageName(currentFile);
         const queryPath = require.resolve(
-          `@jpoly1219/context-extractor/src/tree-sitter-files/queries/relevant-headers-queries/${language}-extract-identifiers.scm`
+          `@jpoly1219/context-extractor/dist/src/tree-sitter-files/queries/relevant-headers-queries/${language}-extract-identifiers.scm`
         );
         const query = await getQueryForFile(
           currentFile,

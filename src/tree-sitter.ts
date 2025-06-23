@@ -119,7 +119,7 @@ async function loadLanguageForFileExt(
   fileExtension: string
 ): Promise<Parser.Language> {
   const wasmPath = require.resolve(
-    `@jpoly1219/context-extractor/src/tree-sitter-files/wasms/tree-sitter-${supportedLanguages[fileExtension]}.wasm`
+    `@jpoly1219/context-extractor/dist/src/tree-sitter-files/wasms/tree-sitter-${supportedLanguages[fileExtension]}.wasm`
   );
   // const wasmPath = path.join(
   //   __dirname,
@@ -289,7 +289,7 @@ export async function extractTopLevelDecls(currentFile: string) {
   }
   const language = getFullLanguageName(currentFile);
   const queryPath = require.resolve(
-    `@jpoly1219/context-extractor/src/tree-sitter-files/queries/relevant-headers-queries/${language}-get-toplevel-headers.scm`
+    `@jpoly1219/context-extractor/dist/src/tree-sitter-files/queries/relevant-headers-queries/${language}-get-toplevel-headers.scm`
   );
   const query = await getQueryForFile(
     currentFile,
@@ -317,7 +317,7 @@ export async function extractTopLevelDeclsWithFormatting(currentFile: string) {
   }
   const language = getFullLanguageName(currentFile);
   const queryPath = require.resolve(
-    `@jpoly1219/context-extractor/src/tree-sitter-files/queries/relevant-headers-queries/${language}-get-toplevel-headers.scm`
+    `@jpoly1219/context-extractor/dist/src/tree-sitter-files/queries/relevant-headers-queries/${language}-get-toplevel-headers.scm`
   );
   const query = await getQueryForFile(
     currentFile,
