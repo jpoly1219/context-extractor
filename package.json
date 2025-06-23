@@ -1,6 +1,6 @@
 {
   "name": "@jpoly1219/context-extractor",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "Extract relevant context from an incomplete program sketch.",
   "repository": {
     "type": "git",
