@@ -440,15 +440,17 @@ export class TypeScriptDriver implements LanguageDriver {
       throw new Error("failed to get ast");
     }
     const language = getFullLanguageName(sketchFilePath);
+    const queryPath = require.resolve(`./tree-sitter-files/queries/hole-queries/${language}.scm`)
     const query = await getQueryForFile(
       sketchFilePath,
-      path.join(
-        __dirname,
-        "tree-sitter-files",
-        "queries",
-        "hole-queries",
-        `${language}.scm`
-      ),
+      queryPath
+      // path.join(
+      //   __dirname,
+      //   "tree-sitter-files",
+      //   "queries",
+      //   "hole-queries",
+      //   `${language}.scm`
+      // ),
     );
     if (!query) {
       throw new Error(`failed to get query for file ${sketchFilePath} and language ${language}`);
@@ -1010,15 +1012,17 @@ export class TypeScriptDriver implements LanguageDriver {
         foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7), ast: ast });
 
         const language = getFullLanguageName(currentFile);
+        const queryPath = require.resolve(`./tree-sitter-files/queries/relevant-types-queries/${language}-extract-identifiers.scm`)
         const query = await getQueryForFile(
           currentFile,
-          path.join(
-            __dirname,
-            "tree-sitter-files",
-            "queries",
-            "relevant-types-queries",
-            `${language}-extract-identifiers.scm`,
-          )
+          queryPath
+          // path.join(
+          //   __dirname,
+          //   "tree-sitter-files",
+          //   "queries",
+          //   "relevant-types-queries",
+          //   `${language}-extract-identifiers.scm`,
+          // )
         );
         if (!query) {
           throw new Error(`failed to get query for file ${currentFile} and language ${language}`);
@@ -1098,15 +1102,17 @@ export class TypeScriptDriver implements LanguageDriver {
         foundSoFar.set(typeName, { typeSpan: fullHoverResult, sourceFile: currentFile.slice(7), ast: ast });
 
         const language = getFullLanguageName(currentFile);
+        const queryPath = require.resolve(`./tree-sitter-files/queries/relevant-headers-queries/${language}-extract-identifiers.scm`)
         const query = await getQueryForFile(
           currentFile,
-          path.join(
-            __dirname,
-            "tree-sitter-files",
-            "queries",
-            "relevant-headers-queries",
-            `${language}-extract-identifiers.scm`,
-          )
+          queryPath
+          // path.join(
+          //   __dirname,
+          //   "tree-sitter-files",
+          //   "queries",
+          //   "relevant-headers-queries",
+          //   `${language}-extract-identifiers.scm`,
+          // )
         );
         if (!query) {
           throw new Error(`failed to get query for file ${currentFile} and language ${language}`);
