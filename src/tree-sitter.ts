@@ -29,6 +29,25 @@ export async function getParserForFile(filepath: string) {
     await Parser.init();
     const parser = new Parser();
 
+    // const packageRoot = path.dirname(
+    //   require.resolve("./package.json", { paths: [__dirname] })
+    // );
+    // console.log(packageRoot);
+    // const wasmPath2 = require.resolve(
+    //   path.join(
+    //     __dirname,
+    //     `tree-sitter-files/wasms/tree-sitter-${supportedLanguages["ts"]}.wasm`
+    //   )
+    // );
+    // console.log(wasmPath2);
+    // const wasmPath3 = require.resolve(
+    //   path.resolve(
+    //     __dirname,
+    //     `tree-sitter-files/wasms/tree-sitter-${supportedLanguages["ts"]}.wasm`
+    //   )
+    // );
+    // console.log(wasmPath3);
+
     const language = await getLanguageForFile(filepath);
     if (!language) {
       return undefined;
@@ -99,7 +118,9 @@ export async function getQueryForFile(
 async function loadLanguageForFileExt(
   fileExtension: string
 ): Promise<Parser.Language> {
-  const wasmPath = require.resolve(`./tree-sitter-files/wasms/tree-sitter-${supportedLanguages[fileExtension]}.wasm`)
+  const wasmPath = require.resolve(
+    `@jpoly1219/context-extractor/src/tree-sitter-files/wasms/tree-sitter-${supportedLanguages[fileExtension]}.wasm`
+  );
   // const wasmPath = path.join(
   //   __dirname,
   //   "tree-sitter-files",
@@ -267,7 +288,9 @@ export async function extractTopLevelDecls(currentFile: string) {
     throw new Error(`failed to get ast for file ${currentFile}`);
   }
   const language = getFullLanguageName(currentFile);
-  const queryPath = require.resolve(`./tree-sitter-files/queries/relevant-headers-queries/${language}-get-toplevel-headers.scm`)
+  const queryPath = require.resolve(
+    `@jpoly1219/context-extractor/src/tree-sitter-files/queries/relevant-headers-queries/${language}-get-toplevel-headers.scm`
+  );
   const query = await getQueryForFile(
     currentFile,
     queryPath
@@ -293,7 +316,9 @@ export async function extractTopLevelDeclsWithFormatting(currentFile: string) {
     throw new Error(`failed to get ast for file ${currentFile}`);
   }
   const language = getFullLanguageName(currentFile);
-  const queryPath = require.resolve(`./tree-sitter-files/queries/relevant-headers-queries/${language}-get-toplevel-headers.scm`)
+  const queryPath = require.resolve(
+    `@jpoly1219/context-extractor/src/tree-sitter-files/queries/relevant-headers-queries/${language}-get-toplevel-headers.scm`
+  );
   const query = await getQueryForFile(
     currentFile,
     queryPath
